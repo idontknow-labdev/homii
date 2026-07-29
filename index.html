@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homii x PUCEM — Arriendos Universitarios en Portoviejo</title>
+  <meta name="description" content="Plataforma oficial de arriendos verificados y búsqueda de compañeros de vivienda para la comunidad de la Pontificia Universidad Católica de Manabí, PUCEM.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===========================================================
+     ENCABEZADO
+     =========================================================== -->
+<header>
+  <div class="nav-inner">
+    <div class="logo">
+      <img src="logo.png" alt="Homii" style="height: 38px;">
+      <span class="logo-tag">PUCEM</span>
+    </div>
+
+    <ul class="nav-links">
+      <li><a class="nav-link active" data-view="landing">Inicio</a></li>
+      <li><a class="nav-link" data-view="search">Buscar Arriendo</a></li>
+      <li><a class="nav-link" data-view="roomie">Buscar Compañero</a></li>
+      <li class="nav-landlord-link" style="display:none;"><a class="nav-link" data-view="landlord">Panel Propietario</a></li>
+      <li class="nav-uni-link" style="display:none;"><a class="nav-link" data-view="university">Portal PUCEM</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <!-- Invitado -->
+      <div id="nav-guest" style="display:flex;gap:0.5rem;align-items:center;">
+        <button class="btn btn-outline btn-sm" id="btn-login">Iniciar sesión</button>
+        <button class="btn btn-primary btn-sm" id="btn-register">Registrarse</button>
+      </div>
+
+      <!-- Usuario con sesión -->
+      <div id="nav-user" style="display:none;gap:0.75rem;align-items:center;">
+        <div class="user-chip">
+          <div class="user-avatar" id="nav-avatar">U</div>
+          <span class="user-name" id="nav-username">Usuario</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-logout">Salir</button>
+      </div>
+
+      <!-- Campana -->
+      <div class="bell-btn" id="bell-btn" title="Notificaciones">
+        <svg viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+        <span class="bell-dot" id="bell-dot" style="display:none;"></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Notificaciones -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-head">
+    <h4>Notificaciones</h4>
+    <button class="notif-clear" id="notif-clear">Limpiar</button>
+  </div>
+  <div class="notif-body" id="notif-body"></div>
+</div>
+
+<main>
+
+<!-- ===========================================================
+     INICIO
+     =========================================================== -->
+<section class="view active" id="landing-view">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-label">Plataforma oficial — PUCEM Portoviejo</div>
+      <h1>Encuentra tu hogar cerca de la PUCEM</h1>
+      <p class="hero-desc">
+        Arriendos verificados por inspección física y certificados por convenio con la
+        Pontificia Universidad Católica de Manabí. Seguro, transparente y a minutos del campus.
+      </p>
+      <div class="hero-search">
+        <input type="text" id="quick-search" placeholder="Busca por barrio, servicio o precio...">
+        <button class="btn btn-primary" id="hero-search-btn">Buscar</button>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">8+</div>
+          <div class="hero-stat-label">Propiedades</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">3</div>
+          <div class="hero-stat-label">Certificados PUCEM</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">6</div>
+          <div class="hero-stat-label">Perfiles Roomie</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="landing-section">
+    <div class="landing-section-inner">
+
+      <!-- Segmentos -->
+      <div style="margin-bottom:3rem;">
+        <div class="section-title">Diseñado para cada miembro de la comunidad</div>
+        <div class="section-desc">Una plataforma pensada para estudiantes foráneos, propietarios locales y la administración de la PUCEM.</div>
+
+        <div class="seg-tabs">
+          <button class="seg-tab active" data-seg="student">Estudiantes</button>
+          <button class="seg-tab" data-seg="general">Arrendatarios</button>
+          <button class="seg-tab" data-seg="landlord">Propietarios</button>
+          <button class="seg-tab" data-seg="admin">Administradores</button>
+          <button class="seg-tab" data-seg="worker">Profesionales</button>
+        </div>
+
+        <div id="seg-panel-student" class="seg-panel"></div>
+        <div id="seg-panel-general" class="seg-panel"></div>
+        <div id="seg-panel-landlord" class="seg-panel"></div>
+        <div id="seg-panel-admin" class="seg-panel"></div>
+        <div id="seg-panel-worker" class="seg-panel"></div>
+      </div>
+
+      <!-- Bloque PUCEM Student -->
+      <div class="pucem-block">
+        <div>
+          <div class="pucem-block-label">Programa Oficial</div>
+          <h3>¿Es estudiante foráneo de la PUCEM?</h3>
+          <p>
+            Active su cuenta con su correo @pucem.edu.ec y acceda al módulo Homii Student.
+            Filtre arriendos certificados por inspección física, avalados por la Pontificia Universidad
+            Católica de Manabí, a pasos de su facultad y con condiciones preferenciales.
+          </p>
+          <div class="pucem-block-actions">
+            <button class="btn btn-white" onclick="navigate('search')">Explorar Arriendos</button>
+            <a class="btn btn-white-outline activation-trigger" href="#">Ver correo de activación</a>
+          </div>
+        </div>
+        <div class="email-sim">
+          <div class="email-sim-header">
+            <div class="email-sim-from">De:</div>
+            <div class="email-sim-sender">noreply@homii.pucem.edu.ec</div>
+          </div>
+          <h4>Active su cuenta Homii Student PUCEM</h4>
+          <p>
+            Su correo @pucem.edu.ec fue reconocido como parte del convenio institucional.
+            Active su pase para acceder a arriendos certificados y a la sección de búsqueda de compañero.
+          </p>
+          <button class="btn btn-white btn-full activation-trigger" style="font-size:0.85rem;">Activar pase estudiantil</button>
+        </div>
+      </div>
+
+      <!-- Características -->
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </div>
+          <h4>Verificación Física</h4>
+          <p>Nuestro equipo visita cada propiedad y revisa agua, internet, electricidad y seguridad estructural antes de publicarla.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M12 2a8 8 0 00-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 00-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <h4>Ubicación en Google Maps</h4>
+          <p>Cada propiedad incluye su ubicación exacta en Google Maps. Conozca el lugar antes de visitar.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h4>Buscar Compañero</h4>
+          <p>Conecta con otros estudiantes de la PUCEM para compartir los gastos del arriendo y hacer más accesible la vivienda.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h4>Convenio PUCEM Oficial</h4>
+          <p>Los arriendos certificados están respaldados por el convenio institucional entre la PUCEM y Homii.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- ===========================================================
+     BUSCADOR DE ARRIENDOS
+     =========================================================== -->
+<section class="view" id="search-view">
+<div class="view-inner">
+  <div class="page-title">Buscar Arriendo</div>
+  <div class="page-subtitle">Propiedades disponibles en Portoviejo, Manabí</div>
+
+  <div class="search-layout">
+
+    <!-- Panel de filtros -->
+    <aside class="filter-panel">
+      <div class="filter-panel-title">Filtros</div>
+
+      <div class="filter-block">
+        <div class="filter-block-title">Búsqueda</div>
+        <input type="text" class="form-input" id="filter-keyword" placeholder="Barrio, sector, servicio...">
+      </div>
+
+      <div class="filter-block">
+        <div class="filter-block-title">Precio máximo: <span id="filter-price-val">$1200</span></div>
+        <input type="range" class="range-slider" id="filter-price" min="100" max="1200" step="25" value="1200">
+        <div class="range-labels"><span>$100</span><span>$1200</span></div>
+      </div>
+
+      <div class="filter-block">
+        <div class="filter-block-title">Habitaciones</div>
+        <select class="form-select" id="filter-rooms">
+          <option value="any">Cualquier cantidad</option>
+          <option value="1">1 o más</option>
+          <option value="2">2 o más</option>
+          <option value="3">3 o más</option>
+        </select>
+      </div>
+
+      <div class="filter-block">
+        <div class="filter-block-title">Certificación</div>
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-certified">
+          Solo arriendos certificados por PUCEM
+        </label>
+      </div>
+
+      <div class="filter-block">
+        <div class="filter-block-title">Distancia a PUCEM: <span id="filter-distance-val">10 km</span></div>
+        <input type="range" class="range-slider" id="filter-distance" min="0.1" max="10" step="0.1" value="10">
+        <div class="range-labels"><span>0.1 km</span><span>10 km</span></div>
+      </div>
+
+      <div class="filter-block">
+        <div class="filter-block-title">Servicios incluidos</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <label class="checkbox-label"><input type="checkbox" class="filter-amenity" value="agua"> Agua</label>
+          <label class="checkbox-label"><input type="checkbox" class="filter-amenity" value="internet"> Internet</label>
+          <label class="checkbox-label"><input type="checkbox" class="filter-amenity" value="electricidad"> Electricidad</label>
+          <label class="checkbox-label"><input type="checkbox" class="filter-amenity" value="mascotas"> Mascotas permitidas</label>
+          <label class="checkbox-label"><input type="checkbox" class="filter-amenity" value="amoblado"> Amoblado</label>
+          <label class="checkbox-label"><input type="checkbox" class="filter-amenity" value="lavanderia"> Lavandería</label>
+        </div>
+      </div>
+
+      <button class="btn btn-outline btn-full btn-sm"
+        onclick="document.querySelectorAll('.filter-amenity,.filter-certified').forEach(e=>e.checked=false);
+                 document.getElementById('filter-keyword').value='';
+                 document.getElementById('filter-price').value=1200;
+                 document.getElementById('filter-price-val').textContent='$1200';
+                 document.getElementById('filter-distance').value=10;
+                 document.getElementById('filter-distance-val').textContent='10 km';
+                 document.getElementById('filter-rooms').value='any';
+                 filterListings();">
+        Limpiar filtros
+      </button>
+    </aside>
+
+    <!-- Listado -->
+    <div>
+      <div class="listings-bar">
+        <span class="listings-count-text"><span id="listings-count">0</span> propiedades disponibles</span>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <span style="font-size:0.8rem;color:var(--text-muted);">Ordenar:</span>
+          <select class="listings-sort-sel" id="sort-by">
+            <option value="featured">Destacados primero</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
+            <option value="distance">Más cercano a PUCEM</option>
+            <option value="rating">Mejor calificación</option>
+          </select>
+        </div>
+      </div>
+      <div class="listings-grid" id="listings-grid"></div>
+    </div>
+
+  </div>
+</div>
+</section>
+
+<!-- ===========================================================
+     BUSCAR COMPAÑERO (ROOMIE)
+     =========================================================== -->
+<section class="view" id="roomie-view">
+<div class="view-inner">
+  <div class="page-title">Buscar Compañero de Vivienda</div>
+  <div class="page-subtitle">Conecta con estudiantes de la PUCEM para compartir gastos de arriendo</div>
+
+  <!-- Hero explicativo -->
+  <div class="roomie-hero">
+    <div>
+      <h2>Comparte el arriendo, comparte la experiencia</h2>
+      <p>
+        Vivir solo en Portoviejo puede resultar costoso para un estudiante foráneo. La sección
+        Buscar Compañero le permite conectar con otros estudiantes de la PUCEM que también
+        buscan con quién dividir el costo mensual del arriendo. Puede publicar su propio perfil
+        o buscar entre los perfiles disponibles.
+      </p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="document.getElementById('roomie-form-card').scrollIntoView({behavior:'smooth'})">Publicar mi perfil</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('roomie-grid-section').scrollIntoView({behavior:'smooth'})">Ver perfiles disponibles</button>
+      </div>
+      <div class="roomie-hero-stats" style="margin-top:1.5rem;">
+        <div>
+          <div class="rh-stat-n" id="roomie-hero-stat">0</div>
+          <div class="rh-stat-l">Perfiles activos</div>
+        </div>
+        <div>
+          <div class="rh-stat-n" id="roomie-stat-busca">0</div>
+          <div class="rh-stat-l">Buscan lugar</div>
+        </div>
+        <div>
+          <div class="rh-stat-n" id="roomie-stat-tiene">0</div>
+          <div class="rh-stat-l">Tienen lugar disponible</div>
+        </div>
+      </div>
+    </div>
+    <div class="roomie-hero-form-card" id="roomie-form-card">
+      <h4>Publique su perfil de compañero</h4>
+      <form id="roomie-form" style="display:flex;flex-direction:column;gap:0.85rem;">
+        <div class="form-group">
+          <label class="form-label">Nombre (primer nombre) *</label>
+          <input type="text" class="form-input" id="rp-name" placeholder="Ej. Camila" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Carrera en PUCEM *</label>
+          <input type="text" class="form-input" id="rp-career" placeholder="Ej. Medicina — 2do año" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Presupuesto mensual ($) *</label>
+            <input type="number" class="form-input" id="rp-budget" min="50" max="500" placeholder="Ej. 140" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Disponible desde</label>
+            <input type="text" class="form-input" id="rp-available" placeholder="Ej. Agosto 2026">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo de perfil</label>
+            <select class="form-select" id="rp-type">
+              <option value="busca-lugar">Busco lugar y compañero</option>
+              <option value="tiene-lugar">Tengo lugar, busco compañero</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Horario de clases</label>
+            <select class="form-select" id="rp-schedule">
+              <option value="Diurno">Diurno</option>
+              <option value="Mixto">Mixto</option>
+              <option value="Nocturno">Nocturno</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Género</label>
+          <select class="form-select" id="rp-gender">
+            <option value="Indistinto">Indistinto</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Masculino">Masculino</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción breve *</label>
+          <textarea class="form-input" id="rp-desc" rows="2" placeholder="Cuéntenos sobre sus hábitos, preferencias de convivencia y qué busca en un compañero..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Publicar perfil</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sección de listado -->
+  <div id="roomie-grid-section">
+    <div class="roomie-layout">
+      <!-- Filtros -->
+      <aside class="filter-panel">
+        <div class="filter-panel-title">Filtros</div>
+
+        <div class="filter-block">
+          <div class="filter-block-title">Presupuesto máximo: <span id="roomie-budget-val">$500</span></div>
+          <input type="range" class="range-slider" id="roomie-budget" min="50" max="500" step="10" value="500">
+          <div class="range-labels"><span>$50</span><span>$500</span></div>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-block-title">Tipo de perfil</div>
+          <select class="form-select" id="roomie-type">
+            <option value="all">Todos</option>
+            <option value="busca-lugar">Busca lugar y compañero</option>
+            <option value="tiene-lugar">Tiene lugar, busca compañero</option>
+          </select>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-block-title">Horario</div>
+          <select class="form-select" id="roomie-schedule">
+            <option value="all">Todos</option>
+            <option value="Diurno">Diurno</option>
+            <option value="Mixto">Mixto</option>
+            <option value="Nocturno">Nocturno</option>
+          </select>
+        </div>
+
+        <div class="filter-block">
+          <div class="filter-block-title">Género</div>
+          <select class="form-select" id="roomie-gender">
+            <option value="all">Todos</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Indistinto">Indistinto</option>
+          </select>
+        </div>
+      </aside>
+
+      <!-- Grid de perfiles -->
+      <div>
+        <div class="listings-bar" style="margin-bottom:1.25rem;">
+          <span class="listings-count-text"><span id="roomie-count">0</span> perfiles disponibles</span>
+        </div>
+        <div class="roomie-grid" id="roomie-grid"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- ===========================================================
+     PANEL PROPIETARIO
+     =========================================================== -->
+<section class="view" id="landlord-view">
+<div class="view-inner">
+<div class="landlord-layout">
+
+  <div>
+    <div class="page-title">Panel de Propietario</div>
+    <div class="page-subtitle">Gestione sus inmuebles, suba fotos, añada la ubicación y solicite la certificación PUCEM.</div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-l">Inmuebles activos</div>
+      <div class="stat-n" id="stat-listings">0</div>
+      <div class="stat-t">Publicados en Homii</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-l">Visualizaciones estimadas</div>
+      <div class="stat-n" id="stat-views">0</div>
+      <div class="stat-t">+14% esta semana</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-l">Consultas activas</div>
+      <div class="stat-n" id="stat-inquiries">0</div>
+      <div class="stat-t">Tasa de respuesta 92%</div>
+    </div>
+  </div>
+
+  <div class="landlord-grid">
+
+    <!-- Lista y planes -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+      <div class="panel-card">
+        <div class="panel-card-title">Mis Propiedades</div>
+        <div id="landlord-list" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-card-title">Planes de Visibilidad</div>
+        <div class="plans-grid">
+          <div class="plan-card">
+            <div class="plan-name">Plan Estandar</div>
+            <div class="plan-price">$0 <span>/mes</span></div>
+            <ul class="plan-features">
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Publicación visible en buscador</li>
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Hasta 5 fotos del inmueble</li>
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Chat directo con inquilinos</li>
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Ubicación en Google Maps</li>
+            </ul>
+            <button class="btn btn-outline btn-sm" disabled style="margin-top:auto;">Plan activo</button>
+          </div>
+          <div class="plan-card featured-plan">
+            <div class="plan-name">Plan Destacado</div>
+            <div class="plan-price">$9.99 <span>/mes</span></div>
+            <ul class="plan-features">
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Posición superior en búsquedas</li>
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Sello destacado en el anuncio</li>
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Fotografía profesional express</li>
+              <li><span class="seg-check" style="flex-shrink:0;">&#10003;</span> Soporte de mediación incluido</li>
+            </ul>
+            <button class="btn btn-primary btn-sm" style="margin-top:auto;">Contratar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario publicar -->
+    <aside class="panel-card">
+      <div class="panel-card-title">Publicar Nuevo Inmueble</div>
+      <form id="publish-form" class="publish-form">
+
+        <div class="form-group">
+          <label class="form-label">Titulo del anuncio *</label>
+          <input type="text" class="form-input" id="prop-title" placeholder="Ej. Habitación amoblada cerca de la PUCEM" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Precio mensual ($) *</label>
+            <input type="number" class="form-input" id="prop-price" min="50" placeholder="Ej. 200" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Habitaciones</label>
+            <select class="form-select" id="prop-rooms">
+              <option value="1">1 habitación</option>
+              <option value="2">2 habitaciones</option>
+              <option value="3">3 habitaciones</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dirección completa *</label>
+          <input type="text" class="form-input" id="prop-location" placeholder="Ej. Calle Córdova y Av. Alajuela, Portoviejo" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dirección para Google Maps</label>
+          <input type="text" class="form-input" id="prop-maps-address" placeholder="Ej. PUCEM, Portoviejo, Manabí">
+          <div id="maps-preview" class="maps-preview" style="margin-top:0.4rem;">
+            <a id="maps-preview-link" href="#" target="_blank">Ver en Google Maps</a>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Distancia a PUCEM (km) *</label>
+          <input type="number" class="form-input" id="prop-distance" min="0.1" step="0.1" placeholder="Ej. 0.5" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fotos del inmueble</label>
+          <div class="upload-area" onclick="document.getElementById('prop-images').click()">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke-width="1.5" fill="none">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            <p><span>Haga clic para subir fotos</span><br>JPEG, PNG, WEBP — puede seleccionar varias</p>
+          </div>
+          <input type="file" id="prop-images" accept="image/*" multiple style="display:none;">
+          <div id="img-thumbs" class="img-thumbs"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Servicios incluidos</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.45rem;background:var(--bg-section);padding:0.75rem;border-radius:var(--r-md);border:1px solid var(--border);">
+            <label class="checkbox-label"><input type="checkbox" class="form-amenity" value="agua"> Agua</label>
+            <label class="checkbox-label"><input type="checkbox" class="form-amenity" value="internet"> Internet</label>
+            <label class="checkbox-label"><input type="checkbox" class="form-amenity" value="electricidad"> Electricidad</label>
+            <label class="checkbox-label"><input type="checkbox" class="form-amenity" value="mascotas"> Mascotas</label>
+            <label class="checkbox-label"><input type="checkbox" class="form-amenity" value="amoblado"> Amoblado</label>
+            <label class="checkbox-label"><input type="checkbox" class="form-amenity" value="lavanderia"> Lavandería</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <textarea class="form-input" id="prop-desc" rows="3" placeholder="Describa el inmueble, sus características y beneficios..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Publicar Inmueble</button>
+      </form>
+    </aside>
+
+  </div>
+
+</div>
+</div>
+</section>
+
+<!-- ===========================================================
+     PORTAL UNIVERSITARIO
+     =========================================================== -->
+<section class="view" id="university-view">
+<div class="view-inner">
+<div class="uni-layout">
+
+  <div class="uni-header">
+    <div class="uni-logo">P</div>
+    <div class="uni-meta">
+      <div style="margin-bottom:0.35rem;"><span class="badge badge-pucem" style="font-size:0.68rem;">Portal Administrativo</span></div>
+      <h3>Pontificia Universidad Católica de Manabí — PUCEM</h3>
+      <p>Gestión de certificaciones Homii Student y validación de inmuebles en el área de Portoviejo.</p>
+    </div>
+  </div>
+
+  <div class="uni-stats-row">
+    <div class="uni-stat-card">
+      <div class="uni-stat-n" id="uni-pending-count" style="color:var(--amber);">0</div>
+      <div class="uni-stat-l">Pendientes de certificación</div>
+    </div>
+    <div class="uni-stat-card">
+      <div class="uni-stat-n" id="uni-certified-count" style="color:var(--green);">0</div>
+      <div class="uni-stat-l">Certificados PUCEM</div>
+    </div>
+  </div>
+
+  <div class="uni-grid">
+    <div class="panel-card" style="padding:1.5rem 1rem;">
+      <div class="panel-card-title" style="padding:0 0.5rem;">Inmuebles pendientes de certificación</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Inmueble</th>
+              <th>Propietario</th>
+              <th>Precio</th>
+              <th>Distancia</th>
+              <th>Mapa</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody id="uni-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <aside class="panel-card">
+      <div class="panel-card-title">Registro de actividades</div>
+      <div class="timeline" id="uni-timeline">
+        <div class="tl-item ok">
+          <div class="tl-time">Hoy, 09:15</div>
+          <div class="tl-title">Convenio Renovado</div>
+          <div class="tl-desc">Actualización del catálogo de inmuebles certificados para el ciclo 2026-2027.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Ayer, 14:32</div>
+          <div class="tl-title">Activación Estudiantil</div>
+          <div class="tl-desc">Estudiante d.vinces@pucem.edu.ec activó su credencial Homii Student.</div>
+        </div>
+        <div class="tl-item ok">
+          <div class="tl-time">21 Jun</div>
+          <div class="tl-title">Inmueble Certificado</div>
+          <div class="tl-desc">Aprobado: Mini Departamento Amoblado — Av. Universitaria.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+</div>
+</div>
+</section>
+
+<!-- ===========================================================
+     TERMINOS Y CONDICIONES
+     =========================================================== -->
+<section class="view" id="terms-view">
+<div class="view-inner" style="max-width:800px; margin: 0 auto;">
+  <div class="page-title">Términos y Condiciones de Uso</div>
+  <div class="page-subtitle">Homii x PUCEM</div>
+  
+  <div style="font-size:0.875rem; color:var(--text-sec); line-height:1.7; display:flex; flex-direction:column; gap:1.25rem;">
+    <p><strong>1. Aceptación de los Términos</strong><br>
+    Al acceder y utilizar la plataforma Homii x PUCEM, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de los términos, no podrá utilizar nuestros servicios.</p>
+    
+    <p><strong>2. Uso de la Plataforma</strong><br>
+    Homii actúa como intermediario para conectar a propietarios de inmuebles, estudiantes y personal administrativo de la Pontificia Universidad Católica de Manabí (PUCEM). No somos propietarios ni administradores de los inmuebles listados.</p>
+    
+    <p><strong>3. Veracidad de la Información</strong><br>
+    Los usuarios (propietarios y arrendatarios) son responsables de la exactitud de la información proporcionada. La certificación PUCEM es una verificación visual y técnica inicial, pero no exime al arrendatario de verificar el inmueble antes de firmar un contrato legal.</p>
+
+    <p><strong>4. Responsabilidad Civil y Legal</strong><br>
+    Homii y la PUCEM no asumen ninguna responsabilidad civil, penal o administrativa por conflictos, daños, perjuicios o incumplimientos contractuales que surjan entre las partes (propietarios, arrendatarios y compañeros de vivienda). Todos los acuerdos financieros y legales se realizan directamente entre los usuarios involucrados.</p>
+
+    <p><strong>5. Privacidad y Datos Personales</strong><br>
+    El tratamiento de datos personales se rige por nuestra Política de Privacidad, en cumplimiento con las leyes aplicables en la República del Ecuador. Su información será utilizada exclusivamente para el funcionamiento de la plataforma.</p>
+
+    <p><strong>6. Modificaciones</strong><br>
+    Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigor inmediatamente después de su publicación en la plataforma.</p>
+  </div>
+</div>
+</section>
+
+</main>
+
+<!-- ===========================================================
+     MODAL DETALLE DE PROPIEDAD
+     =========================================================== -->
+<div class="modal-overlay" id="property-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h3 id="detail-title">Cargando...</h3>
+        <p id="detail-location"></p>
+        <div class="modal-badges-row" id="detail-badges"></div>
+      </div>
+      <button class="modal-close-btn" onclick="closePropertyModal()">&#215;</button>
+    </div>
+
+    <div class="modal-body-grid">
+      <!-- Columna izquierda -->
+      <div class="modal-left">
+
+        <div id="detail-gallery"></div>
+
+        <div class="specs-row">
+          <span id="detail-rooms"></span>
+          <span id="detail-baths"></span>
+          <span id="detail-distance"></span>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Descripcion</div>
+          <p style="font-size:0.875rem;color:var(--text-sec);line-height:1.65;" id="detail-desc"></p>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Servicios incluidos</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.3rem;" id="detail-amenities"></div>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Ubicacion en Google Maps</div>
+          <div class="maps-wrap">
+            <iframe id="detail-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Ubicación del inmueble"></iframe>
+            <div class="maps-link-row">
+              <a id="detail-map-link" href="#" target="_blank" rel="noopener noreferrer">Abrir en Google Maps y ver ruta</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="verif-box" id="detail-verif" style="display:none;">
+          <div class="verif-box-title">Reporte de Verificacion Homii x PUCEM</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.75rem;" id="verif-date"></div>
+          <div class="verif-grid">
+            <div class="verif-item">
+              <div class="verif-item-label">Presion de agua</div>
+              <div class="verif-item-val" id="verif-water"></div>
+            </div>
+            <div class="verif-item">
+              <div class="verif-item-label">Internet</div>
+              <div class="verif-item-val" id="verif-internet"></div>
+            </div>
+            <div class="verif-item">
+              <div class="verif-item-label">Seguridad</div>
+              <div class="verif-item-val" id="verif-safety"></div>
+            </div>
+            <div class="verif-item">
+              <div class="verif-item-label">Estructura</div>
+              <div class="verif-item-val" id="verif-structure"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Opiniones</div>
+          <div class="reviews-list" id="detail-reviews"></div>
+        </div>
+
+      </div>
+
+      <!-- Columna derecha -->
+      <div class="modal-right">
+
+        <div>
+          <div class="booking-price-lbl">Alquiler mensual</div>
+          <div class="booking-price" id="detail-price">$0<span>/mes</span></div>
+        </div>
+
+        <div class="landlord-block">
+          <div class="landlord-av" id="detail-landlord-av">C</div>
+          <div class="landlord-meta">
+            <h5 id="detail-landlord-name">Propietario</h5>
+            <p id="detail-landlord-rating">Propietario verificado</p>
+          </div>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Contactar al propietario</div>
+          <div class="direct-chat-box">
+            <div class="chat-msgs" id="direct-chat-msgs"></div>
+            <div class="chat-input-row">
+              <input type="text" class="chat-txt" id="direct-chat-input" placeholder="Escriba su consulta...">
+              <button class="chat-send" id="direct-chat-send">Enviar</button>
+            </div>
+          </div>
+          <div class="chat-presets" style="margin-top:0.4rem;">
+            <span class="preset-chip direct-preset">¿Cuándo puedo visitar?</span>
+            <span class="preset-chip direct-preset">¿Permite mascotas?</span>
+            <span class="preset-chip direct-preset">¿Incluye agua y luz?</span>
+            <span class="preset-chip direct-preset">¿Cuál es el plazo mínimo?</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full"
+          onclick="alert('Solicitud enviada.\n\nEl propietario ha recibido su solicitud y le contactará en un máximo de 24 horas para coordinar la visita y los detalles del contrato.')">
+          Solicitar reserva
+        </button>
+
+        <a id="detail-map-cta" href="#" target="_blank" rel="noopener noreferrer"
+           class="btn btn-outline btn-full" style="text-align:center;">
+          Ver ubicacion en Google Maps
+        </a>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     MODAL PERFIL ROOMIE
+     =========================================================== -->
+<div class="modal-overlay" id="roomie-modal">
+  <div class="modal-box" style="max-width:820px;">
+    <div class="modal-head">
+      <div>
+        <h3 id="rmodal-title">Perfil de Compañero</h3>
+        <p id="rmodal-career"></p>
+      </div>
+      <button class="modal-close-btn" id="roomie-modal-close">&#215;</button>
+    </div>
+
+    <div class="roomie-modal-layout">
+      <!-- Perfil -->
+      <div class="roomie-profile-section">
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <div class="roomie-profile-avatar" id="rmodal-avatar">R</div>
+          <div>
+            <h3 id="rmodal-title-sub" style="font-size:1.1rem;color:var(--blue-dark);"></h3>
+            <span class="roomie-type-tag" id="rmodal-type"></span>
+          </div>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Informacion del perfil</div>
+          <div class="info-table" id="rmodal-info"></div>
+        </div>
+
+        <div>
+          <div class="detail-section-label">Descripcion personal</div>
+          <p style="font-size:0.875rem;color:var(--text-sec);line-height:1.65;" id="rmodal-desc"></p>
+        </div>
+
+        <div style="background:var(--celeste-bg);border:1px solid var(--celeste-lt);border-radius:var(--r-md);padding:1rem;">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Correo de contacto</div>
+          <div style="font-size:0.88rem;color:var(--blue);" id="rmodal-contact"></div>
+        </div>
+      </div>
+
+      <!-- Chat con el perfil -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <div class="detail-section-label">Escribir a este estudiante</div>
+          <div class="direct-chat-box">
+            <div class="chat-msgs" id="roomie-chat-msgs"></div>
+            <div class="chat-input-row">
+              <input type="text" class="chat-txt" id="roomie-chat-input" placeholder="Escribe un mensaje...">
+              <button class="chat-send" id="roomie-chat-send">Enviar</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-section);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;">
+          <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.55;">
+            Recuerde que este es un espacio de contacto entre estudiantes de la PUCEM. Sea respetuoso y cordial. Homii no garantiza la disponibilidad de los perfiles, le recomendamos confirmar directamente con la persona.
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="alert('Su solicitud de contacto fue enviada al estudiante.\n\nEn las próximas 24 horas recibirá una respuesta en el correo registrado.')">
+          Enviar solicitud de contacto formal
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     MODAL DE AUTENTICACION
+     =========================================================== -->
+<div class="auth-overlay" id="auth-modal">
+  <div class="auth-box">
+    <div class="auth-head">
+      <div>
+        <h3>Acceso a su cuenta</h3>
+        <p>Homii x PUCEM — Portoviejo, Manabí</p>
+      </div>
+      <button class="modal-close-btn" id="auth-close">&#215;</button>
+    </div>
+
+    <!-- Panel login -->
+    <div id="panel-login" class="auth-form" style="display:flex;">
+      <div class="auth-note">
+        Ingrese su correo electrónico y contraseña para acceder. Si es administrador de la PUCEM o propietario registrado, utilice las credenciales que le fueron asignadas.
+      </div>
+
+      <div id="login-error" class="form-error"></div>
+
+      <form id="login-form" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="form-group">
+          <label class="form-label">Correo electronico</label>
+          <input type="email" class="form-input" id="login-email" placeholder="su@correo.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-input" id="login-password" placeholder="Ingrese su contraseña" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Iniciar sesión</button>
+      </form>
+
+      <div class="auth-toggle">
+        ¿No tiene cuenta? <a class="auth-link" id="to-register">Regístrese aquí</a>
+      </div>
+    </div>
+
+    <!-- Panel registro -->
+    <div id="panel-register" class="auth-form" style="display:none;">
+      <div id="register-error" class="form-error"></div>
+      <form id="register-form" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="form-group">
+          <label class="form-label">Nombre completo *</label>
+          <input type="text" class="form-input" id="reg-name" placeholder="Su nombre completo" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electronico *</label>
+          <input type="email" class="form-input" id="reg-email" placeholder="nombre@pucem.edu.ec" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña *</label>
+          <input type="password" class="form-input" id="reg-password" placeholder="Minimo 6 caracteres" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de cuenta</label>
+          <select class="form-select" id="reg-role">
+            <option value="student">Estudiante / Arrendatario</option>
+            <option value="landlord">Propietario de inmuebles</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefono (opcional)</label>
+          <input type="tel" class="form-input" id="reg-phone" placeholder="09XXXXXXXX">
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label" style="font-size:0.75rem;">
+            <input type="checkbox" id="reg-terms" required> Acepto los <a class="auth-link" style="margin-left:0.25rem;" onclick="closeAuth(); navigate('terms');">Términos y Condiciones</a>
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Crear cuenta</button>
+      </form>
+      <div class="auth-toggle">
+        ¿Ya tiene cuenta? <a class="auth-link" id="to-login">Inicie sesión</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     POPUP ACTIVACION ESTUDIANTIL
+     =========================================================== -->
+<div class="activation-overlay" id="activation-popup">
+  <div class="activation-box">
+    <div class="activation-head">
+      <h4>Simulador — Correo Institucional PUCEM</h4>
+      <button class="modal-close-btn" id="activation-close" style="width:28px;height:28px;font-size:0.85rem;">&#215;</button>
+    </div>
+    <div class="activation-body">
+      <h4>Active su pase estudiantil Homii x PUCEM</h4>
+      <p>
+        Recibió este mensaje porque su institución tiene convenio oficial con Homii. Al activar
+        su cuenta con su correo @pucem.edu.ec, accede a arriendos certificados con estándares
+        universitarios y condiciones preferenciales para la comunidad PUCEM.
+      </p>
+      <button class="btn btn-primary btn-full" id="btn-activate">Activar pase universitario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     SOPORTE
+     =========================================================== -->
+<div class="support-widget">
+  <button class="support-btn" id="support-btn" title="Soporte Homii">
+    <svg viewBox="0 0 24 24" width="22" height="22" stroke-width="2" fill="none">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+  </button>
+  <div class="support-win" id="support-win">
+    <div class="support-head">
+      <h4><span class="online-dot"></span> Soporte Homii x PUCEM</h4>
+      <button class="support-x" id="support-close">&#215;</button>
+    </div>
+    <div class="support-msgs"></div>
+    <div class="support-foot">
+      <input class="support-inp" id="support-inp" type="text" placeholder="Escriba su consulta...">
+      <button class="support-send" id="support-send">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     FOOTER
+     =========================================================== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-name">
+          <img src="logo.png" alt="Homii" style="height: 48px; margin-bottom: 0.5rem; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2)); background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 6px;">
+        </div>
+        <p class="footer-brand-p">
+          Plataforma de arriendos verificados y búsqueda de compañeros de vivienda para la
+          comunidad universitaria de Portoviejo y Manabí.
+        </p>
+        <div class="footer-pucem-chip">Convenio Oficial PUCEM</div>
+      </div>
+      <div>
+        <div class="footer-col-title">Plataforma</div>
+        <ul class="footer-links">
+          <li><a onclick="navigate('landing')">Inicio</a></li>
+          <li><a onclick="navigate('search')">Buscar Arriendo</a></li>
+          <li><a onclick="navigate('roomie')">Buscar Compañero</a></li>
+          <li><a onclick="openAuth()">Iniciar sesión</a></li>
+          <li><a onclick="navigate('terms')">Términos y Condiciones</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Comunidad PUCEM</div>
+        <ul class="footer-links">
+          <li><a href="https://www.pucem.edu.ec" target="_blank" rel="noopener">Sitio web PUCEM</a></li>
+          <li><a>Programa Homii Student</a></li>
+          <li><a>Convenio Universitario</a></li>
+          <li><a onclick="navigate('university')">Portal Administrativo</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Contacto</div>
+        <ul class="footer-links">
+          <li><a>soporte@homii.ec</a></li>
+          <li><a>(05) 263-XXXX</a></li>
+          <li><a>Portoviejo, Manabí, Ecuador</a></li>
+          <li><a>Lun–Vie 8:00–18:00</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Homii x PUCEM. Todos los derechos reservados.</span>
+      <span>Pontificia Universidad Católica de Manabí — Portoviejo, Ecuador</span>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

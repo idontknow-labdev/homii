@@ -1879,51 +1879,47 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   const s = id => document.getElementById(id);
   const targetView = s('public-user-profile-view');
 
-  // Cerrar cualquier modal abierto para que la navegación a la vista completa sea limpia
+  // 1. Cerrar modales inmediatamente
   closePropertyModal();
   closeRoomieModal();
   closeConversationModal();
 
-  let profile = null;
-  const validUid = isValidUUID(userId);
-
-  if (validUid) {
-    try {
-      const { data: dbProfile } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
-      profile = dbProfile;
-    } catch(e) {}
+  // 2. Cambiar la vista de la página INMEDIATAMENTE de forma síncrona
+  if (targetView) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    targetView.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
-  if (!profile) {
-    const roleStr = fallbackRole || 'landlord';
-    profile = {
-      name: fallbackName || 'Usuario Registrado',
-      role: roleStr,
-      phone: null,
-      occupation: roleStr === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario',
-      bio: 'Perfil activo y verificado en la plataforma Homii Portoviejo.',
-      avatar_color: '#1a56db'
-    };
-  }
+  // 3. Colocar datos iniciales de inmediato (Instant UI render)
+  const roleStr = fallbackRole || 'landlord';
+  let profile = {
+    name: fallbackName || 'Usuario Registrado',
+    role: roleStr,
+    phone: null,
+    occupation: roleStr === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario',
+    bio: 'Cargando información del perfil...',
+    avatar_color: '#1a56db'
+  };
 
-  // Cargar foto local si existe en almacenamiento local
+  // Cargar datos de respaldo local si existen
   if (userId) {
     const localAvatar = localStorage.getItem('homii_avatar_' + userId);
-    if (localAvatar && !profile.avatar_url) profile.avatar_url = localAvatar;
+    if (localAvatar) profile.avatar_url = localAvatar;
 
     const localExtraStr = localStorage.getItem('homii_extra_' + userId);
     if (localExtraStr) {
       try {
         const localExtra = JSON.parse(localExtraStr);
-        if (localExtra.bio && !profile.bio) profile.bio = localExtra.bio;
-        if (localExtra.occupation && !profile.occupation) profile.occupation = localExtra.occupation;
-        if (localExtra.phone && !profile.phone) profile.phone = localExtra.phone;
+        if (localExtra.bio) profile.bio = localExtra.bio;
+        if (localExtra.occupation) profile.occupation = localExtra.occupation;
+        if (localExtra.phone) profile.phone = localExtra.phone;
         if (localExtra.name) profile.name = localExtra.name;
       } catch(e) {}
     }
   }
 
-  // Renderizar datos en la vista completa
+  // Renderizar datos locales de forma instantánea
   const avEl = s('pub-view-avatar');
   if (avEl) {
     if (profile.avatar_url) {
@@ -1937,12 +1933,32 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
 
   if (s('pub-view-name'))       s('pub-view-name').textContent       = profile.name || 'Usuario';
   if (s('pub-view-role'))       s('pub-view-role').textContent       = roleLabel(profile.role);
-  if (s('pub-view-occupation')) s('pub-view-occupation').textContent = profile.occupation || (profile.role === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario');
+  if (s('pub-view-occupation')) s('pub-view-occupation').textContent = profile.occupation;
   if (s('pub-view-phone'))      s('pub-view-phone').textContent      = profile.phone || 'No especificado';
   if (s('pub-view-email'))      s('pub-view-email').textContent      = profile.email || 'Contacto directo vía Homii Chat';
-  if (s('pub-view-bio'))        s('pub-view-bio').textContent        = profile.bio || 'El usuario no ha publicado una biografía personal todavía.';
+  if (s('pub-view-bio'))        s('pub-view-bio').textContent        = profile.bio;
 
-  // Cargar propiedades publicadas únicamente si es un UUID válido
+  // 4. Consultar base de datos en segundo plano para enriquecer la vista
+  const validUid = isValidUUID(userId);
+  if (validUid) {
+    try {
+      const { data: dbProfile } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (dbProfile) {
+        Object.assign(profile, dbProfile);
+        if (s('pub-view-name'))       s('pub-view-name').textContent       = profile.name;
+        if (s('pub-view-role'))       s('pub-view-role').textContent       = roleLabel(profile.role);
+        if (s('pub-view-occupation')) s('pub-view-occupation').textContent = profile.occupation || (profile.role === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario');
+        if (s('pub-view-phone'))      s('pub-view-phone').textContent      = profile.phone || 'No especificado';
+        if (s('pub-view-bio'))        s('pub-view-bio').textContent        = profile.bio || 'El usuario no ha publicado una biografía personal todavía.';
+        if (avEl && profile.avatar_url) {
+          avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+          avEl.style.background = 'transparent';
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Cargar propiedades publicadas
   const propsSec   = s('pub-view-props-section');
   const propsList  = s('pub-view-props-list');
   const propsCount = s('pub-view-props-count');
@@ -1974,7 +1990,7 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     if (propsSec) propsSec.style.display = 'none';
   }
 
-  // Cargar perfil roomie únicamente si es un UUID válido
+  // Cargar perfil roomie
   const roomieSec  = s('pub-view-roomie-section');
   const roomieCard = s('pub-view-roomie-card');
   let userRoomie   = null;
@@ -2001,13 +2017,6 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     }
   } else {
     if (roomieSec) roomieSec.style.display = 'none';
-  }
-
-  // Cambiar vista activa a la sección de perfil público del usuario
-  if (targetView) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    targetView.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
 

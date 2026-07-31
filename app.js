@@ -1,307 +1,36 @@
 // ============================================================
-// --- CUENTAS POR DEFECTO ---
-const DEFAULT_ACCOUNTS = [
-  {
-    id: 1,
-    name: "Administrador PUCEM",
-    email: "admin@pucem.edu.ec",
-    password: "pucem2026",
-    role: "university",
-    avatar: "A",
-    institution: "Pontificia Universidad Católica de Manabí"
-  },
-  {
-    id: 2,
-    name: "Carlos Ruiz",
-    email: "propietario@homii.ec",
-    password: "homii123",
-    role: "landlord",
-    avatar: "C",
-    phone: "0991234567"
-  }
-];
-
-// --- PROPIEDADES DE DEMOSTRACIÓN ---
-const DEFAULT_PROPERTIES = [
-  {
-    id: 1,
-    title: "Habitación Estudiantil — Sector PUCEM Norte",
-    description: "Habitación amoblada a tres minutos caminando del campus PUCEM. Ambiente tranquilo, escritorio amplio, armario empotrado, ventilación natural y acceso a internet de fibra óptica. El propietario reside en la misma casa, lo que garantiza atención oportuna ante cualquier eventualidad.",
-    price: 180,
-    rooms: 1, bathrooms: 1,
-    location: "Calle Córdova y Av. Universitaria, Portoviejo, Manabí",
-    mapsQuery: "Pontificia Universidad Católica de Manabí, Portoviejo",
-    distanceToCampus: 0.3,
-    universityCertified: true, universityCertifiedBy: "PUCEM",
-    amenities: ["agua", "internet", "electricidad", "amoblado"],
-    landlordName: "Carlos Ruiz", landlordEmail: "propietario@homii.ec",
-    landlordRating: 4.9, propertyRating: 4.8, featured: true, images: [],
-    verificationReport: {
-      inspectionDate: "2026-05-10",
-      standards: { waterPressure: "Excelente (48 PSI)", internetSpeed: "Fibra Óptica 300 Mbps", fireSafety: "Aprobado — Extintor y Detector de Humo", structure: "Aprobado — Sin fisuras ni humedad" }
-    },
-    reviews: [
-      { author: "Mateo Solórzano (Estudiante PUCEM)", rating: 5, text: "Ubicación insuperable. El internet nunca falla, perfecto para clases virtuales y entregas académicas." },
-      { author: "Sofía García (Estudiante PUCEM)", rating: 4, text: "Muy cómodo y tranquilo. El propietario es sumamente atento." }
-    ]
-  },
-  {
-    id: 2,
-    title: "Apartamento Dos Habitaciones — Cdla. Los Ceibos",
-    description: "Espacioso apartamento en la ciudadela Los Ceibos, bien conectada con el centro de Portoviejo y el campus PUCEM. Cocina equipada, lavandería independiente, sala-comedor amplia y balcón ventilado. Ideal para profesionales o estudiantes de posgrado.",
-    price: 380,
-    rooms: 2, bathrooms: 2,
-    location: "Av. 5 de Junio y Calle 13, Cdla. Los Ceibos, Portoviejo",
-    mapsQuery: "Cdla. Los Ceibos, Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 1.8,
-    universityCertified: false, universityCertifiedBy: null,
-    amenities: ["internet", "mascotas", "lavanderia"],
-    landlordName: "Sofía Mendoza", landlordEmail: "sofia.mendoza@gmail.com",
-    landlordRating: 4.7, propertyRating: 4.6, featured: false, images: [],
-    verificationReport: null,
-    reviews: [{ author: "Juan Pereira (Inquilino)", rating: 5, text: "Excelente ventilación y zona segura. Cerca de supermercados y servicios básicos." }]
-  },
-  {
-    id: 3,
-    title: "Habitación Universitaria Certificada — La Floresta",
-    description: "Habitación individual en casa compartida con otros estudiantes de la PUCEM. Ambiente de estudio colaborativo, cocina y áreas comunes amplias, WiFi de alta velocidad. Propietario con convenio formal con la universidad.",
-    price: 150,
-    rooms: 1, bathrooms: 1,
-    location: "Calle Olmedo y Calle Mejía, Barrio La Floresta, Portoviejo",
-    mapsQuery: "Barrio La Floresta, Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 0.5,
-    universityCertified: true, universityCertifiedBy: "PUCEM",
-    amenities: ["agua", "internet", "electricidad", "lavanderia"],
-    landlordName: "Manuel Espinoza", landlordEmail: "manuel.espinoza@gmail.com",
-    landlordRating: 4.6, propertyRating: 4.5, featured: false, images: [],
-    verificationReport: {
-      inspectionDate: "2026-06-01",
-      standards: { waterPressure: "Buena (35 PSI)", internetSpeed: "Fibra 150 Mbps", fireSafety: "Aprobado — Extintor en pasillo principal", structure: "Aprobado — Inspección civil superada" }
-    },
-    reviews: [{ author: "Lucía Reyes (Estudiante PUCEM)", rating: 4, text: "Buen ambiente de estudio. Los compañeros de casa son respetuosos." }]
-  },
-  {
-    id: 4,
-    title: "Suite Ejecutiva — Centro de Portoviejo",
-    description: "Suite amoblada de alta gama en el centro de Portoviejo. Acabados modernos, seguridad las 24 horas y parqueadero privado. Pensada para profesionales o consultores que se instalan temporalmente en Manabí.",
-    price: 750,
-    rooms: 2, bathrooms: 2,
-    location: "Av. Olmedo y Calle Rocafuerte, Centro, Portoviejo",
-    mapsQuery: "Centro de Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 3.5,
-    universityCertified: false, universityCertifiedBy: null,
-    amenities: ["internet", "electricidad", "mascotas", "amoblado", "lavanderia"],
-    landlordName: "Bienes Raíces Manabí S.A.", landlordEmail: "bienesraices@manabi.com",
-    landlordRating: 4.8, propertyRating: 4.9, featured: true, images: [],
-    verificationReport: null,
-    reviews: [{ author: "Roberto Meza (Gerente Regional)", rating: 5, text: "Atención corporativa impecable. Seguridad y acabados excepcionales." }]
-  },
-  {
-    id: 5,
-    title: "Cuarto Económico — Barrio San Marcos",
-    description: "Cuarto sencillo, limpio y bien ventilado a minutos de la PUCEM en bus o bicicleta. Servicios básicos incluidos en el precio. Indicado para estudiantes foráneos que buscan optimizar su presupuesto.",
-    price: 120,
-    rooms: 1, bathrooms: 1,
-    location: "Calle Arroyo y Calle Sucre, Barrio San Marcos, Portoviejo",
-    mapsQuery: "Barrio San Marcos, Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 1.2,
-    universityCertified: false, universityCertifiedBy: null,
-    amenities: ["agua", "internet"],
-    landlordName: "María Gutiérrez", landlordEmail: "maria.g@hotmail.com",
-    landlordRating: 4.2, propertyRating: 4.0, featured: false, images: [], verificationReport: null, reviews: []
-  },
-  {
-    id: 6,
-    title: "Mini Departamento Amoblado — Av. Universitaria",
-    description: "Mini departamento de estreno frente al campus PUCEM. Edificio con sistema de seguridad, área verde compartida y ciclovía en el barrio. A cinco minutos caminando de la Facultad de Ingeniería.",
-    price: 280,
-    rooms: 1, bathrooms: 1,
-    location: "Av. Universitaria 450, Frente a PUCEM, Portoviejo",
-    mapsQuery: "Av. Universitaria, Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 0.1,
-    universityCertified: true, universityCertifiedBy: "PUCEM",
-    amenities: ["agua", "internet", "electricidad", "mascotas", "amoblado"],
-    landlordName: "Carlos Ruiz", landlordEmail: "propietario@homii.ec",
-    landlordRating: 4.9, propertyRating: 4.9, featured: true, images: [],
-    verificationReport: {
-      inspectionDate: "2026-05-22",
-      standards: { waterPressure: "Excelente (44 PSI)", internetSpeed: "Fibra Óptica 400 Mbps", fireSafety: "Aprobado — Aspersores automáticos", structure: "Ecológico Certificado — Aislamiento térmico" }
-    },
-    reviews: [{ author: "Diego Vinces (Estudiante PUCEM)", rating: 5, text: "El mejor lugar donde he vivido. Las áreas comunes para estudiar en grupo son espectaculares." }]
-  },
-  {
-    id: 7,
-    title: "Casa Compartida — Urbanización El Florón",
-    description: "Habitación en casa compartida en una de las urbanizaciones más tranquilas de Portoviejo. Jardín exterior, sala de estudio equipada, cocina moderna y conexión a internet estable.",
-    price: 160,
-    rooms: 1, bathrooms: 1,
-    location: "Calle Los Pinos, Urb. El Florón, Portoviejo",
-    mapsQuery: "Urbanización El Florón, Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 2.8,
-    universityCertified: false, universityCertifiedBy: null,
-    amenities: ["agua", "internet", "electricidad"],
-    landlordName: "Patricia Loor", landlordEmail: "patricia.loor@gmail.com",
-    landlordRating: 4.5, propertyRating: 4.4, featured: false, images: [], verificationReport: null, reviews: []
-  },
-  {
-    id: 8,
-    title: "Estudio Completo — Barrio La Alborada",
-    description: "Estudio completamente amoblado en el barrio La Alborada. Cocina americana, cama doble, escritorio y televisor. Adecuado para estudiantes de posgrado o docentes visitantes de la PUCEM.",
-    price: 250,
-    rooms: 1, bathrooms: 1,
-    location: "Calle 10 de Agosto y Calle Guayaquil, La Alborada, Portoviejo",
-    mapsQuery: "Barrio La Alborada, Portoviejo, Manabí, Ecuador",
-    distanceToCampus: 1.5,
-    universityCertified: false, universityCertifiedBy: null,
-    amenities: ["internet", "amoblado"],
-    landlordName: "Jorge Valdivia", landlordEmail: "j.valdivia@gmail.com",
-    landlordRating: 4.5, propertyRating: 4.3, featured: false, images: [],
-    verificationReport: null,
-    reviews: [{ author: "Emma Bravo (Docente PUCEM)", rating: 4, text: "Muy funcional para mi estadía temporal. Ubicación conveniente y propietario atento." }]
-  }
-];
-
-// --- PERFILES ROOMIE DE DEMOSTRACIÓN ---
-const DEFAULT_ROOMIES = [
-  {
-    id: 1,
-    name: "Camila T.",
-    career: "Medicina — 2do año",
-    year: 2,
-    budget: 140,
-    type: "busca-lugar",
-    gender: "Femenino",
-    schedule: "Diurno",
-    availableFrom: "Agosto 2026",
-    habits: ["No fumadora", "Sin mascotas", "Silenciosa"],
-    description: "Estudiante foránea de Loja buscando compañera de cuarto para compartir gastos en Portoviejo. Prefiero zona cercana al campus. Soy ordenada, estudiosa y respeto los horarios de descanso.",
-    contact: "c.torres@pucem.edu.ec",
-    avatarColor: "#1a56db"
-  },
-  {
-    id: 2,
-    name: "Andrés M.",
-    career: "Ingeniería en Sistemas — 3er año",
-    year: 3,
-    budget: 120,
-    type: "tiene-lugar",
-    location: "Cdla. Los Ceibos, Portoviejo",
-    totalRent: 240,
-    gender: "Masculino",
-    schedule: "Mixto",
-    availableFrom: "Septiembre 2026",
-    habits: ["No fumador", "Mascotas permitidas", "Sociable"],
-    description: "Tengo un departamento de dos habitaciones en Los Ceibos buscando compañero para dividir el arriendo. El departamento cuenta con cocina equipada, sala y zona de lavandería. Ambiente tranquilo pero sociable.",
-    contact: "a.mora@pucem.edu.ec",
-    avatarColor: "#0ea5e9"
-  },
-  {
-    id: 3,
-    name: "Valentina R.",
-    career: "Derecho — 4to año",
-    year: 4,
-    budget: 160,
-    type: "busca-lugar",
-    gender: "Femenino",
-    schedule: "Diurno",
-    availableFrom: "Agosto 2026",
-    habits: ["No fumadora", "Sin mascotas", "Ordenada"],
-    description: "Estudiante de Derecho en cuarto año. Busco compañera de habitación o departamento compartido. Tengo horario diurno y estudio hasta entrada la tarde. Pago puntual garantizado.",
-    contact: "v.roman@pucem.edu.ec",
-    avatarColor: "#7c3aed"
-  },
-  {
-    id: 4,
-    name: "Luis C.",
-    career: "Arquitectura — 1er año",
-    year: 1,
-    budget: 100,
-    type: "busca-lugar",
-    gender: "Masculino",
-    schedule: "Diurno",
-    availableFrom: "Agosto 2026",
-    habits: ["No fumador", "Sin mascotas", "Tranquilo"],
-    description: "Recién ingresado a la PUCEM desde Manta. Busco habitación compartida con ambiente tranquilo y cercana al campus. Presupuesto ajustado pero puntual. Prefiero zona universitaria.",
-    contact: "l.cabrera@pucem.edu.ec",
-    avatarColor: "#059669"
-  },
-  {
-    id: 5,
-    name: "Mariana P.",
-    career: "Enfermería — 2do año",
-    year: 2,
-    budget: 130,
-    type: "tiene-lugar",
-    location: "Barrio La Floresta, Portoviejo",
-    totalRent: 260,
-    gender: "Femenino",
-    schedule: "Mixto",
-    availableFrom: "Julio 2026",
-    habits: ["No fumadora", "Mascotas pequeñas", "Ordenada", "Sociable"],
-    description: "Tengo una habitación disponible en casa compartida en La Floresta, a cinco minutos de la PUCEM. Somos tres estudiantes actualmente. El ambiente es tranquilo y colaborativo. Busco una compañera responsable.",
-    contact: "m.perez@pucem.edu.ec",
-    avatarColor: "#d97706"
-  },
-  {
-    id: 6,
-    name: "Roberto V.",
-    career: "Contabilidad — 3er año",
-    year: 3,
-    budget: 150,
-    type: "busca-lugar",
-    gender: "Masculino",
-    schedule: "Nocturno",
-    availableFrom: "Septiembre 2026",
-    habits: ["Fumador", "Sin mascotas", "Sociable"],
-    description: "Estudiante de Contabilidad con jornada nocturna buscando habitación o compañero. Duermo de día y salgo a clases por la tarde-noche. Busco ambiente tranquilo durante la mañana.",
-    contact: "r.vasquez@pucem.edu.ec",
-    avatarColor: "#0f766e"
-  }
-];
-
-// ============================================================
-// PERSISTENCIA — localStorage
+// HOMII — Application Logic v4.0
+// Backend: Supabase (Base de datos real + Chat en tiempo real)
 // ============================================================
 
-function initDB() {
-  if (!localStorage.getItem("homii_accounts"))    localStorage.setItem("homii_accounts",    JSON.stringify(DEFAULT_ACCOUNTS));
-  if (!localStorage.getItem("homii_properties"))  localStorage.setItem("homii_properties",  JSON.stringify(DEFAULT_PROPERTIES));
-  if (!localStorage.getItem("homii_roomies"))      localStorage.setItem("homii_roomies",     JSON.stringify(DEFAULT_ROOMIES));
-}
+const SUPABASE_URL  = 'https://zpbgzpytzhbbrfdalrde.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwYmd6cHl0emhiYnJmZGFscmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDYwNjcsImV4cCI6MjEwMDkyMjA2N30.PFJp52sxHr_xgTBSuevlCnpOaNnZ0V4icKNv0VJVSLM';
 
-const getAccounts   = () => JSON.parse(localStorage.getItem("homii_accounts")   || "[]");
-const getProperties = () => JSON.parse(localStorage.getItem("homii_properties") || "[]");
-const getRoomies    = () => JSON.parse(localStorage.getItem("homii_roomies")    || "[]");
-const saveAccounts   = d => localStorage.setItem("homii_accounts",   JSON.stringify(d));
-const saveProperties = d => localStorage.setItem("homii_properties", JSON.stringify(d));
-const saveRoomies    = d => localStorage.setItem("homii_roomies",    JSON.stringify(d));
-const getCurrentUser = ()  => { const s = localStorage.getItem("homii_session"); return s ? JSON.parse(s) : null; };
-const setCurrentUser = u  => localStorage.setItem("homii_session", JSON.stringify(u));
-const clearSession   = () => localStorage.removeItem("homii_session");
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ============================================================
-// ESTADO DE LA APLICACIÓN
+// ESTADO GLOBAL
 // ============================================================
+
+let CURRENT_USER    = null;
+let CURRENT_PROFILE = null;
+let activeChatChannel = null;
+let openPropertyData  = null; // Cache de propiedad abierta en modal
 
 const APP = {
-  currentView: "landing",
+  currentView: 'landing',
   galleryIndex: {},
-  notifications: [
-    { id: 1, title: "Bienvenido a Homii", text: "Plataforma oficial de arriendos para la comunidad PUCEM.", time: "Ahora", unread: true }
-  ],
-  supportHistory: [
-    { sender: "bot", text: "Hola. Soy el asistente de soporte de Homii. ¿En qué puedo ayudarle?" }
-  ],
-  directChats: {},
-  pendingRoute: null
+  notifications: [],
+  pendingRoute: null,
+  supportHistory: [{ sender: 'bot', text: 'Hola. Soy el asistente de soporte de Homii. ¿En qué le puedo ayudar?' }]
 };
 
 // ============================================================
 // INICIALIZACIÓN
 // ============================================================
 
-document.addEventListener("DOMContentLoaded", () => {
-  initDB();
+document.addEventListener('DOMContentLoaded', async () => {
+  await initAuth();
   setupNav();
   setupSegmentTabs();
   setupAuth();
@@ -311,996 +40,1360 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSupport();
   setupNotifications();
   setupActivation();
-  updateNavUI();
-  navigate("landing");
+  navigate('landing');
 });
+
+// ============================================================
+// AUTENTICACIÓN
+// ============================================================
+
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session?.user) await loadUserProfile(session.user);
+
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await loadUserProfile(session.user);
+      updateNavUI();
+      const nombre = CURRENT_PROFILE?.name || session.user.email;
+      addNotif('Sesión iniciada', 'Bienvenido, ' + nombre + '.');
+      if (APP.pendingRoute) {
+        const r = APP.pendingRoute; APP.pendingRoute = null; navigate(r);
+      }
+    } else if (event === 'SIGNED_OUT') {
+      CURRENT_USER = null; CURRENT_PROFILE = null;
+      document.body.classList.remove('pucem-mode');
+      updateNavUI();
+    }
+  });
+
+  updateNavUI();
+}
+
+async function loadUserProfile(user) {
+  CURRENT_USER = user;
+  const { data: profile } = await db.from('profiles').select('*').eq('id', user.id).single();
+  CURRENT_PROFILE = profile;
+
+  // Modo PUCEM: solo para estudiantes con correo @pucem.edu.ec
+  const isPUCEM = user.email.endsWith('@pucem.edu.ec') && profile?.role === 'student';
+  document.body.classList.toggle('pucem-mode', isPUCEM);
+
+  updateNavUI();
+}
+
+function setupAuth() {
+  document.getElementById('auth-modal')?.addEventListener('click', e => {
+    if (e.target.id === 'auth-modal') closeAuth();
+  });
+  document.getElementById('auth-close')?.addEventListener('click', closeAuth);
+  document.getElementById('login-form')?.addEventListener('submit', e => { e.preventDefault(); doLogin(); });
+  document.getElementById('register-form')?.addEventListener('submit', e => { e.preventDefault(); doRegister(); });
+  document.getElementById('to-register')?.addEventListener('click', () => switchPanel('register'));
+  document.getElementById('to-login')?.addEventListener('click', () => switchPanel('login'));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeAuth(); closePropertyModal(); closeRoomieModal(); closeConversationModal(); }
+  });
+}
+
+function switchPanel(which) {
+  document.getElementById('panel-login').style.display    = which === 'login'    ? 'flex' : 'none';
+  document.getElementById('panel-register').style.display = which === 'register' ? 'flex' : 'none';
+}
+
+function openAuth()         { document.getElementById('auth-modal')?.classList.add('open'); switchPanel('login');    clearAuthErrors(); }
+function openAuthRegister() { document.getElementById('auth-modal')?.classList.add('open'); switchPanel('register'); clearAuthErrors(); }
+function closeAuth()        { document.getElementById('auth-modal')?.classList.remove('open'); }
+
+function clearAuthErrors() {
+  ['login-error', 'register-error'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
+  });
+}
+
+function showAuthError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const btn   = document.querySelector('#login-form button[type=submit]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+
+  const { error } = await db.auth.signInWithPassword({ email, password: pass });
+  if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
+
+  if (error) { showAuthError('login-error', 'Correo electrónico o contraseña incorrectos.'); return; }
+  closeAuth();
+}
+
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-password').value;
+  const role  = document.getElementById('reg-role').value;
+  const phone = document.getElementById('reg-phone').value.trim();
+  const terms = document.getElementById('reg-terms')?.checked;
+  const btn   = document.querySelector('#register-form button[type=submit]');
+
+  if (!name)  { showAuthError('register-error', 'Ingrese su nombre completo.'); return; }
+  if (!email) { showAuthError('register-error', 'Ingrese un correo electrónico.'); return; }
+  if (pass.length < 6) { showAuthError('register-error', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+  if (!terms) { showAuthError('register-error', 'Debe aceptar los términos y condiciones para continuar.'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
+
+  const { data, error } = await db.auth.signUp({ email, password: pass });
+  if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
+
+  if (error) {
+    let msg = 'No se pudo crear la cuenta.';
+    if (error.message.toLowerCase().includes('already')) msg = 'Este correo ya está registrado. Inicie sesión.';
+    showAuthError('register-error', msg);
+    return;
+  }
+
+  if (data?.user) {
+    const colors = ['#1a56db','#0369a1','#7c3aed','#059669','#d97706','#0f766e','#be185d'];
+    const color  = colors[Math.floor(Math.random() * colors.length)];
+
+    await db.from('profiles').insert({ id: data.user.id, name, role, phone: phone || null, avatar_color: color });
+    closeAuth();
+    addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
+    if (role === 'landlord') { APP.pendingRoute = 'landlord'; }
+  }
+}
+
+async function logout() {
+  if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
+  await db.auth.signOut();
+  document.body.classList.remove('pucem-mode');
+  navigate('landing');
+}
+
+function updateNavUI() {
+  const user    = CURRENT_USER;
+  const profile = CURRENT_PROFILE;
+  const guestEl  = document.getElementById('nav-guest');
+  const userEl   = document.getElementById('nav-user');
+  const nameEl   = document.getElementById('nav-username');
+  const avEl     = document.getElementById('nav-avatar');
+  const llLink   = document.querySelector('.nav-landlord-link');
+  const uniLink  = document.querySelector('.nav-uni-link');
+  const profLink = document.querySelector('.nav-profile-link');
+
+  if (user && profile) {
+    if (guestEl)  guestEl.style.display  = 'none';
+    if (userEl)   userEl.style.display   = 'flex';
+    if (nameEl)   nameEl.textContent     = profile.name.split(' ')[0];
+    if (avEl) {
+      avEl.textContent      = profile.name.charAt(0).toUpperCase();
+      avEl.style.background = profile.avatar_color || '#1a56db';
+      avEl.style.cursor     = 'pointer';
+      avEl.title            = 'Ver mi perfil';
+      avEl.onclick          = () => navigate('profile');
+    }
+    if (llLink)   llLink.style.display   = profile.role === 'landlord'   ? 'list-item' : 'none';
+    if (uniLink)  uniLink.style.display  = profile.role === 'university' ? 'list-item' : 'none';
+    if (profLink) profLink.style.display = 'list-item';
+  } else {
+    if (guestEl)  guestEl.style.display  = 'flex';
+    if (userEl)   userEl.style.display   = 'none';
+    if (llLink)   llLink.style.display   = 'none';
+    if (uniLink)  uniLink.style.display  = 'none';
+    if (profLink) profLink.style.display = 'none';
+  }
+}
+
+function guardRoute(route) {
+  if (!CURRENT_USER) { APP.pendingRoute = route; openAuth(); return false; }
+  const role = CURRENT_PROFILE?.role;
+  if (route === 'landlord'   && role !== 'landlord')   { APP.pendingRoute = route; openAuth(); return false; }
+  if (route === 'university' && role !== 'university') { APP.pendingRoute = route; openAuth(); return false; }
+  return true;
+}
 
 // ============================================================
 // NAVEGACIÓN
 // ============================================================
 
 function navigate(viewId) {
-  if (viewId === "landlord" || viewId === "university") {
-    if (!guardRoute(viewId)) return;
-  }
+  if ((viewId === 'landlord' || viewId === 'university') && !guardRoute(viewId)) return;
+  if (viewId === 'profile' && !CURRENT_USER) { openAuth(); return; }
 
   APP.currentView = viewId;
-  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  const target = document.getElementById(viewId + "-view");
-  if (target) target.classList.add("active");
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById(viewId + '-view');
+  if (target) target.classList.add('active');
 
-  document.querySelectorAll(".nav-link").forEach(l => {
-    l.classList.toggle("active", l.dataset.view === viewId);
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.toggle('active', l.dataset.view === viewId);
   });
 
-  if (viewId === "search")     filterListings();
-  if (viewId === "roomie")     filterRoomies();
-  if (viewId === "landlord")   renderLandlordPanel();
-  if (viewId === "university") renderUniPanel();
+  if (viewId === 'search')     filterListings();
+  if (viewId === 'roomie')     { filterRoomies(); updateRoomieStats(); }
+  if (viewId === 'landlord')   renderLandlordPanel();
+  if (viewId === 'university') renderUniPanel();
+  if (viewId === 'profile')    renderProfileView();
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function setupNav() {
-  document.querySelectorAll(".nav-link").forEach(l => {
-    l.addEventListener("click", () => { if (l.dataset.view) navigate(l.dataset.view); });
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.addEventListener('click', () => { if (l.dataset.view) navigate(l.dataset.view); });
   });
-  document.querySelector(".logo")?.addEventListener("click", () => navigate("landing"));
-  document.getElementById("btn-login")?.addEventListener("click", () => openAuth());
-  document.getElementById("btn-register")?.addEventListener("click", () => openAuthRegister());
-  document.getElementById("btn-logout")?.addEventListener("click", logout);
-  document.getElementById("hero-search-btn")?.addEventListener("click", () => {
-    const kw = document.getElementById("quick-search")?.value.trim();
-    if (kw) { const fi = document.getElementById("filter-keyword"); if (fi) fi.value = kw; }
-    navigate("search");
+  document.querySelector('.logo')?.addEventListener('click', () => navigate('landing'));
+  document.getElementById('btn-login')?.addEventListener('click', openAuth);
+  document.getElementById('btn-register')?.addEventListener('click', openAuthRegister);
+  document.getElementById('btn-logout')?.addEventListener('click', logout);
+  document.getElementById('hero-search-btn')?.addEventListener('click', () => {
+    const kw = document.getElementById('quick-search')?.value.trim();
+    if (kw) { const fi = document.getElementById('filter-keyword'); if (fi) fi.value = kw; }
+    navigate('search');
   });
-  document.getElementById("quick-search")?.addEventListener("keypress", e => {
-    if (e.key === "Enter") document.getElementById("hero-search-btn")?.click();
+  document.getElementById('quick-search')?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') document.getElementById('hero-search-btn')?.click();
   });
-}
-
-function guardRoute(route) {
-  const user = getCurrentUser();
-  if (!user) { APP.pendingRoute = route; openAuth(); return false; }
-  if (route === "landlord"   && user.role !== "landlord")   { APP.pendingRoute = route; openAuth(); return false; }
-  if (route === "university" && user.role !== "university") { APP.pendingRoute = route; openAuth(); return false; }
-  return true;
 }
 
 // ============================================================
-// AUTENTICACIÓN
+// MODO PUCEM
+// Controlado con clase CSS 'pucem-mode' en <body>
+// .pucem-element se oculta por defecto y aparece solo en modo PUCEM
+// Se activa automáticamente en loadUserProfile() según dominio de correo
 // ============================================================
 
-function setupAuth() {
-  document.getElementById("auth-modal")?.addEventListener("click", e => {
-    if (e.target.id === "auth-modal") closeAuth();
-  });
-  document.getElementById("auth-close")?.addEventListener("click", closeAuth);
-  document.getElementById("login-form")?.addEventListener("submit", e => { e.preventDefault(); doLogin(); });
-  document.getElementById("register-form")?.addEventListener("submit", e => { e.preventDefault(); doRegister(); });
-  document.getElementById("to-register")?.addEventListener("click", () => switchPanel("register"));
-  document.getElementById("to-login")?.addEventListener("click", () => switchPanel("login"));
-
-  document.addEventListener("keydown", e => {
-    if (e.key === "Escape") { closeAuth(); closePropertyModal(); closeRoomieModal(); }
-  });
-}
-
-function switchPanel(which) {
-  document.getElementById("panel-login").style.display    = which === "login"    ? "flex" : "none";
-  document.getElementById("panel-register").style.display = which === "register" ? "flex" : "none";
-}
-
-function openAuth() {
-  document.getElementById("auth-modal")?.classList.add("open");
-  switchPanel("login");
-  clearAuthErrors();
-}
-
-function openAuthRegister() {
-  document.getElementById("auth-modal")?.classList.add("open");
-  switchPanel("register");
-  clearAuthErrors();
-}
-
-function closeAuth() { document.getElementById("auth-modal")?.classList.remove("open"); }
-
-function clearAuthErrors() {
-  ["login-error", "register-error"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.textContent = ""; el.style.display = "none"; }
-  });
-}
-
-function showAuthError(id, msg) {
-  const el = document.getElementById(id);
-  if (el) { el.textContent = msg; el.style.display = "block"; }
-}
-
-function doLogin() {
-  const email = document.getElementById("login-email").value.trim();
-  const pass  = document.getElementById("login-password").value;
-  const user  = getAccounts().find(a => a.email === email && a.password === pass);
-
-  if (!user) { showAuthError("login-error", "Correo electrónico o contraseña incorrectos."); return; }
-
-  setCurrentUser(user);
-  closeAuth();
-  updateNavUI();
-  addNotif("Sesión iniciada", "Bienvenido, " + user.name + ".");
-
-  if (APP.pendingRoute) {
-    const r = APP.pendingRoute; APP.pendingRoute = null; navigate(r);
-  } else if (user.role === "landlord") navigate("landlord");
-  else if (user.role === "university") navigate("university");
-}
-
-function doRegister() {
-  const name  = document.getElementById("reg-name").value.trim();
-  const email = document.getElementById("reg-email").value.trim();
-  const pass  = document.getElementById("reg-password").value;
-  const role  = document.getElementById("reg-role").value;
-  const phone = document.getElementById("reg-phone").value.trim();
-
-  if (!name || !email || !pass) { showAuthError("register-error", "Completa todos los campos obligatorios."); return; }
-  if (pass.length < 6)          { showAuthError("register-error", "La contraseña debe tener al menos 6 caracteres."); return; }
-
-  const accounts = getAccounts();
-  if (accounts.find(a => a.email === email)) { showAuthError("register-error", "Este correo ya está registrado."); return; }
-
-  const newUser = { id: Date.now(), name, email, password: pass, role, avatar: name.charAt(0).toUpperCase(), phone: phone || null };
-  accounts.push(newUser);
-  saveAccounts(accounts);
-  setCurrentUser(newUser);
-  closeAuth();
-  updateNavUI();
-  addNotif("Cuenta creada", "Bienvenido a Homii x PUCEM, " + name + ".");
-  if (role === "landlord") navigate("landlord"); else navigate("landing");
-}
-
-function logout() {
-  clearSession(); updateNavUI(); navigate("landing");
-  addNotif("Sesión cerrada", "Ha cerrado sesión exitosamente.");
-}
-
-function updateNavUI() {
-  const user = getCurrentUser();
-  const guestEl = document.getElementById("nav-guest");
-  const userEl  = document.getElementById("nav-user");
-  const nameEl  = document.getElementById("nav-username");
-  const avEl    = document.getElementById("nav-avatar");
-  const llLink  = document.querySelector(".nav-landlord-link");
-  const uniLink = document.querySelector(".nav-uni-link");
-
-  if (user) {
-    if (guestEl) guestEl.style.display = "none";
-    if (userEl)  userEl.style.display  = "flex";
-    if (nameEl)  nameEl.textContent    = user.name.split(" ")[0];
-    if (avEl)  { avEl.textContent = user.avatar || user.name.charAt(0).toUpperCase(); avEl.style.background = userColor(user.id); }
-    if (llLink)  llLink.style.display  = user.role === "landlord"   ? "list-item" : "none";
-    if (uniLink) uniLink.style.display = user.role === "university" ? "list-item" : "none";
-  } else {
-    if (guestEl) guestEl.style.display = "flex";
-    if (userEl)  userEl.style.display  = "none";
-    if (llLink)  llLink.style.display  = "none";
-    if (uniLink) uniLink.style.display = "none";
-  }
-}
-
-function userColor(id) {
-  const palette = ["#1d4ed8","#0369a1","#059669","#7c3aed","#b45309","#0f766e","#be185d"];
-  return palette[id % palette.length];
-}
-
 // ============================================================
-// SEGMENTOS DE LANDING
+// SEGMENTOS (LANDING)
 // ============================================================
 
 const SEGMENTS = {
   student: {
-    title: "Su hogar seguro, validado por la PUCEM",
-    desc: "Mudarse a Portoviejo para estudiar en la PUCEM es una decisión importante. Homii le ayuda a encontrar arriendos a pasos del campus, inspeccionados físicamente por nuestro equipo de campo y respaldados por el convenio oficial con la Pontificia Universidad Católica de Manabí.",
-    features: ["A minutos caminando del campus PUCEM", "Inmuebles inspeccionados y certificados", "Soporte exclusivo Homii Student", "Filtros rápidos de agua, internet y electricidad"],
-    quote: "Llegué desde Loja sin conocer Portoviejo. Gracias a Homii Student encontré un cuarto certificado a tres cuadras de la PUCEM con internet de fibra. Mis padres quedaron completamente tranquilos.",
-    author: "Sofía Valenzuela — Estudiante de Medicina, PUCEM"
+    title: 'Su hogar seguro, validado por la PUCEM',
+    desc: 'Mudarse a Portoviejo para estudiar en la PUCEM es una decisión importante. Homii le ayuda a encontrar arriendos a pasos del campus, inspeccionados físicamente y respaldados por el convenio oficial con la Pontificia Universidad Católica de Manabí.',
+    features: ['A minutos caminando del campus PUCEM', 'Inmuebles inspeccionados y certificados', 'Soporte exclusivo Homii Student', 'Filtros rápidos de agua, internet y electricidad'],
+    quote: 'Llegué desde Loja sin conocer Portoviejo. Gracias a Homii Student encontré un cuarto certificado a tres cuadras de la PUCEM con internet de fibra. Mis padres quedaron completamente tranquilos.',
+    author: 'Sofía Valenzuela — Estudiante de Medicina, PUCEM'
   },
   general: {
-    title: "Arrendamientos transparentes, rápidos y directos",
-    desc: "Encuentre su próximo departamento o estudio en Portoviejo con filtros reales que importan: internet estable, agua constante, precio justo de mercado y políticas de mascotas flexibles.",
-    features: ["Buscador con filtros precisos", "Trato directo con propietarios verificados", "Comparación de precios y valoraciones reales", "Plataforma autogestionable sin intermediarios"],
-    quote: "Detestaba buscar arriendos porque las fotos nunca coinciden con la realidad. En Homii los filtros son exactos y las fotos corresponden a los inmuebles reales. Encontré mi departamento en un fin de semana.",
-    author: "Javier Pérez — Diseñador, Portoviejo"
+    title: 'Arrendamientos transparentes, rápidos y directos',
+    desc: 'Encuentre su próximo departamento o estudio en Portoviejo con filtros reales: internet estable, agua constante, precio justo y políticas de mascotas flexibles.',
+    features: ['Buscador con filtros precisos', 'Trato directo con propietarios verificados', 'Comparación de precios y valoraciones reales', 'Plataforma autogestionable sin intermediarios'],
+    quote: 'Detestaba buscar arriendos porque las fotos nunca coincidían con la realidad. En Homii los filtros son exactos. Encontré mi departamento en un fin de semana.',
+    author: 'Javier Pérez — Diseñador, Portoviejo'
   },
   landlord: {
-    title: "Mayor visibilidad y arrendamiento directo",
-    desc: "¿Tiene inmuebles en Portoviejo o Manabí? Homii le da visibilidad directa entre miles de estudiantes de la PUCEM y arrendatarios en general, con herramientas para gestionar sus propiedades de forma profesional.",
-    features: ["Publicación gratuita con fotos reales", "Calificaciones bidireccionales y transparentes", "Plan destacado con mayor alcance en búsquedas", "Certificación Homii Student PUCEM"],
-    quote: "Tengo dos departamentos cerca de la PUCEM y los arrendaba lentamente antes de Homii. Desde que publiqué, ambos están ocupados todo el año. La verificación universitaria hace toda la diferencia.",
-    author: "Rosa María Delgado — Propietaria en Portoviejo"
+    title: 'Mayor visibilidad y arrendamiento directo',
+    desc: '¿Tiene inmuebles en Portoviejo? Homii le da visibilidad directa entre miles de arrendatarios, con herramientas para gestionar sus propiedades de forma profesional.',
+    features: ['Publicación gratuita con fotos reales', 'Chat directo con inquilinos en tiempo real', 'Plan destacado con mayor alcance', 'Certificación universitaria disponible'],
+    quote: 'Tengo dos departamentos y los arrendaba lentamente antes de Homii. Desde que publiqué, ambos están ocupados todo el año.',
+    author: 'Rosa María Delgado — Propietaria en Portoviejo'
   },
   admin: {
-    title: "Gestión centralizada de múltiples unidades",
-    desc: "Optimice la tasa de ocupación de sus condominios y edificios en Manabí. Monitoree consultas, gestione contratos y garantice el estándar de calidad que los estudiantes e inquilinos exigentes buscan.",
-    features: ["Panel de métricas centralizado", "Soporte prioritario Homii", "Gestión masiva de listados", "Certificación colectiva de condominio"],
-    quote: "Administro un edificio de 16 departamentos en Portoviejo. Homii ha centralizado todas las consultas de estudiantes de la PUCEM de manera muy eficiente.",
-    author: "Alberto Castro — Administrador de Condominios"
+    title: 'Gestión centralizada de múltiples unidades',
+    desc: 'Optimice la tasa de ocupación de sus condominios y edificios en Manabí. Gestione consultas y garantice el estándar de calidad exigido.',
+    features: ['Panel de métricas centralizado', 'Soporte prioritario', 'Gestión masiva de listados', 'Certificación colectiva de condominio'],
+    quote: 'Administro un edificio de 16 departamentos. Homii ha centralizado todas las consultas de manera muy eficiente.',
+    author: 'Alberto Castro — Administrador de Condominios'
   },
   worker: {
-    title: "Transición a Manabí sin dificultad",
-    desc: "Si su empresa o institución lo reubica en Portoviejo o Manta, Homii facilita el proceso con estancias ejecutivas completamente amobladas y listas para habitar desde el primer día.",
-    features: ["Estudios ejecutivos completamente amoblados", "Ubicación estratégica en zonas laborales", "Contratos temporales flexibles", "Todos los servicios incluidos desde el primer día"],
-    quote: "Me trasladaron a la sede de Portoviejo. Encontré un mini departamento amoblado con todos los servicios activos. El proceso fue rápido y confiable gracias a las fotos verificadas.",
-    author: "Eduardo Castillo — Consultor, Portoviejo"
+    title: 'Transición a Manabí sin dificultad',
+    desc: 'Si su empresa lo reubica en Portoviejo, Homii facilita el proceso con estancias ejecutivas completamente amobladas y listas para habitar desde el primer día.',
+    features: ['Estudios ejecutivos completamente amoblados', 'Ubicación estratégica en zonas laborales', 'Contratos temporales flexibles', 'Todos los servicios incluidos desde el primer día'],
+    quote: 'Me trasladaron a la sede de Portoviejo. Encontré un mini departamento amoblado con todos los servicios activos. El proceso fue rápido.',
+    author: 'Eduardo Castillo — Consultor, Portoviejo'
   }
 };
 
 function setupSegmentTabs() {
-  document.querySelectorAll(".seg-tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".seg-tab").forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
+  document.querySelectorAll('.seg-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.seg-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
       renderSegment(tab.dataset.seg);
     });
   });
-  renderSegment("student");
+  renderSegment('student');
 }
 
 function renderSegment(key) {
-  const d = SEGMENTS[key];
-  if (!d) return;
-  document.querySelectorAll(".seg-panel").forEach(p => p.classList.remove("active"));
-  const panel = document.getElementById("seg-panel-" + key);
+  const d = SEGMENTS[key]; if (!d) return;
+  document.querySelectorAll('.seg-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('seg-panel-' + key);
   if (panel) {
     panel.innerHTML = `
       <div>
         <h3 class="seg-panel-title">${d.title}</h3>
         <p class="seg-panel-desc">${d.desc}</p>
         <ul class="seg-features">
-          ${d.features.map(f => `<li><span class="seg-check">&#10003;</span>${f}</li>`).join("")}
+          ${d.features.map(f => `<li><span class="seg-check">&#10003;</span>${f}</li>`).join('')}
         </ul>
       </div>
       <div class="seg-quote">
         <p class="seg-quote-text">"${d.quote}"</p>
         <p class="seg-quote-author">— ${d.author}</p>
       </div>`;
-    panel.classList.add("active");
+    panel.classList.add('active');
   }
 }
 
 // ============================================================
-// BUSCADOR DE ARRIENDOS
+// BUSCADOR — PROPIEDADES
 // ============================================================
 
 function setupSearch() {
-  const priceSlider = document.getElementById("filter-price");
-  const priceVal    = document.getElementById("filter-price-val");
+  const priceSlider = document.getElementById('filter-price');
+  const priceVal    = document.getElementById('filter-price-val');
   if (priceSlider && priceVal) {
-    priceSlider.addEventListener("input", () => { priceVal.textContent = "$" + priceSlider.value; filterListings(); });
+    priceSlider.addEventListener('input', () => { priceVal.textContent = '$' + priceSlider.value; filterListings(); });
   }
-  const distSlider = document.getElementById("filter-distance");
-  const distVal    = document.getElementById("filter-distance-val");
+  const distSlider = document.getElementById('filter-distance');
+  const distVal    = document.getElementById('filter-distance-val');
   if (distSlider && distVal) {
-    distSlider.addEventListener("input", () => { distVal.textContent = distSlider.value + " km"; filterListings(); });
+    distSlider.addEventListener('input', () => { distVal.textContent = distSlider.value + ' km'; filterListings(); });
   }
-  ["filter-keyword","filter-rooms","filter-certified","sort-by"].forEach(id => {
-    document.getElementById(id)?.addEventListener("change", filterListings);
-    document.getElementById(id)?.addEventListener("input",  filterListings);
+  ['filter-keyword','filter-rooms','filter-certified','sort-by'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', filterListings);
+    document.getElementById(id)?.addEventListener('input',  filterListings);
   });
-  document.querySelectorAll(".filter-amenity").forEach(cb => cb.addEventListener("change", filterListings));
+  document.querySelectorAll('.filter-amenity').forEach(cb => cb.addEventListener('change', filterListings));
 }
 
-function filterListings() {
-  const kw        = (document.getElementById("filter-keyword")?.value  || "").toLowerCase().trim();
-  const maxPrice  = parseInt(document.getElementById("filter-price")?.value    || "1200");
-  const minRooms  = document.getElementById("filter-rooms")?.value             || "any";
-  const certOnly  = document.getElementById("filter-certified")?.checked       || false;
-  const maxDist   = parseFloat(document.getElementById("filter-distance")?.value || "10");
-  const sortBy    = document.getElementById("sort-by")?.value                  || "featured";
-  const amenities = [...document.querySelectorAll(".filter-amenity:checked")].map(cb => cb.value);
+async function filterListings() {
+  const grid = document.getElementById('listings-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="no-results-msg">Cargando propiedades...</div>';
 
-  let props = getProperties().filter(p => {
-    const matchKw    = !kw      || p.title.toLowerCase().includes(kw) || p.description.toLowerCase().includes(kw) || p.location.toLowerCase().includes(kw);
-    const matchPrice = p.price <= maxPrice;
-    const matchRooms = minRooms === "any" || p.rooms >= parseInt(minRooms);
-    const matchCert  = !certOnly || p.universityCertified;
-    const matchDist  = p.distanceToCampus <= maxDist;
-    const matchAmen  = amenities.every(a => p.amenities.includes(a));
-    return matchKw && matchPrice && matchRooms && matchCert && matchDist && matchAmen;
+  const kw       = (document.getElementById('filter-keyword')?.value || '').toLowerCase().trim();
+  const maxPrice = parseInt(document.getElementById('filter-price')?.value || '1200');
+  const minRooms = document.getElementById('filter-rooms')?.value || 'any';
+  const certOnly = document.getElementById('filter-certified')?.checked || false;
+  const maxDist  = parseFloat(document.getElementById('filter-distance')?.value || '10');
+  const sortBy   = document.getElementById('sort-by')?.value || 'featured';
+  const amenities = [...document.querySelectorAll('.filter-amenity:checked')].map(cb => cb.value);
+
+  let query = db.from('properties').select('*');
+  if (certOnly) query = query.eq('university_certified', true);
+
+  const { data: props, error } = await query;
+
+  if (error) {
+    grid.innerHTML = '<div class="no-results-msg">Error al cargar propiedades. Intente de nuevo.</div>';
+    return;
+  }
+
+  let filtered = (props || []).filter(p => {
+    const matchKw   = !kw || p.title.toLowerCase().includes(kw) || (p.description || '').toLowerCase().includes(kw) || (p.location || '').toLowerCase().includes(kw);
+    const matchPrc  = p.is_demo || p.price <= maxPrice;
+    const matchRoom = minRooms === 'any' || p.rooms >= parseInt(minRooms);
+    const matchDist = p.is_demo || p.distance_to_campus <= maxDist;
+    const matchAmen = amenities.every(a => (p.amenities || []).includes(a));
+    return matchKw && matchPrc && matchRoom && matchDist && matchAmen;
   });
 
-  if (sortBy === "price-asc")    props.sort((a, b) => a.price - b.price);
-  else if (sortBy === "price-desc") props.sort((a, b) => b.price - a.price);
-  else if (sortBy === "distance") props.sort((a, b) => a.distanceToCampus - b.distanceToCampus);
-  else if (sortBy === "rating")   props.sort((a, b) => b.propertyRating - a.propertyRating);
-  else props.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  if (sortBy === 'price-asc')  filtered.sort((a, b) => a.price - b.price);
+  if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+  if (sortBy === 'distance')   filtered.sort((a, b) => a.distance_to_campus - b.distance_to_campus);
+  if (sortBy === 'rating')     filtered.sort((a, b) => b.property_rating - a.property_rating);
+  if (sortBy === 'featured')   filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
 
-  renderListingsGrid(props);
+  const count = document.getElementById('listings-count');
+  if (count) count.textContent = filtered.length;
+  renderListingsGrid(filtered);
+
+  // Actualizar stats en hero
+  const heroProps = document.querySelector('.hero-stat-num');
+  if (heroProps) heroProps.textContent = (props || []).filter(p => !p.is_demo).length + '+';
 }
 
 function renderListingsGrid(list) {
-  const grid  = document.getElementById("listings-grid");
-  const count = document.getElementById("listings-count");
+  const grid = document.getElementById('listings-grid');
   if (!grid) return;
-  if (count) count.textContent = list.length;
 
   if (list.length === 0) {
-    grid.innerHTML = `<div class="no-results-msg">No se encontraron propiedades con los filtros seleccionados.</div>`;
+    grid.innerHTML = '<div class="no-results-msg">No se encontraron propiedades con los filtros seleccionados.</div>';
     return;
   }
 
   grid.innerHTML = list.map(p => {
-    const img    = p.images && p.images.length > 0 ? p.images[0] : null;
-    const stars  = "★".repeat(Math.round(p.propertyRating)) + "☆".repeat(5 - Math.round(p.propertyRating));
+    const img   = p.images && p.images.length > 0 ? p.images[0] : null;
+    const stars = '★'.repeat(Math.round(p.property_rating || 4)) + '☆'.repeat(5 - Math.round(p.property_rating || 4));
+    const reviews = parseJSON(p.reviews, []);
 
     return `
-    <article class="prop-card ${p.featured ? "featured" : ""}" onclick="openPropertyModal(${p.id})">
+    <article class="prop-card ${p.featured ? 'featured' : ''}" onclick="openPropertyModal('${p.id}')">
       <div class="prop-img">
         ${img
           ? `<img src="${img}" alt="${p.title}">`
           : `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" width="40" height="40" stroke-width="1.2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>`}
         <div class="prop-price-overlay">
-          <div class="prop-price">$${p.price}<span>/mes</span></div>
-          ${p.images && p.images.length > 1 ? `<span class="badge badge-gray" style="font-size:0.65rem;">${p.images.length} fotos</span>` : ""}
+          <div class="prop-price">${p.is_demo ? '<span style="font-size:0.8rem;font-weight:400;">Solo demostración</span>' : '$' + p.price + '<span>/mes</span>'}</div>
         </div>
         <div class="prop-badges-top">
-          ${p.universityCertified ? `<span class="badge badge-pucem">Certificado PUCEM</span>` : ""}
+          ${p.is_demo ? '<span class="badge badge-amber">Ejemplo</span>' : ''}
+          ${p.university_certified ? '<span class="badge badge-pucem">Cert. PUCEM</span>' : ''}
         </div>
-        ${p.featured ? `<div class="prop-featured-tag">Destacado</div>` : ""}
+        ${p.featured ? `<div class="prop-featured-tag">Destacado</div>` : ''}
       </div>
       <div class="prop-body">
         <h4 class="prop-title">${p.title}</h4>
         <p class="prop-location">
           <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M12 2a8 8 0 00-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 00-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${p.location.split(",")[0]}
+          ${(p.location || '').split(',')[0]}
         </p>
+        ${!p.is_demo ? `
         <div class="prop-specs">
           <span>${p.rooms} hab.</span>
           <span>${p.bathrooms} baño</span>
-          <span>${p.distanceToCampus} km PUCEM</span>
-        </div>
+          <span>${p.distance_to_campus} km PUCEM</span>
+        </div>` : ''}
         <div class="prop-amenities">
-          ${p.amenities.slice(0,3).map(a => `<span class="amenity-tag">${capitalize(a)}</span>`).join("")}
-          ${p.amenities.length > 3 ? `<span class="amenity-tag">+${p.amenities.length - 3}</span>` : ""}
+          ${(p.amenities || []).slice(0, 3).map(a => `<span class="amenity-tag">${capitalize(a)}</span>`).join('')}
         </div>
         <div class="prop-footer">
-          <div class="prop-rating"><span class="rating-stars">${stars}</span> ${p.propertyRating}</div>
-          ${p.universityCertified ? `<span class="badge badge-green">Verificado</span>` : ""}
+          <div class="prop-rating"><span class="rating-stars">${stars}</span> ${p.property_rating || 4.5}</div>
+          ${p.is_demo ? '<span class="badge badge-amber" style="font-size:0.68rem;">Solo demostración</span>' : ''}
         </div>
       </div>
     </article>`;
-  }).join("");
+  }).join('');
 }
 
 // ============================================================
-// MODAL DE DETALLE DE PROPIEDAD
+// MODAL DE PROPIEDAD
 // ============================================================
 
-function openPropertyModal(id) {
-  const p = getProperties().find(x => x.id === id);
-  if (!p) return;
+async function openPropertyModal(id) {
+  const { data: p, error } = await db.from('properties').select('*').eq('id', id).single();
+  if (!p || error) return;
 
+  openPropertyData = p;
   APP.galleryIndex[id] = 0;
 
-  document.getElementById("detail-title").textContent        = p.title;
-  document.getElementById("detail-location").textContent     = p.location;
-  document.getElementById("detail-price").innerHTML          = `$${p.price}<span>/mes</span>`;
-  document.getElementById("detail-rooms").textContent        = `${p.rooms} Habitación(es)`;
-  document.getElementById("detail-baths").textContent        = `${p.bathrooms} Baño(s)`;
-  document.getElementById("detail-distance").textContent     = `${p.distanceToCampus} km a PUCEM`;
-  document.getElementById("detail-desc").textContent         = p.description;
+  const reviews = parseJSON(p.reviews, []);
+  const verif   = parseJSON(p.verification_report, null);
 
-  const badgesRow = document.getElementById("detail-badges");
+  document.getElementById('detail-title').textContent    = p.title;
+  document.getElementById('detail-location').textContent = p.location;
+  document.getElementById('detail-price').innerHTML      = p.is_demo
+    ? '<span style="font-size:1rem;font-weight:400;">Solo demostración — sin precio real</span>'
+    : `$${p.price}<span>/mes</span>`;
+  document.getElementById('detail-rooms').textContent    = `${p.rooms} Habitación(es)`;
+  document.getElementById('detail-baths').textContent    = `${p.bathrooms} Baño(s)`;
+  document.getElementById('detail-distance').textContent = `${p.distance_to_campus} km a PUCEM`;
+  document.getElementById('detail-desc').textContent     = p.description;
+
+  const badgesRow = document.getElementById('detail-badges');
   if (badgesRow) {
-    badgesRow.innerHTML = p.universityCertified
-      ? `<span class="badge badge-pucem">Certificado PUCEM</span>`
-      : `<span class="badge badge-gray">Arriendo General</span>`;
-    if (p.featured) badgesRow.innerHTML += ` <span class="badge badge-blue">Destacado</span>`;
+    badgesRow.innerHTML = '';
+    if (p.is_demo) badgesRow.innerHTML += `<span class="badge badge-amber">Anuncio de Ejemplo</span> `;
+    if (p.university_certified) badgesRow.innerHTML += `<span class="badge badge-pucem">Certificado PUCEM</span> `;
+    if (p.featured) badgesRow.innerHTML += `<span class="badge badge-blue">Destacado</span>`;
   }
 
-  const amenEl = document.getElementById("detail-amenities");
-  if (amenEl) amenEl.innerHTML = p.amenities.map(a => `<span class="amenity-tag" style="font-size:0.82rem;padding:0.25rem 0.6rem;">${capitalize(a)}</span>`).join("");
+  const amenEl = document.getElementById('detail-amenities');
+  if (amenEl) amenEl.innerHTML = (p.amenities || []).map(a =>
+    `<span class="amenity-tag" style="font-size:0.82rem;padding:0.25rem 0.6rem;">${capitalize(a)}</span>`
+  ).join('');
 
   renderGallery(p);
 
-  const q = encodeURIComponent(p.mapsQuery || p.location);
-  const frame = document.getElementById("detail-map");
-  const mapLink = document.getElementById("detail-map-link");
-  const mapCta  = document.getElementById("detail-map-cta");
-  if (frame)   frame.src = `https://maps.google.com/maps?q=${q}&output=embed&hl=es&z=16`;
+  const q       = encodeURIComponent(p.maps_query || p.location);
+  const frame   = document.getElementById('detail-map');
+  const mapLink = document.getElementById('detail-map-link');
+  const mapCta  = document.getElementById('detail-map-cta');
+  if (frame)   frame.src    = `https://maps.google.com/maps?q=${q}&output=embed&hl=es&z=16`;
   if (mapLink) mapLink.href = `https://www.google.com/maps/search/?api=1&query=${q}`;
   if (mapCta)  mapCta.href  = `https://www.google.com/maps/search/?api=1&query=${q}`;
 
-  const verifBox = document.getElementById("detail-verif");
+  const verifBox = document.getElementById('detail-verif');
   if (verifBox) {
-    if (p.verificationReport) {
-      verifBox.style.display = "block";
-      document.getElementById("verif-date").textContent       = "Inspección: " + p.verificationReport.inspectionDate;
-      document.getElementById("verif-water").textContent      = p.verificationReport.standards.waterPressure;
-      document.getElementById("verif-internet").textContent   = p.verificationReport.standards.internetSpeed;
-      document.getElementById("verif-safety").textContent     = p.verificationReport.standards.fireSafety;
-      document.getElementById("verif-structure").textContent  = p.verificationReport.standards.structure;
+    if (verif) {
+      verifBox.style.display = 'block';
+      document.getElementById('verif-date').textContent      = 'Inspección: ' + (verif.inspectionDate || '');
+      document.getElementById('verif-water').textContent     = verif.standards?.waterPressure    || '';
+      document.getElementById('verif-internet').textContent  = verif.standards?.internetSpeed    || '';
+      document.getElementById('verif-safety').textContent    = verif.standards?.fireSafety       || '';
+      document.getElementById('verif-structure').textContent = verif.standards?.structure        || '';
     } else {
-      verifBox.style.display = "none";
+      verifBox.style.display = 'none';
     }
   }
 
-  const revEl = document.getElementById("detail-reviews");
+  const revEl = document.getElementById('detail-reviews');
   if (revEl) {
-    revEl.innerHTML = p.reviews && p.reviews.length > 0
-      ? p.reviews.map(r => `
+    revEl.innerHTML = reviews.length > 0
+      ? reviews.map(r => `
           <div class="review-item">
             <div class="review-top">
               <span class="review-author">${r.author}</span>
-              <span class="review-stars">${"★".repeat(r.rating)}</span>
+              <span class="review-stars">${'★'.repeat(r.rating)}</span>
             </div>
             <p class="review-text">"${r.text}"</p>
-          </div>`).join("")
+          </div>`).join('')
       : `<p style="font-size:0.83rem;color:var(--text-muted);font-style:italic;">Sin reseñas todavía.</p>`;
   }
 
-  const landlordAv = document.getElementById("detail-landlord-av");
-  if (landlordAv) { landlordAv.textContent = p.landlordName.charAt(0); landlordAv.style.background = userColor(p.id); }
-  document.getElementById("detail-landlord-name").textContent   = p.landlordName;
-  document.getElementById("detail-landlord-rating").textContent = "Calificación: " + p.landlordRating + " / 5.0";
+  const landlordAv = document.getElementById('detail-landlord-av');
+  if (landlordAv) { landlordAv.textContent = (p.landlord_name || 'P').charAt(0); landlordAv.style.background = '#1a56db'; }
+  document.getElementById('detail-landlord-name').textContent   = p.landlord_name || 'Propietario';
+  document.getElementById('detail-landlord-rating').textContent = 'Calificación: ' + (p.landlord_rating || 5.0) + ' / 5.0';
 
   setupDirectChat(p);
 
-  document.getElementById("property-modal")?.classList.add("open");
-  document.body.style.overflow = "hidden";
+  document.getElementById('property-modal')?.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function renderGallery(p) {
-  const wrap = document.getElementById("detail-gallery");
+  const wrap = document.getElementById('detail-gallery');
   if (!wrap) return;
-  const idx = APP.galleryIndex[p.id] || 0;
-  const q   = encodeURIComponent(p.mapsQuery || p.location);
+  const idx     = APP.galleryIndex[p.id] || 0;
+  const q       = encodeURIComponent(p.maps_query || p.location);
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
 
   if (!p.images || p.images.length === 0) {
     wrap.innerHTML = `
       <div class="gallery-placeholder" onclick="window.open('${mapsUrl}','_blank')" style="height:230px;cursor:pointer;" title="Ver en Google Maps">
         <svg viewBox="0 0 24 24" width="48" height="48" stroke-width="1" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>Sin imágenes. Clic para ver en Google Maps.</span>
+        <span>Sin imágenes — Haga clic para ver la ubicación en Google Maps.</span>
       </div>`;
     return;
   }
 
   wrap.innerHTML = `
     <div class="gallery-wrap">
-      <img src="${p.images[idx]}" alt="Foto ${idx + 1}"
-           onclick="window.open('${mapsUrl}','_blank')" title="Ver ubicación en Google Maps">
+      <img src="${p.images[idx]}" alt="Foto ${idx + 1}" onclick="window.open('${mapsUrl}','_blank')" title="Ver ubicación en Google Maps" style="cursor:pointer;">
       ${p.images.length > 1 ? `
-        <button class="gallery-nav-btn gallery-prev" onclick="changeGallery(${p.id},-1)">&#8249;</button>
-        <button class="gallery-nav-btn gallery-next" onclick="changeGallery(${p.id}, 1)">&#8250;</button>
+        <button class="gallery-nav-btn gallery-prev" onclick="changeGallery('${p.id}',-1)">&#8249;</button>
+        <button class="gallery-nav-btn gallery-next" onclick="changeGallery('${p.id}', 1)">&#8250;</button>
         <div class="gallery-dots">
-          ${p.images.map((_,i) => `<span class="gallery-dot ${i===idx?'on':''}" onclick="setGallery(${p.id},${i})"></span>`).join("")}
+          ${p.images.map((_,i) => `<span class="gallery-dot ${i===idx?'on':''}" onclick="setGallery('${p.id}',${i})"></span>`).join('')}
         </div>
         <div class="gallery-counter">${idx+1} / ${p.images.length}</div>
-      ` : ""}
+      ` : ''}
       <div class="gallery-maps-hover" onclick="window.open('${mapsUrl}','_blank')">Ver ubicación en Google Maps</div>
     </div>`;
 }
 
 window.changeGallery = function(id, dir) {
-  const p = getProperties().find(x => x.id === id);
-  if (!p || !p.images) return;
+  const p = openPropertyData; if (!p || !p.images) return;
   APP.galleryIndex[id] = ((APP.galleryIndex[id] || 0) + dir + p.images.length) % p.images.length;
   renderGallery(p);
 };
 window.setGallery = function(id, idx) {
   APP.galleryIndex[id] = idx;
-  renderGallery(getProperties().find(x => x.id === id));
+  if (openPropertyData) renderGallery(openPropertyData);
 };
 
 function closePropertyModal() {
-  document.getElementById("property-modal")?.classList.remove("open");
-  document.body.style.overflow = "";
-  const f = document.getElementById("detail-map"); if (f) f.src = "";
+  document.getElementById('property-modal')?.classList.remove('open');
+  document.body.style.overflow = '';
+  const f = document.getElementById('detail-map'); if (f) f.src = '';
+  if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
+  openPropertyData = null;
 }
 
-// Chat directo con propietario
-function setupDirectChat(p) {
-  const msgs   = document.getElementById("direct-chat-msgs");
-  const input  = document.getElementById("direct-chat-input");
-  const sendBtn = document.getElementById("direct-chat-send");
-  if (!msgs || !sendBtn || !input) return;
+// ============================================================
+// CHAT EN TIEMPO REAL (Supabase Real-time)
+// ============================================================
 
-  if (!APP.directChats[p.id]) {
-    APP.directChats[p.id] = [
-      { side: "in", text: `Hola, soy ${p.landlordName}. Gracias por su interés en "${p.title}". ¿En qué puedo ayudarle?` }
-    ];
+async function setupDirectChat(p) {
+  const msgs     = document.getElementById('direct-chat-msgs');
+  const input    = document.getElementById('direct-chat-input');
+  const sendBtn  = document.getElementById('direct-chat-send');
+  const chatBox  = msgs?.closest('.direct-chat-box');
+  if (!msgs) return;
+
+  // Demo: sin propietario real
+  if (p.is_demo) {
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);line-height:1.6;text-align:center;">
+        Este es un anuncio de demostración.<br>No hay propietario real para contactar.<br>
+        Cuando propietarios reales publiquen sus inmuebles, podrá chatear con ellos en tiempo real desde aquí.
+      </div>`;
+    return;
   }
 
-  const render = () => {
-    msgs.innerHTML = APP.directChats[p.id].map(m =>
-      `<div class="chat-bubble chat-${m.side}">${m.text}</div>`
-    ).join("");
+  // Sin sesión
+  if (!CURRENT_USER) {
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">
+        Inicie sesión para contactar al propietario.<br>
+        <a class="auth-link" style="cursor:pointer;" onclick="closePropertyModal();openAuth()">Iniciar sesión</a>
+      </div>`;
+    return;
+  }
+
+  if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
+
+  const chatId = `prop_${p.id}_usr_${CURRENT_USER.id}`;
+
+  // Cargar historial
+  const { data: history } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+
+  const appendBubble = (m) => {
+    const b = document.createElement('div');
+    b.className = `chat-bubble chat-${m.sender_id === CURRENT_USER.id ? 'out' : 'in'}`;
+    b.textContent = m.message;
+    msgs.appendChild(b);
     msgs.scrollTop = msgs.scrollHeight;
   };
-  render();
 
-  const sendMsg = text => {
-    if (!text.trim()) return;
-    APP.directChats[p.id].push({ side: "out", text });
-    input.value = "";
-    render();
-    setTimeout(() => {
-      const t = text.toLowerCase();
-      let reply = "Gracias por escribir. Cualquier consulta adicional estoy disponible.";
-      if (t.includes("visitar") || t.includes("ver"))  reply = "Puedo coordinar una visita de lunes a sábado de 9:00 a 18:00. ¿Qué día le conviene?";
-      if (t.includes("precio") || t.includes("descuento")) reply = "El precio publicado es el valor mensual final. Si el contrato es por un año completo, podríamos conversar.";
-      if (t.includes("mascota")) reply = "Se aceptan mascotas pequeñas o medianas con un depósito adicional de garantía.";
-      if (t.includes("agua") || t.includes("internet") || t.includes("luz")) reply = "Los servicios incluidos están detallados en el anuncio. Para consultas específicas, con gusto le aclaro.";
-      if (t.includes("contrato")) reply = "El contrato mínimo es de 6 meses, con 1 mes de garantía. Para estudiantes PUCEM, el proceso está avalado por la universidad.";
-      APP.directChats[p.id].push({ side: "in", text: reply });
-      render();
-      addNotif("Mensaje de " + p.landlordName, reply.substring(0, 55) + "...");
-    }, 1400);
-  };
+  msgs.innerHTML = '';
+  if (!history || history.length === 0) {
+    msgs.innerHTML = `<div class="chat-bubble chat-in">Hola, gracias por su interés en "${p.title}". ¿En qué le puedo ayudar?</div>`;
+  } else {
+    (history || []).forEach(m => appendBubble(m));
+  }
 
+  // Suscripción real-time
+  activeChatChannel = db.channel('chat:' + chatId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'chats',
+      filter: `chat_id=eq.${chatId}`
+    }, (payload) => {
+      // Evitar duplicar mensajes propios (ya los añadimos optimistically)
+      if (payload.new.sender_id !== CURRENT_USER.id) appendBubble(payload.new);
+    })
+    .subscribe();
+
+  // Envío de mensajes
   const newSend = sendBtn.cloneNode(true);
   sendBtn.parentNode.replaceChild(newSend, sendBtn);
-  newSend.addEventListener("click", () => sendMsg(input.value));
-  input.onkeypress = e => { if (e.key === "Enter") sendMsg(input.value); };
 
-  document.querySelectorAll(".direct-preset").forEach(chip => {
+  const doSend = async (text) => {
+    text = (text || '').trim();
+    if (!text || !p.landlord_id) return;
+    if (input) input.value = '';
+
+    // Añadir burbuja local inmediatamente (optimistic)
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble chat-out';
+    bubble.textContent = text;
+    msgs.appendChild(bubble);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    await db.from('chats').insert({
+      chat_id: chatId,
+      property_id: p.id,
+      property_title: p.title,
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      receiver_id: p.landlord_id,
+      message: text
+    });
+  };
+
+  newSend.addEventListener('click', () => doSend(input?.value));
+  if (input) { input.onkeypress = e => { if (e.key === 'Enter') doSend(input.value); }; }
+
+  // Chips de preguntas rápidas
+  document.querySelectorAll('.direct-preset').forEach(chip => {
     const nc = chip.cloneNode(true);
     chip.parentNode.replaceChild(nc, chip);
-    nc.addEventListener("click", () => sendMsg(nc.textContent.trim()));
+    nc.addEventListener('click', () => doSend(nc.textContent.trim()));
   });
 }
 
 // ============================================================
-// ROOMIE — BUSCAR COMPANERO
+// MODAL CONVERSACIÓN (para propietarios respondiendo)
+// ============================================================
+
+window.openConversation = async function(chatId, propTitle, senderName, senderId) {
+  const modal = document.getElementById('conversation-modal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('conv-title');
+  if (titleEl) titleEl.textContent = senderName + ' — ' + propTitle;
+
+  const msgs  = document.getElementById('conv-msgs');
+  const input = document.getElementById('conv-input');
+  const btn   = document.getElementById('conv-send');
+  if (!msgs) return;
+
+  const { data: history } = await db.from('chats')
+    .select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+
+  msgs.innerHTML = (history || []).map(m =>
+    `<div class="chat-bubble chat-${m.sender_id === CURRENT_USER.id ? 'out' : 'in'}">${m.message}</div>`
+  ).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Marcar como leídos
+  await db.from('chats').update({ is_read: true }).eq('chat_id', chatId).eq('receiver_id', CURRENT_USER.id);
+
+  if (activeChatChannel) { activeChatChannel.unsubscribe(); }
+  activeChatChannel = db.channel('conv:' + chatId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats', filter: `chat_id=eq.${chatId}` }, (payload) => {
+      if (payload.new.sender_id !== CURRENT_USER.id) {
+        const b = document.createElement('div');
+        b.className = 'chat-bubble chat-in';
+        b.textContent = payload.new.message;
+        msgs.appendChild(b);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    }).subscribe();
+
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+
+  const doSend = async (text) => {
+    text = (text || '').trim();
+    if (!text) return;
+    if (input) input.value = '';
+    const b = document.createElement('div');
+    b.className = 'chat-bubble chat-out';
+    b.textContent = text;
+    msgs.appendChild(b);
+    msgs.scrollTop = msgs.scrollHeight;
+    await db.from('chats').insert({
+      chat_id: chatId,
+      property_title: propTitle,
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      receiver_id: senderId,
+      message: text
+    });
+  };
+
+  newBtn.addEventListener('click', () => doSend(input?.value));
+  if (input) { input.onkeypress = e => { if (e.key === 'Enter') doSend(input.value); }; }
+
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+function closeConversationModal() {
+  const modal = document.getElementById('conversation-modal');
+  if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
+  if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
+}
+
+// ============================================================
+// ROOMIE
 // ============================================================
 
 function setupRoomie() {
-  // Filtros
-  ["roomie-budget","roomie-type","roomie-schedule","roomie-gender"].forEach(id => {
-    document.getElementById(id)?.addEventListener("change", filterRoomies);
-    document.getElementById(id)?.addEventListener("input",  filterRoomies);
+  ['roomie-type','roomie-schedule','roomie-gender'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', filterRoomies);
   });
-
-  const budgetSlider = document.getElementById("roomie-budget");
-  const budgetVal    = document.getElementById("roomie-budget-val");
+  const budgetSlider = document.getElementById('roomie-budget');
+  const budgetVal    = document.getElementById('roomie-budget-val');
   if (budgetSlider && budgetVal) {
-    budgetSlider.addEventListener("input", () => { budgetVal.textContent = "$" + budgetSlider.value; filterRoomies(); });
+    budgetSlider.addEventListener('input', () => { budgetVal.textContent = '$' + budgetSlider.value; filterRoomies(); });
   }
-
-  // Formulario para publicar perfil
-  document.getElementById("roomie-form")?.addEventListener("submit", e => {
-    e.preventDefault();
-    submitRoomieProfile();
-  });
-
-  // Modal
-  document.getElementById("roomie-modal")?.addEventListener("click", e => {
-    if (e.target.id === "roomie-modal") closeRoomieModal();
-  });
-  document.getElementById("roomie-modal-close")?.addEventListener("click", closeRoomieModal);
-
-  // Stats en hero
-  updateRoomieStats();
+  document.getElementById('roomie-form')?.addEventListener('submit', e => { e.preventDefault(); submitRoomieProfile(); });
+  document.getElementById('roomie-modal')?.addEventListener('click', e => { if (e.target.id === 'roomie-modal') closeRoomieModal(); });
+  document.getElementById('roomie-modal-close')?.addEventListener('click', closeRoomieModal);
 }
 
-function filterRoomies() {
-  const maxBudget = parseInt(document.getElementById("roomie-budget")?.value || "500");
-  const type      = document.getElementById("roomie-type")?.value    || "all";
-  const schedule  = document.getElementById("roomie-schedule")?.value || "all";
-  const gender    = document.getElementById("roomie-gender")?.value   || "all";
+async function filterRoomies() {
+  const grid = document.getElementById('roomie-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="no-results-msg" style="grid-column:1/-1;">Cargando perfiles...</div>';
 
-  let list = getRoomies().filter(r => {
-    const matchBudget   = r.budget <= maxBudget;
-    const matchType     = type     === "all" || r.type     === type;
-    const matchSchedule = schedule === "all" || r.schedule.toLowerCase() === schedule.toLowerCase();
-    const matchGender   = gender   === "all" || r.gender.toLowerCase()   === gender.toLowerCase();
+  const maxBudget = parseInt(document.getElementById('roomie-budget')?.value || '500');
+  const type      = document.getElementById('roomie-type')?.value     || 'all';
+  const schedule  = document.getElementById('roomie-schedule')?.value || 'all';
+  const gender    = document.getElementById('roomie-gender')?.value   || 'all';
+
+  const { data: list } = await db.from('roomies').select('*').order('created_at', { ascending: false });
+
+  const filtered = (list || []).filter(r => {
+    const matchBudget   = r.is_demo || r.budget <= maxBudget;
+    const matchType     = type     === 'all' || r.type     === type;
+    const matchSchedule = schedule === 'all' || r.schedule === schedule;
+    const matchGender   = gender   === 'all' || r.gender   === gender;
     return matchBudget && matchType && matchSchedule && matchGender;
   });
 
-  renderRoomieGrid(list);
+  const count = document.getElementById('roomie-count');
+  if (count) count.textContent = filtered.length;
+  renderRoomieGrid(filtered);
 }
 
 function renderRoomieGrid(list) {
-  const grid  = document.getElementById("roomie-grid");
-  const count = document.getElementById("roomie-count");
+  const grid = document.getElementById('roomie-grid');
   if (!grid) return;
-  if (count) count.textContent = list.length;
 
   if (list.length === 0) {
-    grid.innerHTML = `<div class="no-results-msg" style="grid-column:1/-1;">No se encontraron perfiles con los filtros seleccionados.</div>`;
+    grid.innerHTML = '<div class="no-results-msg" style="grid-column:1/-1;">No se encontraron perfiles con los filtros seleccionados.</div>';
     return;
   }
 
   grid.innerHTML = list.map(r => {
-    const typeLabel = r.type === "tiene-lugar" ? "Tiene lugar, busca compañero" : "Busca lugar y compañero";
-    const typeClass = r.type === "tiene-lugar" ? "type-tiene-lugar" : "type-busca-lugar";
-
+    const typeLabel = r.type === 'tiene-lugar' ? 'Tiene lugar, busca compañero' : 'Busca lugar y compañero';
+    const typeClass = r.type === 'tiene-lugar' ? 'type-tiene-lugar' : 'type-busca-lugar';
     return `
-    <div class="roomie-card" onclick="openRoomieModal(${r.id})">
+    <div class="roomie-card" onclick="openRoomieModal('${r.id}')">
       <div class="roomie-card-header">
-        <div class="roomie-av" style="background:${r.avatarColor}">${r.name.charAt(0)}</div>
+        <div class="roomie-av" style="background:${r.avatar_color || '#1a56db'}">${r.name.charAt(0)}</div>
         <div>
           <div class="roomie-name">${r.name}</div>
-          <div class="roomie-career">${r.career} — PUCEM</div>
+          <div class="roomie-career">${r.career}</div>
         </div>
       </div>
+      ${r.is_demo ? '<span class="badge badge-amber" style="align-self:flex-start;margin-top:0.25rem;">Perfil de Ejemplo</span>' : ''}
       <span class="roomie-type-tag ${typeClass}">${typeLabel}</span>
-      <div class="roomie-budget">$${r.budget}<span>/mes (su parte)</span></div>
+      <div class="roomie-budget">${r.is_demo ? '<span style="font-size:0.85rem;font-weight:400;">Solo demostración</span>' : '$' + r.budget + '<span>/mes (su parte)</span>'}</div>
       <div class="roomie-info-row">
         <span>Horario: ${r.schedule}</span>
         <span>${r.gender}</span>
-        <span>Desde: ${r.availableFrom}</span>
+        <span>Desde: ${r.available_from}</span>
       </div>
       <div class="roomie-habits">
-        ${r.habits.map(h => `<span class="habit-tag">${h}</span>`).join("")}
+        ${(r.habits || []).map(h => `<span class="habit-tag">${h}</span>`).join('')}
       </div>
-      <p class="roomie-desc">${r.description.substring(0, 120)}...</p>
+      <p class="roomie-desc">${(r.description || '').substring(0, 110)}...</p>
       <div class="roomie-footer">
-        <span class="badge badge-blue">Ver perfil completo</span>
-        ${r.type === "tiene-lugar" ? `<span class="badge badge-green">Lugar disponible</span>` : ""}
+        <span class="badge badge-blue">Ver perfil</span>
+        ${r.type === 'tiene-lugar' ? '<span class="badge badge-green">Lugar disponible</span>' : ''}
       </div>
     </div>`;
-  }).join("");
+  }).join('');
 }
 
-function openRoomieModal(id) {
-  const r = getRoomies().find(x => x.id === id);
+async function openRoomieModal(id) {
+  const { data: r } = await db.from('roomies').select('*').eq('id', id).single();
   if (!r) return;
 
-  const typeLabel = r.type === "tiene-lugar" ? "Tiene lugar, busca compañero" : "Busca lugar y compañero";
-  const typeClass = r.type === "tiene-lugar" ? "type-tiene-lugar" : "type-busca-lugar";
+  const typeLabel = r.type === 'tiene-lugar' ? 'Tiene lugar, busca compañero' : 'Busca lugar y compañero';
+  const typeClass = r.type === 'tiene-lugar' ? 'type-tiene-lugar' : 'type-busca-lugar';
 
-  document.getElementById("rmodal-title").textContent  = r.name + " — " + r.career;
-  document.getElementById("rmodal-career").textContent = "PUCEM — " + r.career;
+  document.getElementById('rmodal-title').textContent  = r.name + ' — ' + r.career;
+  document.getElementById('rmodal-career').textContent = r.career;
 
-  const avEl = document.getElementById("rmodal-avatar");
-  if (avEl) { avEl.textContent = r.name.charAt(0); avEl.style.background = r.avatarColor; }
+  const avEl = document.getElementById('rmodal-avatar');
+  if (avEl) { avEl.textContent = r.name.charAt(0); avEl.style.background = r.avatar_color || '#1a56db'; }
 
-  const typeEl = document.getElementById("rmodal-type");
-  if (typeEl) { typeEl.textContent = typeLabel; typeEl.className = "roomie-type-tag " + typeClass; }
+  const typeEl = document.getElementById('rmodal-type');
+  if (typeEl) { typeEl.textContent = typeLabel; typeEl.className = 'roomie-type-tag ' + typeClass; }
 
-  const infoTable = document.getElementById("rmodal-info");
+  const infoTable = document.getElementById('rmodal-info');
   if (infoTable) {
     let rows = [
-      ["Presupuesto mensual (su parte)", "$" + r.budget + " / mes"],
-      ["Horario", r.schedule],
-      ["Género", r.gender],
-      ["Disponibilidad", r.availableFrom],
-      ["Hábitos", r.habits.join(", ")]
+      ['Presupuesto mensual', r.is_demo ? 'Solo demostración' : '$' + r.budget + ' / mes'],
+      ['Horario de clases', r.schedule],
+      ['Género', r.gender],
+      ['Disponibilidad', r.available_from],
+      ['Hábitos', (r.habits || []).join(', ')]
     ];
-    if (r.type === "tiene-lugar") {
-      rows.push(["Ubicación del lugar", r.location || "Portoviejo, Manabí"]);
-      rows.push(["Arriendo total mensual", "$" + (r.totalRent || "N/D") + " (entre dos: $" + Math.ceil((r.totalRent || 0) / 2) + " c/u)"]);
+    if (r.type === 'tiene-lugar') {
+      rows.push(['Sector del lugar', r.location || 'Portoviejo, Manabí']);
+      rows.push(['Arriendo total', '$' + (r.total_rent || 0) + ' (entre dos: $' + Math.ceil((r.total_rent || 0) / 2) + ' c/u)']);
     }
-    infoTable.innerHTML = rows.map(([k, v]) => `
-      <div class="info-row">
-        <span class="info-key">${k}</span>
-        <span class="info-val">${v}</span>
-      </div>`).join("");
+    infoTable.innerHTML = rows.map(([k, v]) =>
+      `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`
+    ).join('');
   }
 
-  document.getElementById("rmodal-desc").textContent    = r.description;
-  document.getElementById("rmodal-contact").textContent = r.contact;
+  document.getElementById('rmodal-desc').textContent    = r.description;
+  document.getElementById('rmodal-contact').textContent = r.is_demo ? 'soporte@homii.ec (solo ejemplo)' : r.contact;
 
-  // Chat roomie
   setupRoomieChat(r);
 
-  document.getElementById("roomie-modal")?.classList.add("open");
-  document.body.style.overflow = "hidden";
+  document.getElementById('roomie-modal')?.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function setupRoomieChat(r) {
-  if (!APP.directChats["roomie_" + r.id]) {
-    APP.directChats["roomie_" + r.id] = [
-      { side: "in", text: `Hola, soy ${r.name}. Gracias por revisar mi perfil. ¿Tiene alguna pregunta sobre la convivencia o el lugar?` }
-    ];
-  }
+  const msgs    = document.getElementById('roomie-chat-msgs');
+  const input   = document.getElementById('roomie-chat-input');
+  const sendBtn = document.getElementById('roomie-chat-send');
+  const chatBox = msgs?.closest('.direct-chat-box');
+  if (!msgs) return;
 
-  const msgs    = document.getElementById("roomie-chat-msgs");
-  const input   = document.getElementById("roomie-chat-input");
-  const sendBtn = document.getElementById("roomie-chat-send");
-  if (!msgs || !sendBtn || !input) return;
-
-  const render = () => {
-    msgs.innerHTML = APP.directChats["roomie_" + r.id].map(m =>
-      `<div class="chat-bubble chat-${m.side}">${m.text}</div>`
-    ).join("");
-    msgs.scrollTop = msgs.scrollHeight;
-  };
-  render();
-
-  const sendMsg = text => {
-    if (!text.trim()) return;
-    APP.directChats["roomie_" + r.id].push({ side: "out", text });
-    input.value = "";
-    render();
-    setTimeout(() => {
-      const t = text.toLowerCase();
-      let reply = "Con gusto le respondo. Cualquier otra duda no dude en preguntar.";
-      if (t.includes("visitar") || t.includes("ver el")) reply = "Podemos coordinar una visita al lugar. Tengo disponibilidad los fines de semana principalmente.";
-      if (t.includes("horario") || t.includes("sched")) reply = "Mi horario es " + r.schedule.toLowerCase() + ". Eso significa que estaría en casa principalmente en " + (r.schedule === "Diurno" ? "la tarde y noche." : "la mañana y tarde.");
-      if (t.includes("precio") || t.includes("costo") || t.includes("gasto")) reply = "Mi presupuesto mensual para el arriendo es $" + r.budget + ". Los gastos de servicios los dividiríamos en partes iguales.";
-      if (t.includes("mascota")) reply = r.habits.some(h => h.toLowerCase().includes("mascota")) ? "Sí, acepto mascotas. Cuénteme más sobre la suya." : "Prefiero no tener mascotas en el lugar, si no le parece un inconveniente.";
-      if (t.includes("hola") || t.includes("buenas")) reply = "Hola, bienvenido. Cuénteme, ¿está buscando roomie para un lugar específico o también está buscando vivienda?";
-      APP.directChats["roomie_" + r.id].push({ side: "in", text: reply });
-      render();
-    }, 1300);
-  };
-
-  const newSend = sendBtn.cloneNode(true);
-  sendBtn.parentNode.replaceChild(newSend, sendBtn);
-  newSend.addEventListener("click", () => sendMsg(input.value));
-  input.onkeypress = e => { if (e.key === "Enter") sendMsg(input.value); };
-}
-
-function closeRoomieModal() {
-  document.getElementById("roomie-modal")?.classList.remove("open");
-  document.body.style.overflow = "";
-}
-
-function submitRoomieProfile() {
-  const user = getCurrentUser();
-  const name = document.getElementById("rp-name")?.value.trim();
-  const career = document.getElementById("rp-career")?.value.trim();
-  const budget = parseInt(document.getElementById("rp-budget")?.value || "0");
-  const type = document.getElementById("rp-type")?.value;
-  const schedule = document.getElementById("rp-schedule")?.value;
-  const gender = document.getElementById("rp-gender")?.value;
-  const desc = document.getElementById("rp-desc")?.value.trim();
-  const available = document.getElementById("rp-available")?.value.trim();
-
-  if (!name || !career || !budget || !desc) {
-    alert("Por favor completa todos los campos obligatorios.");
+  if (r.is_demo) {
+    if (chatBox) chatBox.innerHTML = `<div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">Este es un perfil de demostración.<br>No hay un estudiante real para contactar.</div>`;
     return;
   }
 
-  const colors = ["#1a56db","#0369a1","#7c3aed","#059669","#d97706","#0f766e"];
-  const roomies = getRoomies();
-  const newR = {
-    id: Date.now(),
-    name,
-    career,
-    year: 1,
-    budget,
-    type,
-    gender,
-    schedule,
-    availableFrom: available || "Próximamente",
-    habits: [],
-    description: desc,
-    contact: user ? user.email : "contacto@pucem.edu.ec",
-    avatarColor: colors[roomies.length % colors.length]
-  };
+  if (!CURRENT_USER) {
+    if (chatBox) chatBox.innerHTML = `<div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">Inicie sesión para escribir a este estudiante.<br><a class="auth-link" style="cursor:pointer;" onclick="closeRoomieModal();openAuth()">Iniciar sesión</a></div>`;
+    return;
+  }
 
-  roomies.push(newR);
-  saveRoomies(roomies);
-  document.getElementById("roomie-form")?.reset();
-  filterRoomies();
-  updateRoomieStats();
-  addNotif("Perfil de Roomie Publicado", "Su perfil ya está visible en la sección Buscar Compañero.");
-  alert("Perfil publicado correctamente. Otros estudiantes podrán contactarle.");
+  msgs.innerHTML = `<div class="chat-bubble chat-in">Hola, vi tu perfil en Homii. ¿Sigues buscando compañero?</div>`;
+  if (sendBtn) sendBtn.style.display = '';
+
+  const newSend = sendBtn.cloneNode(true);
+  sendBtn.parentNode.replaceChild(newSend, sendBtn);
+  newSend.addEventListener('click', () => {
+    if (!input?.value.trim()) return;
+    const b = document.createElement('div');
+    b.className = 'chat-bubble chat-out';
+    b.textContent = input.value;
+    msgs.appendChild(b);
+    msgs.scrollTop = msgs.scrollHeight;
+    input.value = '';
+    setTimeout(() => {
+      const reply = document.createElement('div');
+      reply.className = 'chat-bubble chat-in';
+      reply.textContent = 'Gracias por escribirme. Puede contactarme directamente al correo indicado en mi perfil para coordinar los detalles.';
+      msgs.appendChild(reply);
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 1200);
+  });
+  if (input) { input.onkeypress = e => { if (e.key === 'Enter') newSend.click(); }; }
 }
 
-function updateRoomieStats() {
-  const roomies = getRoomies();
-  const statEl = document.getElementById("roomie-hero-stat");
-  const buscaEl = document.getElementById("roomie-stat-busca");
-  const tieneEl = document.getElementById("roomie-stat-tiene");
-  if (statEl)  statEl.textContent  = roomies.length;
-  if (buscaEl) buscaEl.textContent = roomies.filter(r => r.type === "busca-lugar").length;
-  if (tieneEl) tieneEl.textContent = roomies.filter(r => r.type === "tiene-lugar").length;
+function closeRoomieModal() {
+  document.getElementById('roomie-modal')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function submitRoomieProfile() {
+  if (!CURRENT_USER) { openAuth(); return; }
+
+  const name      = document.getElementById('rp-name')?.value.trim();
+  const career    = document.getElementById('rp-career')?.value.trim();
+  const budget    = parseInt(document.getElementById('rp-budget')?.value || '0');
+  const type      = document.getElementById('rp-type')?.value;
+  const schedule  = document.getElementById('rp-schedule')?.value;
+  const gender    = document.getElementById('rp-gender')?.value;
+  const desc      = document.getElementById('rp-desc')?.value.trim();
+  const available = document.getElementById('rp-available')?.value.trim();
+
+  if (!name || !career || !budget || !desc) { alert('Por favor completa todos los campos obligatorios.'); return; }
+
+  const colors = ['#1a56db','#0369a1','#7c3aed','#059669','#d97706','#0f766e'];
+  const color  = colors[Math.floor(Math.random() * colors.length)];
+
+  const { error } = await db.from('roomies').insert({
+    user_id: CURRENT_USER.id,
+    name, career, budget, type, gender, schedule,
+    available_from: available || 'Próximamente',
+    description: desc,
+    contact: CURRENT_USER.email,
+    avatar_color: color,
+    is_demo: false
+  });
+
+  if (error) { alert('Error al publicar perfil: ' + error.message); return; }
+
+  document.getElementById('roomie-form')?.reset();
+  filterRoomies();
+  updateRoomieStats();
+  addNotif('Perfil Publicado', 'Su perfil ya es visible en la sección Buscar Compañero.');
+  alert('Perfil publicado correctamente. Ya está visible en el listado.');
+}
+
+async function updateRoomieStats() {
+  const { data: list } = await db.from('roomies').select('id, type');
+  const all   = list || [];
+  const total = all.length;
+  const busca = all.filter(r => r.type === 'busca-lugar').length;
+  const tiene = all.filter(r => r.type === 'tiene-lugar').length;
+  const s = id => document.getElementById(id);
+  if (s('roomie-hero-stat'))  s('roomie-hero-stat').textContent  = total;
+  if (s('roomie-stat-busca')) s('roomie-stat-busca').textContent = busca;
+  if (s('roomie-stat-tiene')) s('roomie-stat-tiene').textContent = tiene;
+}
+
+// ============================================================
+// PERFIL DE USUARIO
+// ============================================================
+
+async function renderProfileView() {
+  if (!CURRENT_USER || !CURRENT_PROFILE) return;
+  const p = CURRENT_PROFILE;
+  const s = id => document.getElementById(id);
+
+  if (s('profile-avatar')) {
+    s('profile-avatar').textContent      = p.name.charAt(0).toUpperCase();
+    s('profile-avatar').style.background = p.avatar_color || '#1a56db';
+  }
+  if (s('profile-name'))  s('profile-name').textContent  = p.name;
+  if (s('profile-email')) s('profile-email').textContent = CURRENT_USER.email;
+  if (s('profile-role'))  s('profile-role').textContent  = roleLabel(p.role);
+  if (s('profile-phone')) s('profile-phone').textContent = p.phone || 'No registrado';
+  if (s('profile-since')) s('profile-since').textContent = new Date(p.created_at).toLocaleDateString('es-EC', { year:'numeric', month:'long', day:'numeric' });
+
+  // Mis propiedades (solo propietario)
+  const propSection = s('profile-my-props');
+  if (propSection) {
+    if (p.role === 'landlord') {
+      propSection.style.display = 'block';
+      const { data: myProps } = await db.from('properties').select('*').eq('landlord_id', CURRENT_USER.id).order('created_at', { ascending: false });
+      const listEl = s('profile-props-list');
+      if (listEl) {
+        if (!myProps || myProps.length === 0) {
+          listEl.innerHTML = '<p style="font-size:0.83rem;color:var(--text-muted);">No ha publicado propiedades todavía. Use el Panel de Propietario para crear su primer anuncio.</p>';
+        } else {
+          listEl.innerHTML = myProps.map(prop => `
+            <div class="prop-row" onclick="navigate('landlord')" style="cursor:pointer;">
+              <div class="prop-row-img">
+                ${prop.images && prop.images.length > 0 ? `<img src="${prop.images[0]}" alt="${prop.title}">` : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`}
+              </div>
+              <div style="flex:1;min-width:0;margin-left:0.85rem;">
+                <div style="font-weight:600;font-size:0.88rem;color:var(--text);">${prop.title}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">$${prop.price}/mes &middot; ${(prop.location || '').split(',')[0]}</div>
+              </div>
+              <span class="badge ${prop.university_certified ? 'badge-green' : 'badge-gray'}">${prop.university_certified ? 'Verificado' : 'Pendiente'}</span>
+            </div>`).join('');
+        }
+      }
+    } else {
+      propSection.style.display = 'none';
+    }
+  }
+
+  // Mi perfil roomie
+  const roomieSection = s('profile-my-roomie');
+  if (roomieSection) {
+    const { data: myRoomie } = await db.from('roomies').select('*').eq('user_id', CURRENT_USER.id).maybeSingle();
+    if (myRoomie) {
+      roomieSection.innerHTML = `
+        <div class="panel-card-title">Mi perfil de compañero</div>
+        <div class="prop-row">
+          <div class="roomie-av" style="background:${myRoomie.avatar_color};width:40px;height:40px;">${myRoomie.name.charAt(0)}</div>
+          <div style="flex:1;min-width:0;margin-left:0.85rem;">
+            <div style="font-weight:600;font-size:0.88rem;">${myRoomie.name}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">${myRoomie.career} &middot; $${myRoomie.budget}/mes</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="deleteMyRoomieProfile('${myRoomie.id}')">Eliminar</button>
+        </div>`;
+    } else {
+      roomieSection.innerHTML = `
+        <div class="panel-card-title">Mi perfil de compañero</div>
+        <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:0.75rem;">No tiene un perfil de compañero publicado todavía.</p>
+        <button class="btn btn-secondary btn-sm" onclick="navigate('roomie')">Publicar perfil de compañero</button>`;
+    }
+  }
+
+  // Mensajes recibidos (solo propietario)
+  const msgsSection = s('profile-messages');
+  if (msgsSection) {
+    if (p.role === 'landlord') {
+      msgsSection.style.display = 'block';
+      await loadInboxMessages(msgsSection);
+    } else {
+      msgsSection.style.display = 'none';
+    }
+  }
+}
+
+async function loadInboxMessages(container) {
+  const { data: chats } = await db.from('chats')
+    .select('*').eq('receiver_id', CURRENT_USER.id).order('created_at', { ascending: false });
+
+  if (!chats || chats.length === 0) {
+    container.innerHTML = '<div class="panel-card-title">Mensajes recibidos</div><p style="font-size:0.83rem;color:var(--text-muted);">No tiene mensajes todavía.</p>';
+    return;
+  }
+
+  const convMap = {};
+  chats.forEach(m => {
+    if (!convMap[m.chat_id]) convMap[m.chat_id] = { ...m, unread: 0 };
+    if (!m.is_read) convMap[m.chat_id].unread++;
+  });
+  const convs = Object.values(convMap);
+
+  container.innerHTML = `
+    <div class="panel-card-title">Mensajes recibidos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length}</span></div>
+    ${convs.map(c => `
+      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title)}', '${escAttr(c.sender_name)}', '${c.sender_id}')">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${c.sender_name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title}</div>
+          <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.message}</div>
+        </div>
+        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Leído</span>'}
+      </div>`).join('')}`;
+}
+
+window.deleteMyRoomieProfile = async function(id) {
+  if (!confirm('¿Está seguro de eliminar su perfil de compañero?')) return;
+  await db.from('roomies').delete().eq('id', id);
+  renderProfileView();
+  addNotif('Perfil eliminado', 'Su perfil de compañero fue eliminado.');
+};
+
+function roleLabel(role) {
+  return { student: 'Estudiante / Arrendatario', landlord: 'Propietario de inmuebles', university: 'Administrador PUCEM' }[role] || role;
 }
 
 // ============================================================
 // PANEL PROPIETARIO
 // ============================================================
 
-function renderLandlordPanel() {
-  const user = getCurrentUser(); if (!user) return;
-  const myProps = getProperties().filter(p => p.landlordEmail === user.email);
+async function renderLandlordPanel() {
+  if (!CURRENT_USER || !CURRENT_PROFILE) return;
 
-  document.getElementById("stat-listings").textContent   = myProps.length;
-  document.getElementById("stat-views").textContent      = myProps.length * 147;
-  document.getElementById("stat-inquiries").textContent  = myProps.length * 4;
+  const { data: myProps } = await db.from('properties').select('*').eq('landlord_id', CURRENT_USER.id);
+  const count = (myProps || []).length;
 
-  const list = document.getElementById("landlord-list");
-  if (!list) return;
+  if (document.getElementById('stat-listings'))  document.getElementById('stat-listings').textContent  = count;
+  if (document.getElementById('stat-views'))     document.getElementById('stat-views').textContent     = count * 147;
+  if (document.getElementById('stat-inquiries')) document.getElementById('stat-inquiries').textContent = count * 4;
 
-  if (myProps.length === 0) {
-    list.innerHTML = `<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1.5rem;">Aún no tiene propiedades publicadas. Use el formulario para crear su primer anuncio.</p>`;
+  const list = document.getElementById('landlord-list');
+  if (list) {
+    if (count === 0) {
+      list.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1.5rem;">No ha publicado propiedades todavía. Use el formulario para crear su primer anuncio.</p>';
+    } else {
+      list.innerHTML = (myProps || []).map(p => `
+        <div class="prop-row">
+          <div class="prop-row-img">
+            ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${p.title}">` : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`}
+          </div>
+          <div style="flex:1;min-width:0;margin-left:0.85rem;">
+            <div style="font-weight:600;font-size:0.88rem;color:var(--text);">${p.title}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">${(p.location || '').split(',')[0]} &middot; <span style="color:var(--blue);font-weight:600;">$${p.price}/mes</span></div>
+          </div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+            ${p.university_certified ? `<span class="badge badge-green">Verificado PUCEM</span>` : `<button class="btn btn-secondary btn-sm" onclick="requestVerif('${p.id}', '${escAttr(p.title)}')">Pedir verificación</button>`}
+            ${p.featured ? `<span class="badge badge-blue">Destacado</span>` : `<button class="btn btn-outline btn-sm" onclick="makeFeatured('${p.id}')">Destacar</button>`}
+            <button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Eliminar</button>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  await loadLandlordMessages();
+}
+
+async function loadLandlordMessages() {
+  const section = document.getElementById('landlord-messages');
+  if (!section || !CURRENT_USER) return;
+
+  const { data: chats } = await db.from('chats')
+    .select('*').eq('receiver_id', CURRENT_USER.id).order('created_at', { ascending: false });
+
+  if (!chats || chats.length === 0) {
+    section.innerHTML = '<div class="panel-card-title">Mensajes de inquilinos</div><p style="font-size:0.83rem;color:var(--text-muted);">No tiene mensajes todavía. Cuando alguien le escriba, los mensajes aparecerán aquí.</p>';
     return;
   }
 
-  list.innerHTML = myProps.map(p => `
-    <div class="prop-row">
-      <div class="prop-row-img">
-        ${p.images && p.images.length > 0
-          ? `<img src="${p.images[0]}" alt="${p.title}">`
-          : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`}
-      </div>
-      <div class="prop-row-info" style="margin-left:0.85rem;">
-        <h5>${p.title}</h5>
-        <p>${p.location.split(",")[0]} &middot; <span style="color:var(--blue);font-weight:600;">$${p.price}/mes</span></p>
-      </div>
-      <div class="prop-row-actions">
-        ${p.universityCertified ? `<span class="badge badge-green">Verificado PUCEM</span>` : `<button class="btn btn-secondary btn-sm" onclick="requestVerif(${p.id})">Pedir Verificación</button>`}
-        ${p.featured ? `<span class="badge badge-blue">Destacado</span>` : `<button class="btn btn-outline btn-sm" onclick="makeFeatured(${p.id})">Destacar</button>`}
-        <button class="btn btn-outline btn-sm" onclick="openPropertyModal(${p.id})">Ver</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteProp(${p.id})">Eliminar</button>
-      </div>
-    </div>`).join("");
+  const convMap = {};
+  chats.forEach(m => {
+    if (!convMap[m.chat_id]) convMap[m.chat_id] = { ...m, unread: 0 };
+    if (!m.is_read) convMap[m.chat_id].unread++;
+  });
+  const convs = Object.values(convMap);
+
+  section.innerHTML = `
+    <div class="panel-card-title">Mensajes de inquilinos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length} conversación(es)</span></div>
+    ${convs.map(c => `
+      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title)}', '${escAttr(c.sender_name)}', '${c.sender_id}')">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.85rem;font-weight:600;">${c.sender_name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title}</div>
+          <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.1rem;">${c.message}</div>
+        </div>
+        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Leído</span>'}
+      </div>`).join('')}`;
 }
 
-window.makeFeatured = function(id) {
-  const props = getProperties();
-  const p = props.find(x => x.id === id);
-  if (!p) return;
-  p.featured = true;
-  saveProperties(props);
-  addNotif("Anuncio Destacado", `"${p.title}" ahora aparece destacado en el buscador.`);
+window.makeFeatured = async function(id) {
+  await db.from('properties').update({ featured: true }).eq('id', id);
+  addNotif('Anuncio Destacado', 'Su propiedad ahora aparece destacada en el buscador.');
   renderLandlordPanel();
 };
 
-window.requestVerif = function(id) {
-  const p = getProperties().find(x => x.id === id);
-  if (!p) return;
-  addNotif("Solicitud Enviada", `Inspección de campo agendada para "${p.title}".`);
-  alert("Solicitud enviada. Nuestro equipo de campo de la PUCEM coordinará la visita de inspección técnica en los próximos días.");
+window.requestVerif = function(id, title) {
+  addNotif('Solicitud Enviada', `Inspección agendada para "${title}".`);
+  alert('Solicitud enviada. Nuestro equipo coordinará la visita de inspección técnica en los próximos días hábiles.');
 };
 
-window.deleteProp = function(id) {
-  if (!confirm("¿Está seguro de eliminar este anuncio?")) return;
-  saveProperties(getProperties().filter(x => x.id !== id));
+window.deleteProp = async function(id) {
+  if (!confirm('¿Está seguro de eliminar este anuncio? Esta acción es irreversible.')) return;
+  await db.from('properties').delete().eq('id', id);
   renderLandlordPanel();
-  addNotif("Anuncio Eliminado", "La propiedad fue removida del buscador.");
+  addNotif('Anuncio Eliminado', 'La propiedad fue removida del buscador.');
 };
 
 function setupPublishForm() {
-  document.getElementById("prop-images")?.addEventListener("change", previewImages);
-  document.getElementById("prop-maps-address")?.addEventListener("input", updateMapsPreview);
-  document.getElementById("publish-form")?.addEventListener("submit", e => {
+  document.getElementById('prop-images')?.addEventListener('change', previewImages);
+  document.getElementById('prop-maps-address')?.addEventListener('input', updateMapsPreview);
+  document.getElementById('publish-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const user = getCurrentUser();
-    if (!user) { openAuth(); return; }
+    if (!CURRENT_USER) { openAuth(); return; }
 
-    const title    = document.getElementById("prop-title").value.trim();
-    const price    = parseInt(document.getElementById("prop-price").value);
-    const rooms    = parseInt(document.getElementById("prop-rooms").value);
-    const location = document.getElementById("prop-location").value.trim();
-    const mapsAddr = document.getElementById("prop-maps-address").value.trim() || location;
-    const distance = parseFloat(document.getElementById("prop-distance").value);
-    const desc     = document.getElementById("prop-desc").value.trim();
-    const amenities = [...document.querySelectorAll(".form-amenity:checked")].map(cb => cb.value);
-    const imgs     = window._uploadedImgs || [];
+    const btn = e.target.querySelector('[type=submit]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
 
-    const props = getProperties();
-    props.push({
-      id: Date.now(), title, description: desc, price, rooms, bathrooms: 1,
-      location, mapsQuery: mapsAddr, distanceToCampus: distance,
-      universityCertified: false, universityCertifiedBy: null,
-      amenities: amenities.length ? amenities : ["internet"],
-      landlordName: user.name, landlordEmail: user.email,
-      landlordRating: 5.0, propertyRating: 4.5,
-      featured: false, images: imgs, verificationReport: null, reviews: []
+    const title    = document.getElementById('prop-title')?.value.trim();
+    const price    = parseInt(document.getElementById('prop-price')?.value);
+    const rooms    = parseInt(document.getElementById('prop-rooms')?.value);
+    const location = document.getElementById('prop-location')?.value.trim();
+    const mapsAddr = document.getElementById('prop-maps-address')?.value.trim() || location;
+    const distance = parseFloat(document.getElementById('prop-distance')?.value);
+    const desc     = document.getElementById('prop-desc')?.value.trim();
+    const amenities = [...document.querySelectorAll('.form-amenity:checked')].map(cb => cb.value);
+
+    // Subir imágenes a Supabase Storage
+    let imgUrls = [];
+    const files = window._pendingFiles || [];
+    for (const file of files) {
+      const ext  = file.name.split('.').pop().toLowerCase();
+      const path = `${CURRENT_USER.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await db.storage.from('homii-images').upload(path, file);
+      if (!upErr) {
+        const { data: { publicUrl } } = db.storage.from('homii-images').getPublicUrl(path);
+        imgUrls.push(publicUrl);
+      }
+    }
+
+    const { error } = await db.from('properties').insert({
+      title, description: desc || '', price, rooms, bathrooms: 1,
+      location, maps_query: mapsAddr, distance_to_campus: distance || 1.0,
+      university_certified: false,
+      amenities: amenities.length ? amenities : [],
+      landlord_id: CURRENT_USER.id,
+      landlord_name: CURRENT_PROFILE?.name || 'Propietario',
+      landlord_email: CURRENT_USER.email,
+      landlord_rating: 5.0, property_rating: 4.5,
+      featured: false, images: imgUrls, is_demo: false,
+      reviews: []
     });
-    saveProperties(props);
 
-    document.getElementById("publish-form").reset();
-    window._uploadedImgs = [];
-    const prev = document.getElementById("img-thumbs"); if (prev) prev.innerHTML = "";
-    const mp   = document.getElementById("maps-preview"); if (mp) mp.style.display = "none";
+    if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
 
-    addNotif("Propiedad Publicada", `"${title}" ya está visible en el buscador.`);
+    if (error) { alert('Error al publicar: ' + error.message); return; }
+
+    document.getElementById('publish-form')?.reset();
+    window._pendingFiles = [];
+    const thumbsEl = document.getElementById('img-thumbs'); if (thumbsEl) thumbsEl.innerHTML = '';
+    const mp = document.getElementById('maps-preview'); if (mp) mp.style.display = 'none';
+    addNotif('Propiedad Publicada', `"${title}" ya es visible en el buscador.`);
     renderLandlordPanel();
-    alert("Propiedad publicada exitosamente. Ya es visible en el buscador de Homii x PUCEM.");
+    alert('Propiedad publicada exitosamente. Ya aparece en el buscador.');
   });
 }
 
 function previewImages(e) {
   const files = Array.from(e.target.files);
-  const reads = files.map(f => new Promise(res => {
-    const r = new FileReader();
-    r.onload = ev => res(ev.target.result);
-    r.readAsDataURL(f);
-  }));
-  Promise.all(reads).then(results => {
-    window._uploadedImgs = results;
-    const thumbs = document.getElementById("img-thumbs");
-    if (!thumbs) return;
-    thumbs.innerHTML = results.map((src, i) => `
-      <div class="img-thumb">
-        <img src="${src}" alt="Foto ${i+1}">
-        <button type="button" class="img-thumb-del" onclick="removeImg(${i})">x</button>
-      </div>`).join("");
-  });
+  window._pendingFiles = files;
+  const thumbs = document.getElementById('img-thumbs');
+  if (!thumbs) return;
+  thumbs.innerHTML = files.map((f, i) => `
+    <div class="img-thumb">
+      <img src="${URL.createObjectURL(f)}" alt="Foto ${i+1}">
+      <button type="button" class="img-thumb-del" onclick="removeImg(${i})">x</button>
+    </div>`).join('');
 }
 
 window.removeImg = function(i) {
-  window._uploadedImgs = window._uploadedImgs || [];
-  window._uploadedImgs.splice(i, 1);
-  const thumbs = document.getElementById("img-thumbs");
-  if (thumbs) {
-    thumbs.innerHTML = window._uploadedImgs.map((src, idx) => `
-      <div class="img-thumb"><img src="${src}" alt="Foto ${idx+1}">
-      <button type="button" class="img-thumb-del" onclick="removeImg(${idx})">x</button></div>`).join("");
-  }
+  window._pendingFiles = window._pendingFiles || [];
+  window._pendingFiles.splice(i, 1);
+  const thumbs = document.getElementById('img-thumbs');
+  if (thumbs) thumbs.innerHTML = (window._pendingFiles).map((f, idx) => `
+    <div class="img-thumb"><img src="${URL.createObjectURL(f)}" alt="Foto ${idx+1}">
+    <button type="button" class="img-thumb-del" onclick="removeImg(${idx})">x</button></div>`).join('');
 };
 
 function updateMapsPreview() {
-  const addr = document.getElementById("prop-maps-address")?.value.trim();
-  const prev = document.getElementById("maps-preview");
-  const link = document.getElementById("maps-preview-link");
+  const addr = document.getElementById('prop-maps-address')?.value.trim();
+  const prev = document.getElementById('maps-preview');
+  const link = document.getElementById('maps-preview-link');
   if (!addr || !prev || !link) return;
-  link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;
+  link.href        = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;
   link.textContent = `Ver "${addr}" en Google Maps`;
-  prev.style.display = "block";
+  prev.style.display = 'block';
 }
 
 // ============================================================
 // PORTAL UNIVERSITARIO
 // ============================================================
 
-function renderUniPanel() {
-  const pending    = getProperties().filter(p => !p.universityCertified);
-  const certified  = getProperties().filter(p => p.universityCertified);
+async function renderUniPanel() {
+  const { data: pending   } = await db.from('properties').select('*').eq('university_certified', false).eq('is_demo', false);
+  const { data: certified } = await db.from('properties').select('id').eq('university_certified', true);
 
-  document.getElementById("uni-pending-count").textContent    = pending.length;
-  document.getElementById("uni-certified-count").textContent  = certified.length;
+  if (document.getElementById('uni-pending-count'))   document.getElementById('uni-pending-count').textContent   = (pending || []).length;
+  if (document.getElementById('uni-certified-count')) document.getElementById('uni-certified-count').textContent = (certified || []).length;
 
-  const tbody = document.getElementById("uni-table-body");
+  const tbody = document.getElementById('uni-table-body');
   if (!tbody) return;
 
-  if (pending.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">No hay inmuebles pendientes de certificación.</td></tr>`;
+  if (!pending || pending.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">No hay inmuebles pendientes de certificación en este momento.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = pending.map(p => `
     <tr>
-      <td>
-        <div class="table-prop-name">${p.title}</div>
-        <div class="table-prop-addr">${p.location.split(",").slice(0,2).join(",")}</div>
-      </td>
-      <td>${p.landlordName}</td>
+      <td><div class="table-prop-name">${p.title}</div><div class="table-prop-addr">${(p.location || '').split(',').slice(0, 2).join(',')}</div></td>
+      <td>${p.landlord_name || '-'}</td>
       <td>$${p.price}/mes</td>
-      <td>${p.distanceToCampus} km</td>
-      <td>
-        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.mapsQuery || p.location)}" target="_blank" class="btn btn-secondary btn-sm">Ver mapa</a>
-      </td>
-      <td>
-        <button class="btn btn-primary btn-sm" onclick="certifyProp(${p.id})">Certificar</button>
-      </td>
-    </tr>`).join("");
+      <td>${p.distance_to_campus} km</td>
+      <td><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.maps_query || p.location)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Ver mapa</a></td>
+      <td><button class="btn btn-primary btn-sm" onclick="certifyProp('${p.id}')">Certificar</button></td>
+    </tr>`).join('');
 }
 
-window.certifyProp = function(id) {
-  const props = getProperties();
-  const p = props.find(x => x.id === id); if (!p) return;
-  p.universityCertified = true;
-  p.universityCertifiedBy = "PUCEM";
-  p.verificationReport = {
-    inspectionDate: new Date().toISOString().split("T")[0],
+window.certifyProp = async function(id) {
+  const report = {
+    inspectionDate: new Date().toISOString().split('T')[0],
     standards: {
-      waterPressure: "Aprobado — Excelente (42 PSI)",
-      internetSpeed: "Aprobado — Fibra Óptica 300 Mbps",
-      fireSafety: "Aprobado — Certificado contra incendios",
-      structure: "Aprobado — Inspector civil PUCEM"
+      waterPressure: 'Aprobado — Buena presión (42 PSI)',
+      internetSpeed: 'Aprobado — Fibra Óptica 300 Mbps',
+      fireSafety:    'Aprobado — Certificado contra incendios',
+      structure:     'Aprobado — Inspector civil PUCEM'
     }
   };
-  saveProperties(props);
-  addNotif("Inmueble Certificado", `"${p.title}" ahora tiene el sello Homii Student PUCEM.`);
-  renderUniPanel();
-  addTlEntry("Certificación PUCEM Otorgada", `La administración validó "${p.title}".`, true);
-  alert(`Certificación PUCEM otorgada a:\n"${p.title}"\n\nEl propietario y los estudiantes serán notificados.`);
+  const { data: p } = await db.from('properties').update({ university_certified: true, verification_report: report }).eq('id', id).select().single();
+  if (p) {
+    addNotif('Inmueble Certificado', `"${p.title}" ahora tiene el sello Homii Student PUCEM.`);
+    renderUniPanel();
+    alert('Certificación PUCEM otorgada exitosamente.');
+  }
 };
 
-function addTlEntry(title, desc, ok) {
-  const tl = document.getElementById("uni-timeline");
-  if (!tl) return;
-  const d = document.createElement("div");
-  d.className = "tl-item " + (ok ? "ok" : "");
-  d.innerHTML = `<div class="tl-time">Ahora mismo</div><div class="tl-title">${title}</div><div class="tl-desc">${desc}</div>`;
-  tl.insertBefore(d, tl.firstChild);
+// ============================================================
+// NOTIFICACIONES
+// ============================================================
+
+function setupNotifications() {
+  const bell  = document.getElementById('bell-btn');
+  const panel = document.getElementById('notif-panel');
+  const clear = document.getElementById('notif-clear');
+
+  bell?.addEventListener('click', e => {
+    e.stopPropagation();
+    panel?.classList.toggle('open');
+    APP.notifications.forEach(n => n.unread = false);
+    updateBellDot(); renderNotifs();
+  });
+  clear?.addEventListener('click', () => { APP.notifications = []; updateBellDot(); renderNotifs(); });
+  document.addEventListener('click', e => {
+    if (panel && !panel.contains(e.target) && !bell?.contains(e.target)) panel.classList.remove('open');
+  });
+
+  addNotif('Bienvenido a Homii', 'Plataforma de arriendos en Portoviejo, Manabí.');
+}
+
+function renderNotifs() {
+  const body = document.getElementById('notif-body');
+  if (!body) return;
+  body.innerHTML = APP.notifications.length === 0
+    ? `<div class="notif-empty">Sin notificaciones pendientes.</div>`
+    : APP.notifications.map(n => `
+        <div class="notif-item ${n.unread ? 'unread' : ''}">
+          <div class="notif-title">${n.title}</div>
+          <div class="notif-txt">${n.text}</div>
+          <div class="notif-time">${n.time}</div>
+        </div>`).join('');
+}
+
+function addNotif(title, text) {
+  APP.notifications.unshift({ id: Date.now(), title, text, time: 'Ahora mismo', unread: true });
+  updateBellDot(); renderNotifs();
+}
+
+function updateBellDot() {
+  const dot = document.getElementById('bell-dot');
+  if (dot) dot.style.display = APP.notifications.some(n => n.unread) ? 'block' : 'none';
 }
 
 // ============================================================
@@ -1308,103 +1401,46 @@ function addTlEntry(title, desc, ok) {
 // ============================================================
 
 function setupSupport() {
-  const btn  = document.getElementById("support-btn");
-  const win  = document.getElementById("support-win");
-  const close = document.getElementById("support-close");
-  const send  = document.getElementById("support-send");
-  const inp   = document.getElementById("support-inp");
+  const btn   = document.getElementById('support-btn');
+  const win   = document.getElementById('support-win');
+  const close = document.getElementById('support-close');
+  const send  = document.getElementById('support-send');
+  const inp   = document.getElementById('support-inp');
   if (!btn || !win) return;
 
-  btn.onclick = () => win.classList.toggle("open");
-  close?.addEventListener("click", () => win.classList.remove("open"));
+  btn.onclick = () => win.classList.toggle('open');
+  close?.addEventListener('click', () => win.classList.remove('open'));
 
   const render = () => {
-    const body = win.querySelector(".support-msgs");
+    const body = win.querySelector('.support-msgs');
     if (!body) return;
     body.innerHTML = APP.supportHistory.map(m =>
-      `<div class="chat-bubble chat-${m.sender === "user" ? "out" : "in"}">${m.text}</div>`
-    ).join("");
+      `<div class="chat-bubble chat-${m.sender === 'user' ? 'out' : 'in'}">${m.text}</div>`
+    ).join('');
     body.scrollTop = body.scrollHeight;
   };
 
   const doSend = () => {
     const text = inp?.value.trim(); if (!text) return;
-    APP.supportHistory.push({ sender: "user", text });
-    if (inp) inp.value = "";
+    APP.supportHistory.push({ sender: 'user', text });
+    if (inp) inp.value = '';
     render();
     setTimeout(() => {
       const t = text.toLowerCase();
-      let reply = "Su consulta ha sido registrada. Un agente de Homii le responderá a la brevedad. También puede escribirnos a soporte@homii.ec";
-      if (t.includes("verific") || t.includes("certific") || t.includes("pucem")) reply = "La certificación PUCEM se realiza mediante inspección presencial. Nuestro equipo de campo verifica agua, internet, electricidad y estructura. El proceso toma entre 3 y 5 días hábiles.";
-      if (t.includes("precio") || t.includes("costo") || t.includes("comisión")) reply = "Homii es gratuito para arrendatarios. Para propietarios cobramos comisión solo al concretar el arrendamiento (5% del primer mes). El plan Destacado tiene un costo de $9.99 al mes.";
-      if (t.includes("roomie") || t.includes("compañero")) reply = "La sección Buscar Compañero permite encontrar estudiantes de la PUCEM con quienes compartir el costo del arriendo. Puede publicar su perfil de forma gratuita.";
-      if (t.includes("hola") || t.includes("buenas")) reply = "Buen día. Estoy disponible para ayudarle. Puede consultarme sobre verificaciones, arriendos, la sección Roomie o cualquier problema con su cuenta.";
-      if (t.includes("disputa") || t.includes("problema") || t.includes("queja")) reply = "Lamentamos el inconveniente. Las disputas se resuelven en un máximo de 48 horas mediante nuestro equipo de mediación. Necesitamos el identificador de la propiedad y la descripción del problema.";
-      APP.supportHistory.push({ sender: "bot", text: reply });
+      let reply = 'Su consulta ha sido registrada. Escríbanos a soporte@homii.ec para una respuesta más rápida.';
+      if (t.includes('verific') || t.includes('certific')) reply = 'La certificación PUCEM requiere inspección presencial. El proceso toma entre 3 y 5 días hábiles.';
+      if (t.includes('precio') || t.includes('costo') || t.includes('comis')) reply = 'Homii es gratuito para arrendatarios. Los propietarios pagan comisión solo al concretar el arrendamiento.';
+      if (t.includes('roomie') || t.includes('compa')) reply = 'La sección Buscar Compañero le permite conectar con estudiantes de la PUCEM que buscan dividir gastos de arriendo.';
+      if (t.includes('hola') || t.includes('buenas') || t.includes('buenos')) reply = 'Buen día. Estoy disponible para ayudarle con cualquier consulta sobre la plataforma.';
+      if (t.includes('chat') || t.includes('mensaje')) reply = 'El chat en tiempo real está disponible en cada ficha de propiedad. Debe iniciar sesión para enviar mensajes al propietario.';
+      APP.supportHistory.push({ sender: 'bot', text: reply });
       render();
-    }, 1200);
+    }, 1000);
   };
 
-  send?.addEventListener("click", doSend);
-  inp?.addEventListener("keypress", e => { if (e.key === "Enter") doSend(); });
+  send?.addEventListener('click', doSend);
+  inp?.addEventListener('keypress', e => { if (e.key === 'Enter') doSend(); });
   render();
-}
-
-// ============================================================
-// NOTIFICACIONES
-// ============================================================
-
-function setupNotifications() {
-  const bell   = document.getElementById("bell-btn");
-  const panel  = document.getElementById("notif-panel");
-  const clear  = document.getElementById("notif-clear");
-
-  bell?.addEventListener("click", e => {
-    e.stopPropagation();
-    panel?.classList.toggle("open");
-    APP.notifications.forEach(n => n.unread = false);
-    updateBellDot();
-    renderNotifs();
-  });
-
-  clear?.addEventListener("click", () => {
-    APP.notifications = [];
-    updateBellDot();
-    renderNotifs();
-  });
-
-  document.addEventListener("click", e => {
-    if (panel && !panel.contains(e.target) && !bell?.contains(e.target)) {
-      panel.classList.remove("open");
-    }
-  });
-
-  renderNotifs();
-  updateBellDot();
-}
-
-function renderNotifs() {
-  const body = document.getElementById("notif-body");
-  if (!body) return;
-  body.innerHTML = APP.notifications.length === 0
-    ? `<div class="notif-empty">Sin notificaciones pendientes.</div>`
-    : APP.notifications.map(n => `
-        <div class="notif-item ${n.unread ? "unread" : ""}">
-          <div class="notif-title">${n.title}</div>
-          <div class="notif-txt">${n.text}</div>
-          <div class="notif-time">${n.time}</div>
-        </div>`).join("");
-}
-
-function addNotif(title, text) {
-  APP.notifications.unshift({ id: Date.now(), title, text, time: "Ahora mismo", unread: true });
-  updateBellDot();
-  renderNotifs();
-}
-
-function updateBellDot() {
-  const dot = document.getElementById("bell-dot");
-  if (dot) dot.style.display = APP.notifications.some(n => n.unread) ? "block" : "none";
 }
 
 // ============================================================
@@ -1412,22 +1448,19 @@ function updateBellDot() {
 // ============================================================
 
 function setupActivation() {
-  document.querySelectorAll(".activation-trigger").forEach(el => {
-    el.addEventListener("click", e => {
-      e.preventDefault();
-      document.getElementById("activation-popup")?.classList.add("open");
-    });
+  document.querySelectorAll('.activation-trigger').forEach(el => {
+    el.addEventListener('click', e => { e.preventDefault(); document.getElementById('activation-popup')?.classList.add('open'); });
   });
-  document.getElementById("activation-close")?.addEventListener("click", () => {
-    document.getElementById("activation-popup")?.classList.remove("open");
+  document.getElementById('activation-close')?.addEventListener('click', () => {
+    document.getElementById('activation-popup')?.classList.remove('open');
   });
-  document.getElementById("activation-popup")?.addEventListener("click", e => {
-    if (e.target.id === "activation-popup") document.getElementById("activation-popup").classList.remove("open");
+  document.getElementById('activation-popup')?.addEventListener('click', e => {
+    if (e.target.id === 'activation-popup') document.getElementById('activation-popup').classList.remove('open');
   });
-  document.getElementById("btn-activate")?.addEventListener("click", () => {
-    document.getElementById("activation-popup")?.classList.remove("open");
-    addNotif("Homii Student Activo", "Su cuenta estudiantil PUCEM ha sido activada exitosamente.");
-    alert("Activación exitosa.\nAhora tiene acceso preferencial a los inmuebles certificados por la PUCEM.");
+  document.getElementById('btn-activate')?.addEventListener('click', () => {
+    document.getElementById('activation-popup')?.classList.remove('open');
+    addNotif('Homii Student Activo', 'Su cuenta estudiantil PUCEM ha sido activada.');
+    alert('Activación exitosa. Ahora tiene acceso preferencial a los inmuebles certificados por la PUCEM.');
   });
 }
 
@@ -1435,17 +1468,27 @@ function setupActivation() {
 // UTILIDADES
 // ============================================================
 
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 
-// Exponer al ámbito global
-window.navigate = navigate;
-window.openPropertyModal = openPropertyModal;
-window.closePropertyModal = closePropertyModal;
-window.openRoomieModal = openRoomieModal;
-window.closeRoomieModal = closeRoomieModal;
-window.openAuth = openAuth;
-window.closeAuth = closeAuth;
-window.logout = logout;
-window.certifyProp = window.certifyProp;
-window.filterListings = filterListings;
-window.filterRoomies = filterRoomies;
+function parseJSON(val, fallback) {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'object' && val !== null) return val;
+  try { return JSON.parse(val || JSON.stringify(fallback)); } catch { return fallback; }
+}
+
+function escAttr(str) {
+  return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// Exportaciones globales necesarias para onclick en HTML dinámico
+window.navigate              = navigate;
+window.openPropertyModal     = openPropertyModal;
+window.closePropertyModal    = closePropertyModal;
+window.openRoomieModal       = openRoomieModal;
+window.closeRoomieModal      = closeRoomieModal;
+window.closeConversationModal = closeConversationModal;
+window.openAuth              = openAuth;
+window.closeAuth             = closeAuth;
+window.logout                = logout;
+window.filterListings        = filterListings;
+window.filterRoomies         = filterRoomies;

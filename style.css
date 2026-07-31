@@ -60,6 +60,20 @@
 }
 
 /* =====================================================
+   MODO PUCEM (Visibilidad condicional)
+   ===================================================== */
+
+.pucem-element { display: none !important; }
+body.pucem-mode .pucem-element { display: initial !important; }
+body.pucem-mode div.pucem-element,
+body.pucem-mode section.pucem-element,
+body.pucem-mode li.pucem-element,
+body.pucem-mode article.pucem-element { display: block !important; }
+body.pucem-mode flex.pucem-element,
+body.pucem-mode div.pucem-element-flex { display: flex !important; }
+
+
+/* =====================================================
    RESET
    ===================================================== */
 

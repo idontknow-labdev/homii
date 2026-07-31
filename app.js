@@ -71,12 +71,41 @@ async function initAuth() {
 }
 
 async function loadUserProfile(user) {
+  if (!user) {
+    CURRENT_USER = null;
+    CURRENT_PROFILE = null;
+    document.body.classList.remove('pucem-mode');
+    updateNavUI();
+    return;
+  }
+
   CURRENT_USER = user;
-  const { data: profile } = await db.from('profiles').select('*').eq('id', user.id).single();
+  
+  // Consultar perfil de la tabla profiles
+  let { data: profile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  
+  if (!profile) {
+    // Si la tabla no devolvió fila, crear perfil por defecto inmediatamente
+    const defaultName = user.user_metadata?.name || user.email.split('@')[0];
+    const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    profile = {
+      id: user.id,
+      name: defaultName,
+      role: 'student',
+      phone: null,
+      avatar_color: color
+    };
+
+    db.from('profiles').upsert(profile).then(() => {}).catch(() => {});
+  }
+
   CURRENT_PROFILE = profile;
 
-  // Modo PUCEM: solo para estudiantes con correo @pucem.edu.ec
-  const isPUCEM = user.email.endsWith('@pucem.edu.ec') && profile?.role === 'student';
+  // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
+  const em = (user.email || '').toLowerCase();
+  const isPUCEM = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
   document.body.classList.toggle('pucem-mode', isPUCEM);
 
   updateNavUI();
@@ -119,19 +148,38 @@ function showAuthError(id, msg) {
 }
 
 async function doLogin() {
+  clearAuthErrors();
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-password').value;
   const btn   = document.querySelector('#login-form button[type=submit]');
+  
+  if (!email) { showAuthError('login-error', 'Ingrese su correo electrónico.'); return; }
+  if (!pass)  { showAuthError('login-error', 'Ingrese su contraseña.'); return; }
+
   if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
 
-  const { error } = await db.auth.signInWithPassword({ email, password: pass });
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
   if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
 
-  if (error) { showAuthError('login-error', 'Correo electrónico o contraseña incorrectos.'); return; }
-  closeAuth();
+  if (error) {
+    let msg = 'Correo electrónico o contraseña incorrectos.';
+    if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+      msg = 'Debe confirmar su correo electrónico para acceder (o desactive la confirmación en Supabase).';
+    } else if (error.message && !error.message.toLowerCase().includes('invalid login credentials')) {
+      msg = error.message;
+    }
+    showAuthError('login-error', msg);
+    return;
+  }
+
+  if (data?.user) {
+    await loadUserProfile(data.user);
+    closeAuth();
+  }
 }
 
 async function doRegister() {
+  clearAuthErrors();
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-password').value;
@@ -147,21 +195,38 @@ async function doRegister() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  const { data, error } = await db.auth.signUp({ email, password: pass });
+  const { data, error } = await db.auth.signUp({
+    email,
+    password: pass,
+    options: { data: { name, role } }
+  });
+
   if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
 
   if (error) {
     let msg = 'No se pudo crear la cuenta.';
-    if (error.message.toLowerCase().includes('already')) msg = 'Este correo ya está registrado. Inicie sesión.';
+    if (error.message.toLowerCase().includes('already')) {
+      msg = 'Este correo ya está registrado. Inicie sesión con su contraseña.';
+    } else if (error.message) {
+      msg = error.message;
+    }
     showAuthError('register-error', msg);
     return;
   }
 
   if (data?.user) {
-    const colors = ['#1a56db','#0369a1','#7c3aed','#059669','#d97706','#0f766e','#be185d'];
+    const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
-    await db.from('profiles').insert({ id: data.user.id, name, role, phone: phone || null, avatar_color: color });
+    await db.from('profiles').upsert({
+      id: data.user.id,
+      name,
+      role,
+      phone: phone || null,
+      avatar_color: color
+    });
+
+    await loadUserProfile(data.user);
     closeAuth();
     addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
     if (role === 'landlord') { APP.pendingRoute = 'landlord'; }
@@ -172,6 +237,9 @@ async function logout() {
   if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
   await db.auth.signOut();
   document.body.classList.remove('pucem-mode');
+  CURRENT_USER = null;
+  CURRENT_PROFILE = null;
+  updateNavUI();
   navigate('landing');
 }
 
@@ -186,19 +254,20 @@ function updateNavUI() {
   const uniLink  = document.querySelector('.nav-uni-link');
   const profLink = document.querySelector('.nav-profile-link');
 
-  if (user && profile) {
+  if (user) {
+    const displayName = profile?.name || user.email.split('@')[0];
     if (guestEl)  guestEl.style.display  = 'none';
     if (userEl)   userEl.style.display   = 'flex';
-    if (nameEl)   nameEl.textContent     = profile.name.split(' ')[0];
+    if (nameEl)   nameEl.textContent     = displayName.split(' ')[0];
     if (avEl) {
-      avEl.textContent      = profile.name.charAt(0).toUpperCase();
-      avEl.style.background = profile.avatar_color || '#1a56db';
+      avEl.textContent      = displayName.charAt(0).toUpperCase();
+      avEl.style.background = profile?.avatar_color || '#0f172a';
       avEl.style.cursor     = 'pointer';
       avEl.title            = 'Ver mi perfil';
       avEl.onclick          = () => navigate('profile');
     }
-    if (llLink)   llLink.style.display   = profile.role === 'landlord'   ? 'list-item' : 'none';
-    if (uniLink)  uniLink.style.display  = profile.role === 'university' ? 'list-item' : 'none';
+    if (llLink)   llLink.style.display   = profile?.role === 'landlord'   ? 'list-item' : 'none';
+    if (uniLink)  uniLink.style.display  = profile?.role === 'university' ? 'list-item' : 'none';
     if (profLink) profLink.style.display = 'list-item';
   } else {
     if (guestEl)  guestEl.style.display  = 'flex';

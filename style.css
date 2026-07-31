@@ -6,12 +6,72 @@
    ===================================================== */
 
 :root {
-  /* Fondo y superficies */
+  /* Fondo y superficies - Tema Neutro Elegante (Blanco, Gris y Negro) por defecto */
+  --bg:          #f8fafc;
+  --bg-white:    #ffffff;
+  --bg-section:  #f1f5f9;
+
+  /* Colores neutros oscuros */
+  --blue-dark:   #0f172a; /* Slate 900 */
+  --blue:        #1e293b; /* Slate 800 */
+  --blue-mid:    #334155; /* Slate 700 */
+  --blue-light:  #475569; /* Slate 600 */
+
+  /* Acabados neutros */
+  --celeste:     #64748b;
+  --celeste-lt:  #cbd5e1;
+  --celeste-bg:  #f1f5f9;
+
+  /* Bordes */
+  --border:      #e2e8f0;
+  --border-blue: #cbd5e1;
+
+  /* Texto */
+  --text:        #0f172a;
+  --text-sec:    #334155;
+  --text-muted:  #64748b;
+
+  /* Estado / alertas */
+  --green:       #059669;
+  --green-bg:    #d1fae5;
+  --amber:       #d97706;
+  --amber-bg:    #fef3c7;
+  --red:         #dc2626;
+  --red-bg:      #fee2e2;
+
+  /* Fondo Hero Neutro */
+  --hero-bg:     linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+
+  /* Sombras */
+  --shadow-sm:   0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md:   0 4px 16px rgba(15, 23, 42, 0.10);
+  --shadow-lg:   0 12px 40px rgba(15, 23, 42, 0.14);
+
+  /* Tipografía */
+  --font-head:   'Outfit', sans-serif;
+  --font-body:   'Inter', sans-serif;
+
+  /* Transiciones */
+  --t:           all 0.22s ease;
+  --t-fast:      all 0.12s ease;
+
+  /* Radios */
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r-lg:  16px;
+  --r-xl:  22px;
+}
+
+/* =====================================================
+   MODO PUCEM (Activado únicamente con correos @pucem.edu.ec / @pucesm.edu.ec)
+   ===================================================== */
+
+body.pucem-mode {
   --bg:          #f5f8fd;
   --bg-white:    #ffffff;
   --bg-section:  #eef4fc;
 
-  /* Azul principal PUCEM */
+  /* Azul institucional PUCEM */
   --blue-dark:   #003087;
   --blue:        #1a56db;
   --blue-mid:    #2d72d2;
@@ -31,46 +91,22 @@
   --text-sec:    #3d5272;
   --text-muted:  #7a93b4;
 
-  /* Estado / alertas */
-  --green:       #059669;
-  --green-bg:    #d1fae5;
-  --amber:       #d97706;
-  --amber-bg:    #fef3c7;
-  --red:         #dc2626;
-  --red-bg:      #fee2e2;
-
-  /* Sombras */
-  --shadow-sm:   0 1px 3px rgba(10, 40, 90, 0.08);
-  --shadow-md:   0 4px 16px rgba(10, 40, 90, 0.10);
-  --shadow-lg:   0 12px 40px rgba(10, 40, 90, 0.14);
-
-  /* Tipografía */
-  --font-head:   'Outfit', sans-serif;
-  --font-body:   'Inter', sans-serif;
-
-  /* Transiciones */
-  --t:           all 0.22s ease;
-  --t-fast:      all 0.12s ease;
-
-  /* Radios */
-  --r-sm:  6px;
-  --r-md:  10px;
-  --r-lg:  16px;
-  --r-xl:  22px;
+  /* Fondo Hero PUCEM */
+  --hero-bg:     linear-gradient(160deg, #003087 0%, #2d72d2 60%, #3b82f6 100%);
 }
 
-/* =====================================================
-   MODO PUCEM (Visibilidad condicional)
-   ===================================================== */
-
+/* Visibilidad condicional (General vs PUCEM) */
 .pucem-element { display: none !important; }
+.non-pucem-element { display: initial !important; }
+div.non-pucem-element, section.non-pucem-element, p.non-pucem-element, h1.non-pucem-element, article.non-pucem-element { display: block !important; }
+span.non-pucem-element { display: inline !important; }
+
+body.pucem-mode .non-pucem-element { display: none !important; }
 body.pucem-mode .pucem-element { display: initial !important; }
 body.pucem-mode div.pucem-element,
 body.pucem-mode section.pucem-element,
-body.pucem-mode li.pucem-element,
 body.pucem-mode article.pucem-element { display: block !important; }
-body.pucem-mode flex.pucem-element,
-body.pucem-mode div.pucem-element-flex { display: flex !important; }
+body.pucem-mode span.pucem-element { display: inline-block !important; }
 
 
 /* =====================================================
@@ -440,7 +476,7 @@ textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
    ===================================================== */
 
 .hero {
-  background: linear-gradient(160deg, var(--blue-dark) 0%, var(--blue-mid) 60%, var(--blue-light) 100%);
+  background: var(--hero-bg);
   padding: 5rem 2rem 4rem;
   text-align: center;
   color: #fff;

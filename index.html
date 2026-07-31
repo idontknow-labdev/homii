@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Homii x PUCEM — Arriendos Universitarios en Portoviejo</title>
-  <meta name="description" content="Plataforma oficial de arriendos verificados y búsqueda de compañeros de vivienda para la comunidad de la Pontificia Universidad Católica de Manabí, PUCEM.">
+  <title>Homii — Arriendos en Portoviejo</title>
+  <meta name="description" content="Plataforma de arriendos verificados y búsqueda de compañeros de vivienda en Portoviejo, Manabí.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -74,12 +74,22 @@
   <!-- Hero -->
   <div class="hero">
     <div class="hero-inner">
-      <div class="hero-label">Plataforma oficial — PUCEM Portoviejo</div>
-      <h1>Encuentra tu hogar cerca de la PUCEM</h1>
-      <p class="hero-desc">
+      <!-- Texto por defecto (Modo Neutro General) -->
+      <div class="hero-label non-pucem-element">Plataforma de Arriendos — Portoviejo, Manabí</div>
+      <h1 class="non-pucem-element">Encuentra tu próximo arriendo en Portoviejo</h1>
+      <p class="hero-desc non-pucem-element">
+        Departamentos, habitaciones y estudios verificados en Portoviejo.
+        Trato directo con propietarios o busca un compañero para compartir gastos de arriendo.
+      </p>
+
+      <!-- Texto exclusivo MODO PUCEM (Solo para usuarios con correo @pucem.edu.ec / @pucesm.edu.ec) -->
+      <div class="hero-label pucem-element">Plataforma oficial — PUCEM Portoviejo</div>
+      <h1 class="pucem-element">Encuentra tu hogar cerca de la PUCEM</h1>
+      <p class="hero-desc pucem-element">
         Arriendos verificados por inspección física y certificados por convenio con la
         Pontificia Universidad Católica de Manabí. Seguro, transparente y a minutos del campus.
       </p>
+
       <div class="hero-search">
         <input type="text" id="quick-search" placeholder="Busca por barrio, servicio o precio...">
         <button class="btn btn-primary" id="hero-search-btn">Buscar</button>
@@ -91,7 +101,8 @@
         </div>
         <div>
           <div class="hero-stat-num">3</div>
-          <div class="hero-stat-label">Certificados PUCEM</div>
+          <div class="hero-stat-label non-pucem-element">Verificados</div>
+          <div class="hero-stat-label pucem-element">Certificados PUCEM</div>
         </div>
         <div>
           <div class="hero-stat-num">6</div>
@@ -174,9 +185,17 @@
             <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
           <h4>Buscar Compañero</h4>
-          <p>Conecta con otros estudiantes de la PUCEM para compartir los gastos del arriendo y hacer más accesible la vivienda.</p>
+          <p class="non-pucem-element">Conecta con otros usuarios en Portoviejo para compartir los gastos del arriendo y reducir costos.</p>
+          <p class="pucem-element">Conecta con otros estudiantes de la PUCEM para compartir los gastos del arriendo y hacer más accesible la vivienda.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card non-pucem-element">
+          <div class="feature-card-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h4>Trato Directo</h4>
+          <p>Contacto transparente entre propietarios y arrendatarios en Portoviejo sin comisiones ocultas.</p>
+        </div>
+        <div class="feature-card pucem-element">
           <div class="feature-card-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
@@ -225,7 +244,7 @@
         </select>
       </div>
 
-      <div class="filter-block">
+      <div class="filter-block pucem-element">
         <div class="filter-block-title">Certificación</div>
         <label class="checkbox-label">
           <input type="checkbox" id="filter-certified">
@@ -234,7 +253,8 @@
       </div>
 
       <div class="filter-block">
-        <div class="filter-block-title">Distancia a PUCEM: <span id="filter-distance-val">10 km</span></div>
+        <div class="filter-block-title non-pucem-element">Distancia al centro: <span id="filter-distance-val">10 km</span></div>
+        <div class="filter-block-title pucem-element">Distancia a PUCEM: <span id="filter-distance-val">10 km</span></div>
         <input type="range" class="range-slider" id="filter-distance" min="0.1" max="10" step="0.1" value="10">
         <div class="range-labels"><span>0.1 km</span><span>10 km</span></div>
       </div>
@@ -1058,7 +1078,8 @@
   </button>
   <div class="support-win" id="support-win">
     <div class="support-head">
-      <h4><span class="online-dot"></span> Soporte Homii x PUCEM</h4>
+      <h4 class="non-pucem-element"><span class="online-dot"></span> Soporte Homii</h4>
+      <h4 class="pucem-element"><span class="online-dot"></span> Soporte Homii x PUCEM</h4>
       <button class="support-x" id="support-close">&#215;</button>
     </div>
     <div class="support-msgs"></div>
@@ -1080,10 +1101,9 @@
           <img src="logo.png" alt="Homii" style="height: 48px; margin-bottom: 0.5rem; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2)); background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 6px;">
         </div>
         <p class="footer-brand-p">
-          Plataforma de arriendos verificados y búsqueda de compañeros de vivienda para la
-          comunidad universitaria de Portoviejo y Manabí.
+          Plataforma de arriendos verificados y búsqueda de compañeros de vivienda en Portoviejo, Manabí.
         </p>
-        <div class="footer-pucem-chip">Convenio Oficial PUCEM</div>
+        <div class="footer-pucem-chip pucem-element">Convenio Oficial PUCEM</div>
       </div>
       <div>
         <div class="footer-col-title">Plataforma</div>
@@ -1095,7 +1115,7 @@
           <li><a onclick="navigate('terms')">Términos y Condiciones</a></li>
         </ul>
       </div>
-      <div>
+      <div class="pucem-element">
         <div class="footer-col-title">Comunidad PUCEM</div>
         <ul class="footer-links">
           <li><a href="https://www.pucem.edu.ec" target="_blank" rel="noopener">Sitio web PUCEM</a></li>
@@ -1115,8 +1135,10 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 Homii x PUCEM. Todos los derechos reservados.</span>
-      <span>Pontificia Universidad Católica de Manabí — Portoviejo, Ecuador</span>
+      <span class="non-pucem-element">© 2026 Homii — Arriendos en Portoviejo. Todos los derechos reservados.</span>
+      <span class="pucem-element">© 2026 Homii x PUCEM. Todos los derechos reservados.</span>
+      <span class="non-pucem-element">Portoviejo, Manabí, Ecuador</span>
+      <span class="pucem-element">Pontificia Universidad Católica de Manabí — Portoviejo, Ecuador</span>
     </div>
   </div>
 </footer>

@@ -98,13 +98,17 @@ body.pucem-mode {
 /* Visibilidad condicional (General vs PUCEM) */
 .pucem-element { display: none !important; }
 .non-pucem-element { display: initial !important; }
-div.non-pucem-element, section.non-pucem-element, p.non-pucem-element, h1.non-pucem-element, article.non-pucem-element { display: block !important; }
-span.non-pucem-element { display: inline !important; }
+div.non-pucem-element, section.non-pucem-element, p.non-pucem-element, h1.non-pucem-element, h2.non-pucem-element, h3.non-pucem-element, article.non-pucem-element { display: block !important; }
+span.non-pucem-element { display: inline-block !important; }
 
 body.pucem-mode .non-pucem-element { display: none !important; }
 body.pucem-mode .pucem-element { display: initial !important; }
 body.pucem-mode div.pucem-element,
 body.pucem-mode section.pucem-element,
+body.pucem-mode p.pucem-element,
+body.pucem-mode h1.pucem-element,
+body.pucem-mode h2.pucem-element,
+body.pucem-mode h3.pucem-element,
 body.pucem-mode article.pucem-element { display: block !important; }
 body.pucem-mode span.pucem-element { display: inline-block !important; }
 

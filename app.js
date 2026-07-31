@@ -280,8 +280,13 @@ function updateNavUI() {
     if (userEl)   userEl.style.display   = 'flex';
     if (nameEl)   nameEl.textContent     = displayName.split(' ')[0];
     if (avEl) {
-      avEl.textContent      = displayName.charAt(0).toUpperCase();
-      avEl.style.background = profile?.avatar_color || '#0f172a';
+      if (profile?.avatar_url) {
+        avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        avEl.style.background = 'transparent';
+      } else {
+        avEl.textContent      = displayName.charAt(0).toUpperCase();
+        avEl.style.background = profile?.avatar_color || '#1a56db';
+      }
       avEl.style.cursor     = 'pointer';
       avEl.title            = 'Ver mi perfil';
       avEl.onclick          = () => navigate('profile');
@@ -1148,14 +1153,28 @@ async function renderProfileView() {
   const s = id => document.getElementById(id);
 
   if (s('profile-avatar')) {
-    s('profile-avatar').textContent      = p.name.charAt(0).toUpperCase();
-    s('profile-avatar').style.background = p.avatar_color || '#1a56db';
+    if (p.avatar_url) {
+      s('profile-avatar').innerHTML = `<img src="${p.avatar_url}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      s('profile-avatar').style.background = 'transparent';
+    } else {
+      s('profile-avatar').textContent      = p.name.charAt(0).toUpperCase();
+      s('profile-avatar').style.background = p.avatar_color || '#1a56db';
+    }
   }
-  if (s('profile-name'))  s('profile-name').textContent  = p.name;
-  if (s('profile-email')) s('profile-email').textContent = CURRENT_USER.email;
-  if (s('profile-role'))  s('profile-role').textContent  = roleLabel(p.role);
-  if (s('profile-phone')) s('profile-phone').textContent = p.phone || 'No registrado';
-  if (s('profile-since')) s('profile-since').textContent = new Date(p.created_at).toLocaleDateString('es-EC', { year:'numeric', month:'long', day:'numeric' });
+
+  if (s('profile-name'))       s('profile-name').textContent       = p.name;
+  if (s('profile-email'))      s('profile-email').textContent      = CURRENT_USER.email;
+  if (s('profile-role'))       s('profile-role').textContent       = roleLabel(p.role);
+  if (s('profile-phone'))      s('profile-phone').textContent      = p.phone || 'No registrado';
+  if (s('profile-occupation')) s('profile-occupation').textContent = p.occupation || 'No especificada';
+  if (s('profile-bio'))        s('profile-bio').textContent        = p.bio || 'No ha añadido una descripción a su perfil todavía. Haga clic en "Editar Perfil" para agregar información sobre usted.';
+  if (s('profile-since'))      s('profile-since').textContent      = new Date(p.created_at || Date.now()).toLocaleDateString('es-EC', { year:'numeric', month:'long', day:'numeric' });
+
+  // Pre-llenar campos de edición
+  if (s('edit-name'))       s('edit-name').value       = p.name || '';
+  if (s('edit-phone'))      s('edit-phone').value      = p.phone || '';
+  if (s('edit-occupation')) s('edit-occupation').value = p.occupation || '';
+  if (s('edit-bio'))        s('edit-bio').value        = p.bio || '';
 
   // Mis propiedades (solo propietario)
   const propSection = s('profile-my-props');
@@ -1220,6 +1239,87 @@ async function renderProfileView() {
     }
   }
 }
+
+window.toggleEditProfileForm = function() {
+  const card = document.getElementById('edit-profile-card');
+  if (!card) return;
+  const isHidden = card.style.display === 'none';
+  card.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    card.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
+window.saveProfileChanges = async function(e) {
+  e.preventDefault();
+  if (!CURRENT_USER || !CURRENT_PROFILE) return;
+
+  const name       = document.getElementById('edit-name')?.value.trim();
+  const phone      = document.getElementById('edit-phone')?.value.trim();
+  const occupation = document.getElementById('edit-occupation')?.value.trim();
+  const bio        = document.getElementById('edit-bio')?.value.trim();
+  const btn        = document.getElementById('btn-save-profile');
+
+  if (!name) { alert('El nombre completo es obligatorio.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  const updates = {
+    name,
+    phone: phone || null,
+    occupation: occupation || null,
+    bio: bio || null,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await db.from('profiles').update(updates).eq('id', CURRENT_USER.id);
+  if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
+
+  if (error) {
+    alert('Error al actualizar perfil: ' + error.message);
+    return;
+  }
+
+  Object.assign(CURRENT_PROFILE, updates);
+  toggleEditProfileForm();
+  updateNavUI();
+  await renderProfileView();
+  addNotif('Perfil Actualizado', 'Su información personal fue guardada correctamente.');
+  alert('Perfil actualizado exitosamente.');
+};
+
+window.uploadProfileAvatar = async function(e) {
+  const file = e.target.files?.[0];
+  if (!file || !CURRENT_USER || !CURRENT_PROFILE) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const path = `avatars/${CURRENT_USER.id}_${Date.now()}.${ext}`;
+
+  let avatarUrl = null;
+  const { error: upErr } = await db.storage.from('homii-images').upload(path, file, { upsert: true });
+
+  if (!upErr) {
+    const { data: { publicUrl } } = db.storage.from('homii-images').getPublicUrl(path);
+    avatarUrl = publicUrl;
+  } else {
+    avatarUrl = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const { error: dbErr } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', CURRENT_USER.id);
+  if (dbErr) {
+    alert('No se pudo guardar la foto de perfil: ' + dbErr.message);
+    return;
+  }
+
+  CURRENT_PROFILE.avatar_url = avatarUrl;
+  updateNavUI();
+  await renderProfileView();
+  addNotif('Foto Actualizada', 'Su nueva foto de perfil ya es visible.');
+  alert('Foto de perfil actualizada exitosamente.');
+};
 
 async function loadInboxMessages(container) {
   const { data: chats } = await db.from('chats')

@@ -723,23 +723,83 @@
      PERFIL DE USUARIO
      =========================================================== -->
 <section class="view" id="profile-view">
-<div class="view-inner" style="max-width:800px; margin: 0 auto;">
+<div class="view-inner" style="max-width:820px; margin: 0 auto;">
   <div class="page-title">Mi Perfil</div>
-  <div class="page-subtitle">Información de su cuenta y publicaciones</div>
+  <div class="page-subtitle">Personalice su cuenta, gestione su foto de perfil e información personal</div>
 
   <div style="display:flex;flex-direction:column;gap:1.5rem;">
-    <!-- Tarjeta de usuario -->
-    <div class="panel-card" style="display:flex;align-items:center;gap:1.25rem;">
-      <div id="profile-avatar" class="user-avatar" style="width:64px;height:64px;font-size:1.6rem;font-weight:700;">U</div>
-      <div style="flex:1;">
-        <h3 id="profile-name" style="font-size:1.3rem;color:var(--blue-dark);margin-bottom:0.2rem;">Usuario</h3>
-        <p id="profile-email" style="font-size:0.85rem;color:var(--text-muted);"></p>
-        <div style="display:flex;gap:0.5rem;margin-top:0.4rem;flex-wrap:wrap;align-items:center;">
-          <span id="profile-role" class="badge badge-blue">Rol</span>
-          <span style="font-size:0.78rem;color:var(--text-sec);">Teléfono: <strong id="profile-phone" style="color:var(--text);">---</strong></span>
-          <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto;">Miembro desde: <span id="profile-since"></span></span>
+    <!-- Tarjeta de Perfil principal con Foto -->
+    <div class="panel-card" style="display:flex;flex-direction:column;gap:1.25rem;">
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+        <!-- Avatar y botón de cambiar foto -->
+        <div style="position:relative;display:inline-block;">
+          <div id="profile-avatar" class="user-avatar" style="width:84px;height:84px;font-size:2rem;font-weight:700;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:3px solid var(--border-blue);box-shadow:var(--shadow-sm);">
+            U
+          </div>
+          <label for="avatar-file-input" style="position:absolute;bottom:0;right:-4px;background:var(--blue);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.2);" title="Cambiar foto de perfil">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </label>
+          <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="uploadProfileAvatar(event)">
         </div>
+
+        <div style="flex:1;min-width:220px;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <h3 id="profile-name" style="font-size:1.4rem;color:var(--text);font-weight:700;">Usuario</h3>
+            <span id="profile-role" class="badge badge-blue">Rol</span>
+          </div>
+          <p id="profile-email" style="font-size:0.85rem;color:var(--text-muted);margin-top:0.15rem;"></p>
+          <div id="profile-occupation-display" style="font-size:0.82rem;color:var(--text-sec);margin-top:0.25rem;font-weight:500;">
+            Ocupación / Carrera: <span id="profile-occupation" style="color:var(--text);font-weight:600;">No especificada</span>
+          </div>
+          <div style="display:flex;gap:1rem;margin-top:0.4rem;flex-wrap:wrap;font-size:0.78rem;color:var(--text-sec);">
+            <span>Teléfono: <strong id="profile-phone" style="color:var(--text);">---</strong></span>
+            <span>Miembro desde: <span id="profile-since"></span></span>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary btn-sm" onclick="toggleEditProfileForm()" style="margin-left:auto;">
+          ✏️ Editar Perfil
+        </button>
       </div>
+
+      <!-- Biografía / Descripción personal -->
+      <div style="background:var(--bg-section);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;margin-top:0.25rem;">
+        <div style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.35rem;">
+          Sobre mí / Descripción personal
+        </div>
+        <p id="profile-bio" style="font-size:0.88rem;color:var(--text-sec);line-height:1.6;font-style:italic;">
+          No ha añadido una descripción a su perfil todavía. Haga clic en "Editar Perfil" para agregar información sobre usted.
+        </p>
+      </div>
+    </div>
+
+    <!-- Formulario para Editar Perfil (Oculto por defecto) -->
+    <div class="panel-card" id="edit-profile-card" style="display:none;border:2px solid var(--border-blue);">
+      <div class="panel-card-title">Personalizar Información de Mi Perfil</div>
+      <form id="edit-profile-form" style="display:flex;flex-direction:column;gap:1rem;" onsubmit="saveProfileChanges(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre completo *</label>
+            <input type="text" class="form-input" id="edit-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono de contacto</label>
+            <input type="tel" class="form-input" id="edit-phone" placeholder="Ej. 0991234567">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ocupación / Carrera universitaria</label>
+          <input type="text" class="form-input" id="edit-occupation" placeholder="Ej. Estudiante de Odontología — 3er año / Ingeniero Civil">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción personal / Biografía</label>
+          <textarea class="form-textarea" id="edit-bio" rows="3" placeholder="Escriba una breve presentación personal, pasatiempos o preferencias de convivencia..."></textarea>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="toggleEditProfileForm()">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-save-profile">Guardar Cambios</button>
+        </div>
+      </form>
     </div>
 
     <!-- Mis Propiedades (solo propietario) -->

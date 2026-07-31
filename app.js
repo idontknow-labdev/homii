@@ -527,6 +527,12 @@ function renderListingsGrid(list) {
     const stars = '★'.repeat(Math.round(p.property_rating || 4)) + '☆'.repeat(5 - Math.round(p.property_rating || 4));
     const reviews = parseJSON(p.reviews, []);
 
+    const certBadge = p.university_certified
+      ? (p.certification_type === 'pucem'
+          ? '<span class="badge badge-pucem">Cert. PUCEM</span>'
+          : '<span class="badge badge-green">Certificado Homii</span>')
+      : '';
+
     return `
     <article class="prop-card ${p.featured ? 'featured' : ''}" onclick="openPropertyModal('${p.id}')">
       <div class="prop-img">
@@ -538,7 +544,7 @@ function renderListingsGrid(list) {
         </div>
         <div class="prop-badges-top">
           ${p.is_demo ? '<span class="badge badge-amber">Ejemplo</span>' : ''}
-          ${p.university_certified ? '<span class="badge badge-pucem">Cert. PUCEM</span>' : ''}
+          ${certBadge}
         </div>
         ${p.featured ? `<div class="prop-featured-tag">Destacado</div>` : ''}
       </div>
@@ -552,7 +558,8 @@ function renderListingsGrid(list) {
         <div class="prop-specs">
           <span>${p.rooms} hab.</span>
           <span>${p.bathrooms} baño</span>
-          <span>${p.distance_to_campus} km PUCEM</span>
+          <span class="pucem-element">${p.distance_to_campus} km PUCEM</span>
+          <span class="non-pucem-element">${p.distance_to_campus} km al centro</span>
         </div>` : ''}
         <div class="prop-amenities">
           ${(p.amenities || []).slice(0, 3).map(a => `<span class="amenity-tag">${capitalize(a)}</span>`).join('')}
@@ -587,14 +594,20 @@ async function openPropertyModal(id) {
     : `$${p.price}<span>/mes</span>`;
   document.getElementById('detail-rooms').textContent    = `${p.rooms} Habitación(es)`;
   document.getElementById('detail-baths').textContent    = `${p.bathrooms} Baño(s)`;
-  document.getElementById('detail-distance').textContent = `${p.distance_to_campus} km a PUCEM`;
+  document.getElementById('detail-distance').textContent = `${p.distance_to_campus} km`;
   document.getElementById('detail-desc').textContent     = p.description;
 
   const badgesRow = document.getElementById('detail-badges');
   if (badgesRow) {
     badgesRow.innerHTML = '';
     if (p.is_demo) badgesRow.innerHTML += `<span class="badge badge-amber">Anuncio de Ejemplo</span> `;
-    if (p.university_certified) badgesRow.innerHTML += `<span class="badge badge-pucem">Certificado PUCEM</span> `;
+    if (p.university_certified) {
+      if (p.certification_type === 'pucem') {
+        badgesRow.innerHTML += `<span class="badge badge-pucem">Certificado PUCEM</span> `;
+      } else {
+        badgesRow.innerHTML += `<span class="badge badge-green">Certificado Homii</span> `;
+      }
+    }
     if (p.featured) badgesRow.innerHTML += `<span class="badge badge-blue">Destacado</span>`;
   }
 
@@ -784,7 +797,14 @@ async function setupDirectChat(p) {
 
   const doSend = async (text) => {
     text = (text || '').trim();
-    if (!text || !p.landlord_id) return;
+    const targetLandlordId = p.landlord_id || p.user_id;
+
+    if (!text) return;
+    if (!targetLandlordId) {
+      alert('Este anuncio no tiene un propietario registrado para recibir mensajes.');
+      return;
+    }
+
     if (input) input.value = '';
 
     // Añadir burbuja local inmediatamente (optimistic)
@@ -794,15 +814,21 @@ async function setupDirectChat(p) {
     msgs.appendChild(bubble);
     msgs.scrollTop = msgs.scrollHeight;
 
-    await db.from('chats').insert({
+    const { error: chatErr } = await db.from('chats').insert({
       chat_id: chatId,
       property_id: p.id,
       property_title: p.title,
       sender_id: CURRENT_USER.id,
       sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-      receiver_id: p.landlord_id,
+      receiver_id: targetLandlordId,
       message: text
     });
+
+    if (chatErr) {
+      alert('Error al enviar mensaje: ' + chatErr.message);
+      console.error('Error enviando chat:', chatErr);
+      bubble.style.opacity = '0.5';
+    }
   };
 
   newSend.addEventListener('click', () => doSend(input?.value));
@@ -1396,7 +1422,8 @@ function setupPublishForm() {
     const mp = document.getElementById('maps-preview'); if (mp) mp.style.display = 'none';
     addNotif('Propiedad Publicada', `"${title}" ya es visible en el buscador.`);
     renderLandlordPanel();
-    alert('Propiedad publicada exitosamente. Ya aparece en el buscador.');
+    filterListings();
+    alert('Propiedad publicada exitosamente. Ya aparece en el buscador de arriendos.');
   });
 }
 
@@ -1432,7 +1459,7 @@ function updateMapsPreview() {
 }
 
 // ============================================================
-// PORTAL UNIVERSITARIO
+// PORTAL UNIVERSITARIO / ADMINISTRACIÓN
 // ============================================================
 
 async function renderUniPanel() {
@@ -1462,33 +1489,45 @@ async function renderUniPanel() {
 }
 
 window.certifyProp = async function(id) {
+  const email = (CURRENT_USER?.email || '').toLowerCase();
+  const isPucemAdmin = email.includes('@pucem.edu.ec') || email.includes('@pucesm.edu.ec');
+  const certType = isPucemAdmin ? 'pucem' : 'standard';
+
   const report = {
     inspectionDate: new Date().toISOString().split('T')[0],
+    certifiedBy: CURRENT_PROFILE?.name || CURRENT_USER?.email,
+    certificationType: isPucemAdmin ? 'Certificación Oficial PUCEM' : 'Verificación Estándar Homii',
     standards: {
       waterPressure: 'Aprobado — Buena presión (42 PSI)',
       internetSpeed: 'Aprobado — Fibra Óptica 300 Mbps',
       fireSafety:    'Aprobado — Certificado contra incendios',
-      structure:     'Aprobado — Inspector civil'
+      structure:     'Aprobado — Inspector técnico'
     }
   };
 
   const { data, error } = await db.from('properties')
-    .update({ university_certified: true, verification_report: report })
+    .update({
+      university_certified: true,
+      certification_type: certType,
+      verification_report: report
+    })
     .eq('id', id)
     .select();
 
   if (error) {
-    alert('Error al certificar la propiedad: ' + error.message + '\n\nAsegúrese de ejecutar el script SQL de actualización de políticas RLS en Supabase.');
+    alert('Error al certificar la propiedad: ' + error.message);
     console.error('Certify error:', error);
     return;
   }
 
   if (data && data.length > 0) {
-    addNotif('Inmueble Certificado', `"${data[0].title}" ahora tiene la certificación oficial.`);
+    const badgeName = isPucemAdmin ? 'Certificado PUCEM' : 'Certificado Homii';
+    addNotif('Inmueble Certificado', `"${data[0].title}" ha recibido la marca ${badgeName}.`);
     await renderUniPanel();
-    alert('Certificación otorgada exitosamente.');
+    filterListings();
+    alert(`Propiedad certificada exitosamente como: ${badgeName}`);
   } else {
-    alert('No se pudo certificar la propiedad. Esto ocurre cuando la política RLS en Supabase bloquea la edición por parte de administradores. Por favor ejecute la sentencia SQL proporcionada.');
+    alert('No se pudo certificar la propiedad. Asegúrese de haber ejecutado la política RLS en Supabase.');
   }
 };
 

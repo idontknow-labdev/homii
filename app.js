@@ -679,39 +679,48 @@ async function openPropertyModal(id) {
       : `<p style="font-size:0.83rem;color:var(--text-muted);font-style:italic;">Sin reseñas todavía.</p>`;
   }
 
-  const landlordAv = document.getElementById('detail-landlord-av');
+  const landlordAv     = document.getElementById('detail-landlord-av');
   const landlordNameEl = document.getElementById('detail-landlord-name');
+  const targetUid      = p.landlord_id || 'demo_landlord';
+  const targetName     = p.landlord_name || 'Propietario Homii';
 
   if (landlordAv) {
-    if (p.landlord_id) {
-      landlordAv.style.cursor = 'pointer';
-      landlordAv.title = 'Ver perfil público';
-      landlordAv.onclick = () => { closePropertyModal(); openPublicProfile(p.landlord_id); };
-      
-      // Buscar avatar_url del propietario
+    landlordAv.style.cursor = 'pointer';
+    landlordAv.title = 'Ver perfil público de ' + targetName;
+    landlordAv.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      closePropertyModal();
+      openPublicProfile(targetUid, targetName, 'landlord');
+    };
+
+    if (isValidUUID(p.landlord_id)) {
       db.from('profiles').select('avatar_url, name').eq('id', p.landlord_id).maybeSingle().then(({ data: lProfile }) => {
         if (lProfile?.avatar_url) {
           landlordAv.innerHTML = `<img src="${lProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
           landlordAv.style.background = 'transparent';
         } else {
-          landlordAv.textContent = (p.landlord_name || 'P').charAt(0);
+          landlordAv.textContent = (targetName).charAt(0).toUpperCase();
           landlordAv.style.background = '#1a56db';
         }
       });
     } else {
-      landlordAv.textContent = (p.landlord_name || 'P').charAt(0);
+      landlordAv.textContent = (targetName).charAt(0).toUpperCase();
       landlordAv.style.background = '#1a56db';
     }
   }
 
   if (landlordNameEl) {
-    landlordNameEl.textContent = p.landlord_name || 'Propietario';
-    if (p.landlord_id) {
-      landlordNameEl.style.cursor = 'pointer';
-      landlordNameEl.style.textDecoration = 'underline';
-      landlordNameEl.style.color = 'var(--blue)';
-      landlordNameEl.onclick = () => { closePropertyModal(); openPublicProfile(p.landlord_id); };
-    }
+    landlordNameEl.textContent = targetName;
+    landlordNameEl.style.cursor = 'pointer';
+    landlordNameEl.style.textDecoration = 'underline';
+    landlordNameEl.style.color = 'var(--blue)';
+    landlordNameEl.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      closePropertyModal();
+      openPublicProfile(targetUid, targetName, 'landlord');
+    };
   }
   document.getElementById('detail-landlord-rating').textContent = 'Calificación: ' + (p.landlord_rating || 5.0) + ' / 5.0';
 
@@ -1867,14 +1876,6 @@ function isValidUUID(str) {
 // ============================================================
 
 window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
-  // Si es el propio usuario logueado, ir a su perfil personal
-  if (CURRENT_USER && userId && CURRENT_USER.id === userId) {
-    closePropertyModal();
-    closeRoomieModal();
-    navigate('profile');
-    return;
-  }
-
   const s = id => document.getElementById(id);
   const modal = s('public-profile-modal');
   if (!modal) return;

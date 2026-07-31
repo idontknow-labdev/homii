@@ -689,20 +689,21 @@
 <section class="view" id="terms-view">
 <div class="view-inner" style="max-width:800px; margin: 0 auto;">
   <div class="page-title">Términos y Condiciones de Uso</div>
-  <div class="page-subtitle">Homii x PUCEM</div>
+  <div class="page-subtitle non-pucem-element">Homii — Plataforma de Arriendos</div>
+  <div class="page-subtitle pucem-element">Homii x PUCEM</div>
   
   <div style="font-size:0.875rem; color:var(--text-sec); line-height:1.7; display:flex; flex-direction:column; gap:1.25rem;">
     <p><strong>1. Aceptación de los Términos</strong><br>
-    Al acceder y utilizar la plataforma Homii x PUCEM, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de los términos, no podrá utilizar nuestros servicios.</p>
+    Al acceder y utilizar la plataforma Homii, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de los términos, no podrá utilizar nuestros servicios.</p>
     
     <p><strong>2. Uso de la Plataforma</strong><br>
-    Homii actúa como intermediario para conectar a propietarios de inmuebles, estudiantes y personal administrativo de la Pontificia Universidad Católica de Manabí (PUCEM). No somos propietarios ni administradores de los inmuebles listados.</p>
+    Homii actúa como intermediario para conectar a propietarios de inmuebles, arrendatarios y estudiantes en Portoviejo. No somos propietarios ni administradores de los inmuebles listados.</p>
     
     <p><strong>3. Veracidad de la Información</strong><br>
-    Los usuarios (propietarios y arrendatarios) son responsables de la exactitud de la información proporcionada. La certificación PUCEM es una verificación visual y técnica inicial, pero no exime al arrendatario de verificar el inmueble antes de firmar un contrato legal.</p>
+    Los usuarios (propietarios y arrendatarios) son responsables de la exactitud de la información proporcionada. La verificación es una revisión inicial visual y técnica, pero no exime al arrendatario de verificar el inmueble antes de firmar un contrato legal.</p>
 
     <p><strong>4. Responsabilidad Civil y Legal</strong><br>
-    Homii y la PUCEM no asumen ninguna responsabilidad civil, penal o administrativa por conflictos, daños, perjuicios o incumplimientos contractuales que surjan entre las partes (propietarios, arrendatarios y compañeros de vivienda). Todos los acuerdos financieros y legales se realizan directamente entre los usuarios involucrados.</p>
+    Homii no asume ninguna responsabilidad civil, penal o administrativa por conflictos, daños, perjuicios o incumplimientos contractuales que surjan entre las partes (propietarios, arrendatarios y compañeros de vivienda). Todos los acuerdos financieros y legales se realizan directamente entre los usuarios involucrados.</p>
 
     <p><strong>5. Privacidad y Datos Personales</strong><br>
     El tratamiento de datos personales se rige por nuestra Política de Privacidad, en cumplimiento con las leyes aplicables en la República del Ecuador. Su información será utilizada exclusivamente para el funcionamiento de la plataforma.</p>
@@ -936,11 +937,11 @@
 
         <div style="background:var(--bg-section);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;">
           <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.55;">
-            Recuerde que este es un espacio de contacto entre estudiantes de la PUCEM. Sea respetuoso y cordial. Homii no garantiza la disponibilidad de los perfiles, le recomendamos confirmar directamente con la persona.
+            Recuerde que este es un espacio de contacto directo entre usuarios y personas interesadas en compartir arriendo en Portoviejo. Sea respetuoso y cordial.
           </div>
         </div>
 
-        <button class="btn btn-primary" onclick="alert('Su solicitud de contacto fue enviada al estudiante.\n\nEn las próximas 24 horas recibirá una respuesta en el correo registrado.')">
+        <button class="btn btn-primary" onclick="alert('Su solicitud de contacto fue enviada.\n\nEn las próximas 24 horas recibirá una respuesta en el correo registrado.')">
           Enviar solicitud de contacto formal
         </button>
       </div>
@@ -980,7 +981,8 @@
     <div class="auth-head">
       <div>
         <h3>Acceso a su cuenta</h3>
-        <p>Homii x PUCEM — Portoviejo, Manabí</p>
+        <p class="non-pucem-element">Homii — Portoviejo, Manabí</p>
+        <p class="pucem-element">Homii x PUCEM — Portoviejo, Manabí</p>
       </div>
       <button class="modal-close-btn" id="auth-close">&#215;</button>
     </div>
@@ -988,7 +990,7 @@
     <!-- Panel login -->
     <div id="panel-login" class="auth-form" style="display:flex;">
       <div class="auth-note">
-        Ingrese su correo electrónico y contraseña para acceder. Si es administrador de la PUCEM o propietario registrado, utilice las credenciales que le fueron asignadas.
+        Ingrese su correo electrónico y contraseña para acceder a su cuenta de Homii.
       </div>
 
       <div id="login-error" class="form-error"></div>
@@ -1020,7 +1022,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Correo electronico *</label>
-          <input type="email" class="form-input" id="reg-email" placeholder="nombre@pucem.edu.ec" required autocomplete="email">
+          <input type="email" class="form-input" id="reg-email" placeholder="su@correo.com" required autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label">Contraseña *</label>

@@ -163,9 +163,12 @@ async function doLogin() {
 
   if (error) {
     let msg = 'Correo electrónico o contraseña incorrectos.';
-    if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
-      msg = 'Debe confirmar su correo electrónico para acceder (o desactive la confirmación en Supabase).';
-    } else if (error.message && !error.message.toLowerCase().includes('invalid login credentials')) {
+    const errStr = (error.message || '').toLowerCase();
+    if (errStr.includes('email not confirmed')) {
+      msg = 'Debe confirmar su correo antes de acceder (o desactive "Confirm email" en Supabase Dashboard).';
+    } else if (errStr.includes('rate limit')) {
+      msg = 'Se ha superado el límite de peticiones de Supabase. Espere unos minutos e intente de nuevo.';
+    } else if (error.message && !errStr.includes('invalid login credentials')) {
       msg = error.message;
     }
     showAuthError('login-error', msg);
@@ -205,8 +208,11 @@ async function doRegister() {
 
   if (error) {
     let msg = 'No se pudo crear la cuenta.';
-    if (error.message.toLowerCase().includes('already')) {
-      msg = 'Este correo ya está registrado. Inicie sesión con su contraseña.';
+    const errStr = (error.message || '').toLowerCase();
+    if (errStr.includes('already') || errStr.includes('registered')) {
+      msg = 'Este correo ya está registrado. Por favor inicie sesión con su contraseña.';
+    } else if (errStr.includes('rate limit')) {
+      msg = 'Supabase ha pausado temporalmente el envío de correos por límite de peticiones (Email rate limit exceeded). Por favor espere unos minutos antes de intentar de nuevo o inicie sesión si ya creó la cuenta.';
     } else if (error.message) {
       msg = error.message;
     }

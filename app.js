@@ -584,9 +584,11 @@ function renderListingsGrid(list) {
         <div class="prop-amenities">
           ${(p.amenities || []).slice(0, 3).map(a => `<span class="amenity-tag">${capitalize(a)}</span>`).join('')}
         </div>
-        <div class="prop-footer">
+        <div class="prop-footer" style="margin-top:0.4rem;padding-top:0.4rem;border-top:1px dashed var(--border);">
           <div class="prop-rating"><span class="rating-stars">${stars}</span> ${p.property_rating || 4.5}</div>
-          ${p.is_demo ? '<span class="badge badge-amber" style="font-size:0.68rem;">Solo demostración</span>' : ''}
+          <div style="font-size:0.78rem;color:var(--blue);font-weight:600;cursor:pointer;text-decoration:underline;display:flex;align-items:center;gap:0.25rem;" onclick="event.stopPropagation();openPublicProfile('${p.landlord_id || 'demo'}', '${escAttr(p.landlord_name || 'Propietario')}', 'landlord')" title="Ver perfil del propietario">
+            👤 ${p.landlord_name || 'Propietario'}
+          </div>
         </div>
       </div>
     </article>`;
@@ -1857,11 +1859,9 @@ window.filterRoomies         = filterRoomies;
 // PERFIL PÚBLICO DE OTRO USUARIO / PROPIETARIO
 // ============================================================
 
-window.openPublicProfile = async function(userId) {
-  if (!userId) return;
-
+window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   // Si es el propio usuario logueado, ir a su perfil personal
-  if (CURRENT_USER && CURRENT_USER.id === userId) {
+  if (CURRENT_USER && userId && CURRENT_USER.id === userId) {
     closePropertyModal();
     closeRoomieModal();
     navigate('profile');
@@ -1872,34 +1872,42 @@ window.openPublicProfile = async function(userId) {
   const modal = s('public-profile-modal');
   if (!modal) return;
 
-  // Cargar perfil desde BD (o fallback local)
-  let { data: profile } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
+  let profile = null;
 
-  // Si no se encuentra fila en BD, usar datos generales de fallback
+  if (userId && !userId.startsWith('demo')) {
+    try {
+      const { data: dbProfile } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
+      profile = dbProfile;
+    } catch(e) {}
+  }
+
   if (!profile) {
+    const roleStr = fallbackRole || 'landlord';
     profile = {
-      name: 'Usuario Registrado',
-      role: 'student',
+      name: fallbackName || 'Usuario Registrado',
+      role: roleStr,
       phone: null,
-      occupation: null,
-      bio: null,
+      occupation: roleStr === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario',
+      bio: 'Perfil activo y verificado en la plataforma Homii Portoviejo.',
       avatar_color: '#1a56db'
     };
   }
 
   // Cargar foto local si existe en almacenamiento local
-  const localAvatar = localStorage.getItem('homii_avatar_' + userId);
-  if (localAvatar && !profile.avatar_url) profile.avatar_url = localAvatar;
+  if (userId) {
+    const localAvatar = localStorage.getItem('homii_avatar_' + userId);
+    if (localAvatar && !profile.avatar_url) profile.avatar_url = localAvatar;
 
-  const localExtraStr = localStorage.getItem('homii_extra_' + userId);
-  if (localExtraStr) {
-    try {
-      const localExtra = JSON.parse(localExtraStr);
-      if (localExtra.bio && !profile.bio) profile.bio = localExtra.bio;
-      if (localExtra.occupation && !profile.occupation) profile.occupation = localExtra.occupation;
-      if (localExtra.phone && !profile.phone) profile.phone = localExtra.phone;
-      if (localExtra.name) profile.name = localExtra.name;
-    } catch(e) {}
+    const localExtraStr = localStorage.getItem('homii_extra_' + userId);
+    if (localExtraStr) {
+      try {
+        const localExtra = JSON.parse(localExtraStr);
+        if (localExtra.bio && !profile.bio) profile.bio = localExtra.bio;
+        if (localExtra.occupation && !profile.occupation) profile.occupation = localExtra.occupation;
+        if (localExtra.phone && !profile.phone) profile.phone = localExtra.phone;
+        if (localExtra.name) profile.name = localExtra.name;
+      } catch(e) {}
+    }
   }
 
   // Renderizar avatar

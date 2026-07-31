@@ -186,7 +186,8 @@ async function doRegister() {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-password').value;
-  const role  = document.getElementById('reg-role').value;
+  let role  = document.getElementById('reg-role')?.value || 'student';
+  if (role !== 'landlord' && role !== 'student') role = 'student';
   const phone = document.getElementById('reg-phone').value.trim();
   const terms = document.getElementById('reg-terms')?.checked;
   const btn   = document.querySelector('#register-form button[type=submit]');
@@ -198,11 +199,24 @@ async function doRegister() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  const { data, error } = await db.auth.signUp({
+  // Intento 1: Registrar nuevo usuario
+  let { data, error } = await db.auth.signUp({
     email,
     password: pass,
     options: { data: { name, role } }
   });
+
+  // Si Supabase responde con rate limit o correo ya existente, intentamos iniciar sesión de forma transparente
+  if (error) {
+    const errStr = (error.message || '').toLowerCase();
+    if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('rate limit')) {
+      const { data: loginData, error: loginError } = await db.auth.signInWithPassword({ email, password: pass });
+      if (!loginError && loginData?.user) {
+        data = loginData;
+        error = null;
+      }
+    }
+  }
 
   if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
 
@@ -210,9 +224,9 @@ async function doRegister() {
     let msg = 'No se pudo crear la cuenta.';
     const errStr = (error.message || '').toLowerCase();
     if (errStr.includes('already') || errStr.includes('registered')) {
-      msg = 'Este correo ya está registrado. Por favor inicie sesión con su contraseña.';
+      msg = 'Este correo ya está registrado. Por favor ingrese a "Iniciar sesión" con su contraseña.';
     } else if (errStr.includes('rate limit')) {
-      msg = 'Supabase ha pausado temporalmente el envío de correos por límite de peticiones (Email rate limit exceeded). Por favor espere unos minutos antes de intentar de nuevo o inicie sesión si ya creó la cuenta.';
+      msg = 'Supabase ha alcanzado el límite de envío de correos (Email rate limit exceeded).\n\nPara quitar este límite en Supabase de forma definitiva:\n• Vaya a Supabase Dashboard → Authentication → Providers → Email y desactive la casilla "Confirm email".';
     } else if (error.message) {
       msg = error.message;
     }

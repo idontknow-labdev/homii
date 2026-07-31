@@ -1877,8 +1877,12 @@ function isValidUUID(str) {
 
 window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   const s = id => document.getElementById(id);
-  const modal = s('public-profile-modal');
-  if (!modal) return;
+  const targetView = s('public-user-profile-view');
+
+  // Cerrar cualquier modal abierto para que la navegación a la vista completa sea limpia
+  closePropertyModal();
+  closeRoomieModal();
+  closeConversationModal();
 
   let profile = null;
   const validUid = isValidUUID(userId);
@@ -1919,8 +1923,8 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     }
   }
 
-  // Renderizar avatar
-  const avEl = s('pub-profile-avatar');
+  // Renderizar datos en la vista completa
+  const avEl = s('pub-view-avatar');
   if (avEl) {
     if (profile.avatar_url) {
       avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
@@ -1931,17 +1935,17 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     }
   }
 
-  if (s('pub-profile-name'))       s('pub-profile-name').textContent       = profile.name || 'Usuario';
-  if (s('pub-profile-role'))       s('pub-profile-role').textContent       = roleLabel(profile.role);
-  if (s('pub-profile-occupation')) s('pub-profile-occupation').textContent = profile.occupation || 'Ocupación no especificada';
-  if (s('pub-profile-phone'))      s('pub-profile-phone').textContent      = profile.phone || 'No disponible';
-  if (s('pub-profile-email'))      s('pub-profile-email').textContent      = profile.email || 'Contacto directo vía Homii Chat';
-  if (s('pub-profile-bio'))        s('pub-profile-bio').textContent        = profile.bio || 'El usuario no ha publicado una biografía personal todavía.';
+  if (s('pub-view-name'))       s('pub-view-name').textContent       = profile.name || 'Usuario';
+  if (s('pub-view-role'))       s('pub-view-role').textContent       = roleLabel(profile.role);
+  if (s('pub-view-occupation')) s('pub-view-occupation').textContent = profile.occupation || (profile.role === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario');
+  if (s('pub-view-phone'))      s('pub-view-phone').textContent      = profile.phone || 'No especificado';
+  if (s('pub-view-email'))      s('pub-view-email').textContent      = profile.email || 'Contacto directo vía Homii Chat';
+  if (s('pub-view-bio'))        s('pub-view-bio').textContent        = profile.bio || 'El usuario no ha publicado una biografía personal todavía.';
 
   // Cargar propiedades publicadas únicamente si es un UUID válido
-  const propsSec   = s('pub-profile-props-section');
-  const propsList  = s('pub-profile-props-list');
-  const propsCount = s('pub-props-count');
+  const propsSec   = s('pub-view-props-section');
+  const propsList  = s('pub-view-props-list');
+  const propsCount = s('pub-view-props-count');
 
   let userProps = [];
   if (validUid) {
@@ -1956,15 +1960,14 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     if (propsCount) propsCount.textContent = userProps.length;
     if (propsList) {
       propsList.innerHTML = userProps.map(p => `
-        <div class="prop-row" style="cursor:pointer;" onclick="closePublicProfileModal();openPropertyModal('${p.id}')">
-          <div class="prop-row-img">
-            ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${p.title}">` : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`}
+        <div class="prop-card" style="cursor:pointer;" onclick="openPropertyModal('${p.id}')">
+          <div class="prop-img" style="height:150px;">
+            ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${p.title}">` : `<div class="prop-img-placeholder"><svg viewBox="0 0 24 24" width="30" height="30" stroke-width="1.2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>`}
           </div>
-          <div style="flex:1;min-width:0;margin-left:0.85rem;">
-            <div style="font-weight:600;font-size:0.88rem;color:var(--text);">${p.title}</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);">$${p.price}/mes &middot; ${(p.location || '').split(',')[0]}</div>
+          <div class="prop-body" style="padding:0.85rem;">
+            <div style="font-weight:600;font-size:0.9rem;color:var(--text);margin-bottom:0.25rem;">${p.title}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">$${p.price}/mes &middot; ${(p.location || '').split(',')[0]}</div>
           </div>
-          <span class="badge badge-blue">Ver anuncio</span>
         </div>`).join('');
     }
   } else {
@@ -1972,8 +1975,8 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   }
 
   // Cargar perfil roomie únicamente si es un UUID válido
-  const roomieSec  = s('pub-profile-roomie-section');
-  const roomieCard = s('pub-profile-roomie-card');
+  const roomieSec  = s('pub-view-roomie-section');
+  const roomieCard = s('pub-view-roomie-card');
   let userRoomie   = null;
 
   if (validUid) {
@@ -1987,21 +1990,25 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     if (roomieSec)  roomieSec.style.display = 'block';
     if (roomieCard) {
       roomieCard.innerHTML = `
-        <div class="prop-row" style="cursor:pointer;" onclick="closePublicProfileModal();openRoomieModal('${userRoomie.id}')">
-          <div class="roomie-av" style="background:${userRoomie.avatar_color};width:40px;height:40px;">${userRoomie.name.charAt(0)}</div>
+        <div class="prop-row" style="cursor:pointer;" onclick="openRoomieModal('${userRoomie.id}')">
+          <div class="roomie-av" style="background:${userRoomie.avatar_color};width:44px;height:44px;">${userRoomie.name.charAt(0)}</div>
           <div style="flex:1;min-width:0;margin-left:0.85rem;">
-            <div style="font-weight:600;font-size:0.88rem;">${userRoomie.name}</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);">${userRoomie.career} &middot; $${userRoomie.budget}/mes</div>
+            <div style="font-weight:600;font-size:0.9rem;">${userRoomie.name}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">${userRoomie.career} &middot; $${userRoomie.budget}/mes</div>
           </div>
-          <span class="badge badge-blue">Ver perfil roomie</span>
+          <span class="badge badge-blue">Ver publicación roomie</span>
         </div>`;
     }
   } else {
     if (roomieSec) roomieSec.style.display = 'none';
   }
 
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  // Cambiar vista activa a la sección de perfil público del usuario
+  if (targetView) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    targetView.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 };
 
 window.closePublicProfileModal = function() {

@@ -821,6 +821,67 @@
 </div>
 </section>
 
+<!-- ===========================================================
+     VISTA DE PERFIL DE OTRO USUARIO / PROPIETARIO
+     =========================================================== -->
+<section class="view" id="public-user-profile-view">
+<div class="view-inner" style="max-width:850px; margin: 0 auto;">
+  
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+    <button class="btn btn-outline btn-sm" onclick="navigate('search')" style="display:flex;align-items:center;gap:0.35rem;">
+      &larr; Volver a Buscar
+    </button>
+    <span class="badge badge-blue" id="pub-view-role">Perfil de Usuario</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    
+    <!-- Tarjeta Principal de Perfil -->
+    <div class="panel-card" style="display:flex;flex-direction:column;gap:1.25rem;background:var(--bg-white);border:1px solid var(--border);border-radius:var(--r-xl);padding:1.75rem;">
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+        <div id="pub-view-avatar" class="user-avatar" style="width:88px;height:88px;font-size:2.2rem;font-weight:700;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:3px solid var(--border-blue);box-shadow:var(--shadow-sm);flex-shrink:0;">
+          U
+        </div>
+
+        <div style="flex:1;min-width:220px;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <h2 id="pub-view-name" style="font-size:1.6rem;color:var(--text);font-weight:700;">---</h2>
+          </div>
+          <div id="pub-view-occupation" style="font-size:0.9rem;color:var(--blue);margin-top:0.25rem;font-weight:600;">---</div>
+          <div style="display:flex;gap:1.25rem;margin-top:0.5rem;flex-wrap:wrap;font-size:0.83rem;color:var(--text-sec);">
+            <span>Teléfono: <strong id="pub-view-phone" style="color:var(--text);">---</strong></span>
+            <span>Contacto: <strong id="pub-view-email" style="color:var(--blue);">---</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biografía / Descripción personal -->
+      <div style="background:var(--bg-section);border:1px solid var(--border);border-radius:var(--r-md);padding:1.25rem;margin-top:0.5rem;">
+        <div style="font-size:0.78rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.4rem;">
+          Sobre este usuario
+        </div>
+        <p id="pub-view-bio" style="font-size:0.92rem;color:var(--text-sec);line-height:1.65;font-style:italic;">
+          El usuario no ha añadido una descripción a su perfil todavía.
+        </p>
+      </div>
+    </div>
+
+    <!-- Seccion Propiedades Publicadas (solo propietarios) -->
+    <div class="panel-card" id="pub-view-props-section" style="display:none;">
+      <div class="panel-card-title" style="font-size:1.1rem;margin-bottom:0.75rem;">Propiedades Publicadas (<span id="pub-view-props-count">0</span>)</div>
+      <div id="pub-view-props-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:1rem;"></div>
+    </div>
+
+    <!-- Seccion Perfil de Compañero (roomie) -->
+    <div class="panel-card" id="pub-view-roomie-section" style="display:none;">
+      <div class="panel-card-title" style="font-size:1.1rem;margin-bottom:0.75rem;">Publicación de Compañero de Vivienda</div>
+      <div id="pub-view-roomie-card"></div>
+    </div>
+
+  </div>
+</div>
+</section>
+
 </main>
 
 <!-- ===========================================================

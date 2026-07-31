@@ -675,8 +675,39 @@ async function openPropertyModal(id) {
   }
 
   const landlordAv = document.getElementById('detail-landlord-av');
-  if (landlordAv) { landlordAv.textContent = (p.landlord_name || 'P').charAt(0); landlordAv.style.background = '#1a56db'; }
-  document.getElementById('detail-landlord-name').textContent   = p.landlord_name || 'Propietario';
+  const landlordNameEl = document.getElementById('detail-landlord-name');
+
+  if (landlordAv) {
+    if (p.landlord_id) {
+      landlordAv.style.cursor = 'pointer';
+      landlordAv.title = 'Ver perfil público';
+      landlordAv.onclick = () => { closePropertyModal(); openPublicProfile(p.landlord_id); };
+      
+      // Buscar avatar_url del propietario
+      db.from('profiles').select('avatar_url, name').eq('id', p.landlord_id).maybeSingle().then(({ data: lProfile }) => {
+        if (lProfile?.avatar_url) {
+          landlordAv.innerHTML = `<img src="${lProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+          landlordAv.style.background = 'transparent';
+        } else {
+          landlordAv.textContent = (p.landlord_name || 'P').charAt(0);
+          landlordAv.style.background = '#1a56db';
+        }
+      });
+    } else {
+      landlordAv.textContent = (p.landlord_name || 'P').charAt(0);
+      landlordAv.style.background = '#1a56db';
+    }
+  }
+
+  if (landlordNameEl) {
+    landlordNameEl.textContent = p.landlord_name || 'Propietario';
+    if (p.landlord_id) {
+      landlordNameEl.style.cursor = 'pointer';
+      landlordNameEl.style.textDecoration = 'underline';
+      landlordNameEl.style.color = 'var(--blue)';
+      landlordNameEl.onclick = () => { closePropertyModal(); openPublicProfile(p.landlord_id); };
+    }
+  }
   document.getElementById('detail-landlord-rating').textContent = 'Calificación: ' + (p.landlord_rating || 5.0) + ' / 5.0';
 
   setupDirectChat(p);
@@ -992,12 +1023,15 @@ function renderRoomieGrid(list) {
   grid.innerHTML = list.map(r => {
     const typeLabel = r.type === 'tiene-lugar' ? 'Tiene lugar, busca compañero' : 'Busca lugar y compañero';
     const typeClass = r.type === 'tiene-lugar' ? 'type-tiene-lugar' : 'type-busca-lugar';
+    const userUid   = r.user_id || r.id;
     return `
     <div class="roomie-card" onclick="openRoomieModal('${r.id}')">
       <div class="roomie-card-header">
-        <div class="roomie-av" style="background:${r.avatar_color || '#1a56db'}">${r.name.charAt(0)}</div>
-        <div>
-          <div class="roomie-name">${r.name}</div>
+        <div class="roomie-av" onclick="event.stopPropagation();openPublicProfile('${userUid}')" style="background:${r.avatar_color || '#1a56db'};cursor:pointer;overflow:hidden;" title="Ver perfil de ${r.name}">
+          ${r.avatar_url ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : r.name.charAt(0)}
+        </div>
+        <div onclick="event.stopPropagation();openPublicProfile('${userUid}')" style="cursor:pointer;">
+          <div class="roomie-name" style="color:var(--blue);text-decoration:underline;">${r.name}</div>
           <div class="roomie-career">${r.career}</div>
         </div>
       </div>
@@ -1027,12 +1061,24 @@ async function openRoomieModal(id) {
 
   const typeLabel = r.type === 'tiene-lugar' ? 'Tiene lugar, busca compañero' : 'Busca lugar y compañero';
   const typeClass = r.type === 'tiene-lugar' ? 'type-tiene-lugar' : 'type-busca-lugar';
+  const userUid   = r.user_id || r.id;
 
   document.getElementById('rmodal-title').textContent  = r.name + ' — ' + r.career;
   document.getElementById('rmodal-career').textContent = r.career;
 
   const avEl = document.getElementById('rmodal-avatar');
-  if (avEl) { avEl.textContent = r.name.charAt(0); avEl.style.background = r.avatar_color || '#1a56db'; }
+  if (avEl) {
+    avEl.style.cursor = 'pointer';
+    avEl.title = 'Ver perfil público';
+    avEl.onclick = () => { closeRoomieModal(); openPublicProfile(userUid); };
+    if (r.avatar_url) {
+      avEl.innerHTML = `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`;
+      avEl.style.background = 'transparent';
+    } else {
+      avEl.textContent = r.name.charAt(0);
+      avEl.style.background = r.avatar_color || '#1a56db';
+    }
+  }
 
   const typeEl = document.getElementById('rmodal-type');
   if (typeEl) { typeEl.textContent = typeLabel; typeEl.className = 'roomie-type-tag ' + typeClass; }
@@ -1799,8 +1845,138 @@ window.closePropertyModal    = closePropertyModal;
 window.openRoomieModal       = openRoomieModal;
 window.closeRoomieModal      = closeRoomieModal;
 window.closeConversationModal = closeConversationModal;
+window.openPublicProfile     = openPublicProfile;
+window.closePublicProfileModal = closePublicProfileModal;
 window.openAuth              = openAuth;
 window.closeAuth             = closeAuth;
 window.logout                = logout;
 window.filterListings        = filterListings;
 window.filterRoomies         = filterRoomies;
+
+// ============================================================
+// PERFIL PÚBLICO DE OTRO USUARIO / PROPIETARIO
+// ============================================================
+
+window.openPublicProfile = async function(userId) {
+  if (!userId) return;
+
+  // Si es el propio usuario logueado, ir a su perfil personal
+  if (CURRENT_USER && CURRENT_USER.id === userId) {
+    closePropertyModal();
+    closeRoomieModal();
+    navigate('profile');
+    return;
+  }
+
+  const s = id => document.getElementById(id);
+  const modal = s('public-profile-modal');
+  if (!modal) return;
+
+  // Cargar perfil desde BD (o fallback local)
+  let { data: profile } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
+
+  // Si no se encuentra fila en BD, usar datos generales de fallback
+  if (!profile) {
+    profile = {
+      name: 'Usuario Registrado',
+      role: 'student',
+      phone: null,
+      occupation: null,
+      bio: null,
+      avatar_color: '#1a56db'
+    };
+  }
+
+  // Cargar foto local si existe en almacenamiento local
+  const localAvatar = localStorage.getItem('homii_avatar_' + userId);
+  if (localAvatar && !profile.avatar_url) profile.avatar_url = localAvatar;
+
+  const localExtraStr = localStorage.getItem('homii_extra_' + userId);
+  if (localExtraStr) {
+    try {
+      const localExtra = JSON.parse(localExtraStr);
+      if (localExtra.bio && !profile.bio) profile.bio = localExtra.bio;
+      if (localExtra.occupation && !profile.occupation) profile.occupation = localExtra.occupation;
+      if (localExtra.phone && !profile.phone) profile.phone = localExtra.phone;
+      if (localExtra.name) profile.name = localExtra.name;
+    } catch(e) {}
+  }
+
+  // Renderizar avatar
+  const avEl = s('pub-profile-avatar');
+  if (avEl) {
+    if (profile.avatar_url) {
+      avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      avEl.style.background = 'transparent';
+    } else {
+      avEl.textContent = (profile.name || 'U').charAt(0).toUpperCase();
+      avEl.style.background = profile.avatar_color || '#1a56db';
+    }
+  }
+
+  if (s('pub-profile-name'))       s('pub-profile-name').textContent       = profile.name || 'Usuario';
+  if (s('pub-profile-role'))       s('pub-profile-role').textContent       = roleLabel(profile.role);
+  if (s('pub-profile-occupation')) s('pub-profile-occupation').textContent = profile.occupation || 'Ocupación no especificada';
+  if (s('pub-profile-phone'))      s('pub-profile-phone').textContent      = profile.phone || 'No disponible';
+  if (s('pub-profile-email'))      s('pub-profile-email').textContent      = profile.email || 'Contacto directo vía Homii Chat';
+  if (s('pub-profile-bio'))        s('pub-profile-bio').textContent        = profile.bio || 'El usuario no ha publicado una biografía personal todavía.';
+
+  // Cargar propiedades publicadas si es propietario
+  const propsSec   = s('pub-profile-props-section');
+  const propsList  = s('pub-profile-props-list');
+  const propsCount = s('pub-props-count');
+  
+  const { data: userProps } = await db.from('properties').select('*').eq('landlord_id', userId);
+  
+  if (userProps && userProps.length > 0) {
+    if (propsSec)   propsSec.style.display = 'block';
+    if (propsCount) propsCount.textContent = userProps.length;
+    if (propsList) {
+      propsList.innerHTML = userProps.map(p => `
+        <div class="prop-row" style="cursor:pointer;" onclick="closePublicProfileModal();openPropertyModal('${p.id}')">
+          <div class="prop-row-img">
+            ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${p.title}">` : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`}
+          </div>
+          <div style="flex:1;min-width:0;margin-left:0.85rem;">
+            <div style="font-weight:600;font-size:0.88rem;color:var(--text);">${p.title}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">$${p.price}/mes &middot; ${(p.location || '').split(',')[0]}</div>
+          </div>
+          <span class="badge badge-blue">Ver anuncio</span>
+        </div>`).join('');
+    }
+  } else {
+    if (propsSec) propsSec.style.display = 'none';
+  }
+
+  // Cargar perfil roomie si existe
+  const roomieSec  = s('pub-profile-roomie-section');
+  const roomieCard = s('pub-profile-roomie-card');
+
+  const { data: userRoomie } = await db.from('roomies').select('*').eq('user_id', userId).maybeSingle();
+
+  if (userRoomie) {
+    if (roomieSec)  roomieSec.style.display = 'block';
+    if (roomieCard) {
+      roomieCard.innerHTML = `
+        <div class="prop-row" style="cursor:pointer;" onclick="closePublicProfileModal();openRoomieModal('${userRoomie.id}')">
+          <div class="roomie-av" style="background:${userRoomie.avatar_color};width:40px;height:40px;">${userRoomie.name.charAt(0)}</div>
+          <div style="flex:1;min-width:0;margin-left:0.85rem;">
+            <div style="font-weight:600;font-size:0.88rem;">${userRoomie.name}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">${userRoomie.career} &middot; $${userRoomie.budget}/mes</div>
+          </div>
+          <span class="badge badge-blue">Ver perfil roomie</span>
+        </div>`;
+    }
+  } else {
+    if (roomieSec) roomieSec.style.display = 'none';
+  }
+
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closePublicProfileModal = function() {
+  const modal = document.getElementById('public-profile-modal');
+  if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
+};

@@ -1039,6 +1039,63 @@
 </div>
 
 <!-- ===========================================================
+     MODAL PERFIL PÚBLICO DE USUARIO / PROPIETARIO
+     =========================================================== -->
+<div class="modal-overlay" id="public-profile-modal">
+  <div class="modal-box" style="max-width:720px;">
+    <div class="modal-head">
+      <div>
+        <h3 id="pub-profile-title">Perfil de Usuario</h3>
+        <p style="font-size:0.78rem;color:var(--text-muted);">Información del miembro y sus publicaciones activas</p>
+      </div>
+      <button class="modal-close-btn" onclick="closePublicProfileModal()">&#215;</button>
+    </div>
+
+    <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem;">
+      <!-- Header de perfil -->
+      <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;background:var(--bg-section);padding:1.25rem;border-radius:var(--r-lg);border:1px solid var(--border);">
+        <div id="pub-profile-avatar" class="user-avatar" style="width:72px;height:72px;font-size:1.8rem;font-weight:700;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;border:3px solid var(--border-blue);flex-shrink:0;">
+          U
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <h3 id="pub-profile-name" style="font-size:1.25rem;font-weight:700;color:var(--text);">Cargando...</h3>
+            <span id="pub-profile-role" class="badge badge-blue">Usuario</span>
+          </div>
+          <div id="pub-profile-occupation" style="font-size:0.83rem;color:var(--text-sec);margin-top:0.2rem;font-weight:500;">---</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <span>Teléfono: <strong id="pub-profile-phone" style="color:var(--text);">No disponible</strong></span>
+            <span>Contacto: <span id="pub-profile-email" style="color:var(--blue);font-weight:600;">---</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biografía / Descripción -->
+      <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;">
+        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.35rem;">
+          Sobre esta persona
+        </div>
+        <p id="pub-profile-bio" style="font-size:0.85rem;color:var(--text-sec);line-height:1.6;font-style:italic;">
+          El usuario no ha añadido una descripción todavía.
+        </p>
+      </div>
+
+      <!-- Publicaciones de propiedades (solo propietarios) -->
+      <div id="pub-profile-props-section" style="display:none;">
+        <div class="panel-card-title" style="font-size:0.95rem;margin-bottom:0.5rem;">Propiedades Publicadas (<span id="pub-props-count">0</span>)</div>
+        <div id="pub-profile-props-list" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+      </div>
+
+      <!-- Perfil de compañero (roomie) -->
+      <div id="pub-profile-roomie-section" style="display:none;">
+        <div class="panel-card-title" style="font-size:0.95rem;margin-bottom:0.5rem;">Publicación de Compañero de Vivienda</div>
+        <div id="pub-profile-roomie-card"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
      MODAL DE AUTENTICACION
      =========================================================== -->
 <div class="auth-overlay" id="auth-modal">

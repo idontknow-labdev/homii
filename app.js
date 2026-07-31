@@ -101,6 +101,21 @@ async function loadUserProfile(user) {
     db.from('profiles').upsert(profile).then(() => {}).catch(() => {});
   }
 
+  // Cargar datos locales de respaldo si existen
+  const localAvatar = localStorage.getItem('homii_avatar_' + user.id);
+  if (localAvatar && !profile.avatar_url) profile.avatar_url = localAvatar;
+
+  const localExtraStr = localStorage.getItem('homii_extra_' + user.id);
+  if (localExtraStr) {
+    try {
+      const localExtra = JSON.parse(localExtraStr);
+      if (localExtra.bio && !profile.bio) profile.bio = localExtra.bio;
+      if (localExtra.occupation && !profile.occupation) profile.occupation = localExtra.occupation;
+      if (localExtra.phone && !profile.phone) profile.phone = localExtra.phone;
+      if (localExtra.name && profile.name === user.email.split('@')[0]) profile.name = localExtra.name;
+    } catch(e) {}
+  }
+
   CURRENT_PROFILE = profile;
 
   // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
@@ -1271,12 +1286,23 @@ window.saveProfileChanges = async function(e) {
     updated_at: new Date().toISOString()
   };
 
-  const { error } = await db.from('profiles').update(updates).eq('id', CURRENT_USER.id);
+  // Guardar copia local de respaldo inmediatamente para asegurar que el usuario nunca pierda sus cambios
+  localStorage.setItem('homii_extra_' + CURRENT_USER.id, JSON.stringify({ name, phone, occupation, bio }));
+
+  // Intentar actualizar la base de datos de Supabase
+  let { error } = await db.from('profiles').update(updates).eq('id', CURRENT_USER.id);
+
+  // Si Supabase devuelve un error por columna no encontrada en la caché (PGRST204), actualizar solo campos base
+  if (error && (error.message.includes('Could not find') || error.code === 'PGRST204')) {
+    const baseUpdates = { name, phone: phone || null, updated_at: new Date().toISOString() };
+    const { error: baseErr } = await db.from('profiles').update(baseUpdates).eq('id', CURRENT_USER.id);
+    if (!baseErr) error = null;
+  }
+
   if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
 
   if (error) {
-    alert('Error al actualizar perfil: ' + error.message);
-    return;
+    console.warn('Advertencia actualizando perfil en Supabase DB:', error.message);
   }
 
   Object.assign(CURRENT_PROFILE, updates);
@@ -1301,6 +1327,7 @@ window.uploadProfileAvatar = async function(e) {
     const { data: { publicUrl } } = db.storage.from('homii-images').getPublicUrl(path);
     avatarUrl = publicUrl;
   } else {
+    // Usar Data URL como fallback rápido si falla el Storage
     avatarUrl = await new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -1308,10 +1335,13 @@ window.uploadProfileAvatar = async function(e) {
     });
   }
 
-  const { error: dbErr } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', CURRENT_USER.id);
+  // Guardar copia local del avatar
+  localStorage.setItem('homii_avatar_' + CURRENT_USER.id, avatarUrl);
+
+  // Intentar actualizar avatar_url en Supabase DB
+  let { error: dbErr } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', CURRENT_USER.id);
   if (dbErr) {
-    alert('No se pudo guardar la foto de perfil: ' + dbErr.message);
-    return;
+    console.warn('Advertencia actualizando avatar_url en Supabase DB (se usará copia guardada localmente):', dbErr.message);
   }
 
   CURRENT_PROFILE.avatar_url = avatarUrl;

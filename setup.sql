@@ -18,9 +18,16 @@ create table if not exists public.profiles (
   role text not null default 'student',
   phone text,
   avatar_color text default '#1a56db',
+  avatar_url text,
+  bio text,
+  occupation text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists occupation text;
 
 -- Propiedades
 create table if not exists public.properties (

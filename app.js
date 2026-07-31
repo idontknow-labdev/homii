@@ -1853,19 +1853,25 @@ function escAttr(str) {
 }
 
 // Exportaciones globales necesarias para onclick en HTML dinámico
-window.navigate              = navigate;
-window.openPropertyModal     = openPropertyModal;
-window.closePropertyModal    = closePropertyModal;
-window.openRoomieModal       = openRoomieModal;
-window.closeRoomieModal      = closeRoomieModal;
-window.closeConversationModal = closeConversationModal;
-window.openPublicProfile     = openPublicProfile;
-window.closePublicProfileModal = closePublicProfileModal;
-window.openAuth              = openAuth;
-window.closeAuth             = closeAuth;
-window.logout                = logout;
-window.filterListings        = filterListings;
-window.filterRoomies         = filterRoomies;
+window.navigate                  = navigate;
+window.openPropertyModal         = openPropertyModal;
+window.closePropertyModal        = closePropertyModal;
+window.openRoomieModal           = openRoomieModal;
+window.closeRoomieModal          = closeRoomieModal;
+window.closeConversationModal    = closeConversationModal;
+window.openPublicProfile         = openPublicProfile;
+window.closePublicProfileModal   = closePublicProfileModal;
+window.openCurrentLandlordProfile = function() {
+  const p = openPropertyData;
+  const targetUid  = p?.landlord_id || 'demo_landlord';
+  const targetName = p?.landlord_name || 'Propietario Homii';
+  openPublicProfile(targetUid, targetName, 'landlord');
+};
+window.openAuth                  = openAuth;
+window.closeAuth                 = closeAuth;
+window.logout                    = logout;
+window.filterListings            = filterListings;
+window.filterRoomies             = filterRoomies;
 
 function isValidUUID(str) {
   return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);

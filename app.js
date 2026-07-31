@@ -732,6 +732,17 @@ async function setupDirectChat(p) {
     return;
   }
 
+  // Si el usuario actual es el propio propietario de este inmueble
+  if (CURRENT_USER.id === p.landlord_id) {
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);line-height:1.6;text-align:center;">
+        Esta es su propia publicación.<br>
+        Para revisar y responder los mensajes privados de los interesados, consulte la sección 
+        <strong>"Mensajes de inquilinos"</strong> en su <a class="auth-link" style="cursor:pointer;" onclick="closePropertyModal();navigate('landlord');">Panel de Propietario</a> o en <a class="auth-link" style="cursor:pointer;" onclick="closePropertyModal();navigate('profile');">Mi Perfil</a>.
+      </div>`;
+    return;
+  }
+
   if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
 
   const chatId = `prop_${p.id}_usr_${CURRENT_USER.id}`;
@@ -1186,7 +1197,9 @@ async function renderProfileView() {
 
 async function loadInboxMessages(container) {
   const { data: chats } = await db.from('chats')
-    .select('*').eq('receiver_id', CURRENT_USER.id).order('created_at', { ascending: false });
+    .select('*')
+    .or(`receiver_id.eq.${CURRENT_USER.id},sender_id.eq.${CURRENT_USER.id}`)
+    .order('created_at', { ascending: false });
 
   if (!chats || chats.length === 0) {
     container.innerHTML = '<div class="panel-card-title">Mensajes recibidos</div><p style="font-size:0.83rem;color:var(--text-muted);">No tiene mensajes todavía.</p>';
@@ -1195,21 +1208,27 @@ async function loadInboxMessages(container) {
 
   const convMap = {};
   chats.forEach(m => {
-    if (!convMap[m.chat_id]) convMap[m.chat_id] = { ...m, unread: 0 };
-    if (!m.is_read) convMap[m.chat_id].unread++;
+    if (!convMap[m.chat_id]) {
+      const otherId   = m.sender_id === CURRENT_USER.id ? m.receiver_id : m.sender_id;
+      const otherName = m.sender_id === CURRENT_USER.id ? 'Inquilino / Usuario' : m.sender_name;
+      convMap[m.chat_id] = { ...m, otherId, otherName, unread: 0 };
+    }
+    if (m.receiver_id === CURRENT_USER.id && !m.is_read) {
+      convMap[m.chat_id].unread++;
+    }
   });
   const convs = Object.values(convMap);
 
   container.innerHTML = `
     <div class="panel-card-title">Mensajes recibidos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length}</span></div>
     ${convs.map(c => `
-      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title)}', '${escAttr(c.sender_name)}', '${c.sender_id}')">
+      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title || 'Propiedad')}', '${escAttr(c.otherName)}', '${c.otherId}')">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${c.sender_name}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title}</div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${c.otherName}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title || 'Consulta'}</div>
           <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.message}</div>
         </div>
-        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Leído</span>'}
+        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Chat activo</span>'}
       </div>`).join('')}`;
 }
 
@@ -1269,7 +1288,9 @@ async function loadLandlordMessages() {
   if (!section || !CURRENT_USER) return;
 
   const { data: chats } = await db.from('chats')
-    .select('*').eq('receiver_id', CURRENT_USER.id).order('created_at', { ascending: false });
+    .select('*')
+    .or(`receiver_id.eq.${CURRENT_USER.id},sender_id.eq.${CURRENT_USER.id}`)
+    .order('created_at', { ascending: false });
 
   if (!chats || chats.length === 0) {
     section.innerHTML = '<div class="panel-card-title">Mensajes de inquilinos</div><p style="font-size:0.83rem;color:var(--text-muted);">No tiene mensajes todavía. Cuando alguien le escriba, los mensajes aparecerán aquí.</p>';
@@ -1278,21 +1299,27 @@ async function loadLandlordMessages() {
 
   const convMap = {};
   chats.forEach(m => {
-    if (!convMap[m.chat_id]) convMap[m.chat_id] = { ...m, unread: 0 };
-    if (!m.is_read) convMap[m.chat_id].unread++;
+    if (!convMap[m.chat_id]) {
+      const otherId   = m.sender_id === CURRENT_USER.id ? m.receiver_id : m.sender_id;
+      const otherName = m.sender_id === CURRENT_USER.id ? 'Inquilino / Usuario' : m.sender_name;
+      convMap[m.chat_id] = { ...m, otherId, otherName, unread: 0 };
+    }
+    if (m.receiver_id === CURRENT_USER.id && !m.is_read) {
+      convMap[m.chat_id].unread++;
+    }
   });
   const convs = Object.values(convMap);
 
   section.innerHTML = `
     <div class="panel-card-title">Mensajes de inquilinos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length} conversación(es)</span></div>
     ${convs.map(c => `
-      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title)}', '${escAttr(c.sender_name)}', '${c.sender_id}')">
+      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title || 'Propiedad')}', '${escAttr(c.otherName)}', '${c.otherId}')">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:0.85rem;font-weight:600;">${c.sender_name}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title}</div>
-          <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.1rem;">${c.message}</div>
+          <div style="font-size:0.85rem;font-weight:600;">${c.otherName}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title || 'Consulta'}</div>
+          <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.message}</div>
         </div>
-        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Leído</span>'}
+        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Chat activo</span>'}
       </div>`).join('')}`;
 }
 
@@ -1441,14 +1468,27 @@ window.certifyProp = async function(id) {
       waterPressure: 'Aprobado — Buena presión (42 PSI)',
       internetSpeed: 'Aprobado — Fibra Óptica 300 Mbps',
       fireSafety:    'Aprobado — Certificado contra incendios',
-      structure:     'Aprobado — Inspector civil PUCEM'
+      structure:     'Aprobado — Inspector civil'
     }
   };
-  const { data: p } = await db.from('properties').update({ university_certified: true, verification_report: report }).eq('id', id).select().single();
-  if (p) {
-    addNotif('Inmueble Certificado', `"${p.title}" ahora tiene el sello Homii Student PUCEM.`);
-    renderUniPanel();
-    alert('Certificación PUCEM otorgada exitosamente.');
+
+  const { data, error } = await db.from('properties')
+    .update({ university_certified: true, verification_report: report })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    alert('Error al certificar la propiedad: ' + error.message + '\n\nAsegúrese de ejecutar el script SQL de actualización de políticas RLS en Supabase.');
+    console.error('Certify error:', error);
+    return;
+  }
+
+  if (data && data.length > 0) {
+    addNotif('Inmueble Certificado', `"${data[0].title}" ahora tiene la certificación oficial.`);
+    await renderUniPanel();
+    alert('Certificación otorgada exitosamente.');
+  } else {
+    alert('No se pudo certificar la propiedad. Esto ocurre cuando la política RLS en Supabase bloquea la edición por parte de administradores. Por favor ejecute la sentencia SQL proporcionada.');
   }
 };
 

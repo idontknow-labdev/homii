@@ -97,7 +97,14 @@ create policy "Usuarios actualizan su propio perfil" on public.profiles for upda
 alter table public.properties enable row level security;
 create policy "Propiedades visibles por todos" on public.properties for select using (true);
 create policy "Propietarios insertan sus propiedades" on public.properties for insert with check (auth.uid() = landlord_id);
-create policy "Propietarios actualizan sus propiedades" on public.properties for update using (auth.uid() = landlord_id);
+create policy "Propietarios y Administradores actualizan propiedades" on public.properties for update using (
+  auth.uid() = landlord_id 
+  or 
+  exists (
+    select 1 from public.profiles 
+    where profiles.id = auth.uid() and profiles.role = 'university'
+  )
+);
 create policy "Propietarios eliminan sus propiedades" on public.properties for delete using (auth.uid() = landlord_id);
 
 -- Roomies

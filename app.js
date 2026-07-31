@@ -368,6 +368,9 @@ function setupNav() {
   document.getElementById('quick-search')?.addEventListener('keypress', e => {
     if (e.key === 'Enter') document.getElementById('hero-search-btn')?.click();
   });
+  document.getElementById('public-profile-modal')?.addEventListener('click', e => {
+    if (e.target.id === 'public-profile-modal') closePublicProfileModal();
+  });
 }
 
 // ============================================================
@@ -1855,6 +1858,10 @@ window.logout                = logout;
 window.filterListings        = filterListings;
 window.filterRoomies         = filterRoomies;
 
+function isValidUUID(str) {
+  return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+}
+
 // ============================================================
 // PERFIL PÚBLICO DE OTRO USUARIO / PROPIETARIO
 // ============================================================
@@ -1873,8 +1880,9 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   if (!modal) return;
 
   let profile = null;
+  const validUid = isValidUUID(userId);
 
-  if (userId && !userId.startsWith('demo')) {
+  if (validUid) {
     try {
       const { data: dbProfile } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
       profile = dbProfile;
@@ -1929,13 +1937,19 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   if (s('pub-profile-email'))      s('pub-profile-email').textContent      = profile.email || 'Contacto directo vía Homii Chat';
   if (s('pub-profile-bio'))        s('pub-profile-bio').textContent        = profile.bio || 'El usuario no ha publicado una biografía personal todavía.';
 
-  // Cargar propiedades publicadas si es propietario
+  // Cargar propiedades publicadas únicamente si es un UUID válido
   const propsSec   = s('pub-profile-props-section');
   const propsList  = s('pub-profile-props-list');
   const propsCount = s('pub-props-count');
-  
-  const { data: userProps } = await db.from('properties').select('*').eq('landlord_id', userId);
-  
+
+  let userProps = [];
+  if (validUid) {
+    try {
+      const { data: pData } = await db.from('properties').select('*').eq('landlord_id', userId);
+      userProps = pData || [];
+    } catch(e) {}
+  }
+
   if (userProps && userProps.length > 0) {
     if (propsSec)   propsSec.style.display = 'block';
     if (propsCount) propsCount.textContent = userProps.length;
@@ -1956,11 +1970,17 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
     if (propsSec) propsSec.style.display = 'none';
   }
 
-  // Cargar perfil roomie si existe
+  // Cargar perfil roomie únicamente si es un UUID válido
   const roomieSec  = s('pub-profile-roomie-section');
   const roomieCard = s('pub-profile-roomie-card');
+  let userRoomie   = null;
 
-  const { data: userRoomie } = await db.from('roomies').select('*').eq('user_id', userId).maybeSingle();
+  if (validUid) {
+    try {
+      const { data: rData } = await db.from('roomies').select('*').eq('user_id', userId).maybeSingle();
+      userRoomie = rData;
+    } catch(e) {}
+  }
 
   if (userRoomie) {
     if (roomieSec)  roomieSec.style.display = 'block';

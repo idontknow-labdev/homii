@@ -391,7 +391,20 @@ function setupSegmentTabs() {
 }
 
 function renderSegment(key) {
-  const d = SEGMENTS[key]; if (!d) return;
+  const isPucemMode = document.body.classList.contains('pucem-mode');
+  
+  let d = SEGMENTS[key];
+  if (key === 'student' && !isPucemMode) {
+    d = {
+      title: 'Su hogar cómodo y seguro en Portoviejo',
+      desc: 'Mudarse a Portoviejo por estudios o trabajo es un gran paso. Homii le ayuda a encontrar arriendos verificados físicamente, cercanos a zonas principales y con todos los servicios.',
+      features: ['A minutos de centros educativos y comerciales', 'Inmuebles inspeccionados y verificados', 'Soporte y contacto directo con propietarios', 'Filtros rápidos de agua, internet y luz'],
+      quote: 'Llegué a Portoviejo y encontré una habitación verificada a pocos minutos con internet de fibra. El proceso fue completamente transparente.',
+      author: 'Sofía Valenzuela — Residente en Portoviejo'
+    };
+  }
+
+  if (!d) return;
   document.querySelectorAll('.seg-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById('seg-panel-' + key);
   if (panel) {

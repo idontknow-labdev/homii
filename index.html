@@ -312,13 +312,17 @@
 <section class="view" id="roomie-view">
 <div class="view-inner">
   <div class="page-title">Buscar Compañero de Vivienda</div>
-  <div class="page-subtitle">Conecta con estudiantes de la PUCEM para compartir gastos de arriendo</div>
+  <div class="page-subtitle non-pucem-element">Conecta con personas y estudiantes en Portoviejo para compartir gastos de arriendo</div>
+  <div class="page-subtitle pucem-element">Conecta con estudiantes de la PUCEM para compartir gastos de arriendo</div>
 
   <!-- Hero explicativo -->
   <div class="roomie-hero">
     <div>
       <h2>Comparte el arriendo, comparte la experiencia</h2>
-      <p>
+      <p class="non-pucem-element">
+        Vivir solo en Portoviejo puede resultar costoso. La sección Buscar Compañero le permite conectar con otras personas o estudiantes que también buscan dividir el costo mensual del arriendo. Puede publicar su propio perfil o buscar entre los perfiles disponibles.
+      </p>
+      <p class="pucem-element">
         Vivir solo en Portoviejo puede resultar costoso para un estudiante foráneo. La sección
         Buscar Compañero le permite conectar con otros estudiantes de la PUCEM que también
         buscan con quién dividir el costo mensual del arriendo. Puede publicar su propio perfil
@@ -351,8 +355,9 @@
           <input type="text" class="form-input" id="rp-name" placeholder="Ej. Camila" required>
         </div>
         <div class="form-group">
-          <label class="form-label">Carrera en PUCEM *</label>
-          <input type="text" class="form-input" id="rp-career" placeholder="Ej. Medicina — 2do año" required>
+          <label class="form-label non-pucem-element">Carrera / Ocupación *</label>
+          <label class="form-label pucem-element">Carrera en PUCEM *</label>
+          <input type="text" class="form-input" id="rp-career" placeholder="Ej. Medicina — 2do año, Diseñador, etc." required>
         </div>
         <div class="form-row">
           <div class="form-group">

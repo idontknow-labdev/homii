@@ -1623,20 +1623,53 @@ footer { background: var(--blue-dark); color: rgba(255,255,255,0.75); margin-top
     border-bottom-right-radius: 0; 
     border-top-left-radius: var(--radius-md); 
     border-top-right-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  .modal-body-grid { grid-template-columns: 1fr; height: auto; overflow-y: auto; }
-  .modal-left { border-right: none; border-bottom: 1px solid var(--border); max-height: 260px; }
-  .modal-right { padding: 1rem; }
+  .modal-body-grid { 
+    grid-template-columns: 1fr; 
+    flex: 1;
+    height: 100%; 
+    overflow-y: auto;
+  }
 
-  .roomie-modal-layout { grid-template-columns: 1fr; }
+  .modal-left { 
+    border-right: none; 
+    border-bottom: none; 
+    max-height: none !important; 
+    height: auto;
+    padding: 1.25rem;
+    overflow-y: auto;
+  }
+
+  .modal-right { 
+    padding: 1.25rem; 
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .roomie-modal-layout { 
+    grid-template-columns: 1fr; 
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .roomie-profile-section {
+    max-height: none !important;
+    padding: 1.25rem;
+    overflow-y: auto;
+  }
 
   /* Interfaz de Chat Estilo Messenger para Teléfonos */
   .direct-chat-box {
     display: flex;
     flex-direction: column;
-    height: 420px;
-    max-height: 60vh;
+    height: 100%;
+    flex: 1;
+    min-height: 380px;
     background: #ffffff;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);

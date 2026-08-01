@@ -51,9 +51,57 @@
         </svg>
         <span class="bell-dot" id="bell-dot" style="display:none;"></span>
       </div>
+
+      <!-- Botón Menú Móvil -->
+      <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Menú">
+        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
     </div>
   </div>
 </header>
+
+<!-- Drawer de Navegación Móvil -->
+<div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
+<div class="mobile-nav-drawer" id="mobile-nav-drawer">
+  <div class="mobile-drawer-head">
+    <div class="logo">
+      <img src="logo.png" alt="Homii" style="height: 32px;">
+      <span class="logo-tag pucem-element">PUCEM</span>
+    </div>
+    <button class="modal-close" id="mobile-drawer-close">&times;</button>
+  </div>
+  <div class="mobile-drawer-body">
+    <!-- Usuario info en menú móvil -->
+    <div id="mobile-user-info" style="display:none;padding:0.75rem;background:var(--gray-50);border-radius:var(--radius-sm);margin-bottom:1rem;align-items:center;gap:0.75rem;">
+      <div class="user-avatar" id="mobile-avatar" style="width:38px;height:38px;">U</div>
+      <div style="flex:1;min-width:0;">
+        <div id="mobile-username" style="font-weight:600;font-size:0.9rem;color:var(--text);">Usuario</div>
+        <div id="mobile-user-role" style="font-size:0.75rem;color:var(--text-muted);">Estudiante</div>
+      </div>
+    </div>
+
+    <ul class="mobile-nav-links">
+      <li><a class="nav-link active" data-view="landing">🏠 Inicio</a></li>
+      <li><a class="nav-link" data-view="search">🔍 Buscar Arriendo</a></li>
+      <li><a class="nav-link" data-view="roomie">🤝 Buscar Compañero</a></li>
+      <li class="nav-landlord-link" style="display:none;"><a class="nav-link" data-view="landlord">🏢 Panel Propietario</a></li>
+      <li class="nav-uni-link" style="display:none;"><a class="nav-link" data-view="university">🎓 Portal PUCEM</a></li>
+      <li class="nav-profile-link" style="display:none;"><a class="nav-link" data-view="profile">👤 Mi Perfil</a></li>
+    </ul>
+
+    <div class="mobile-drawer-actions" style="margin-top:1.5rem;">
+      <div id="mobile-guest-actions" style="display:flex;flex-direction:column;gap:0.5rem;">
+        <button class="btn btn-outline btn-full" id="btn-mobile-login">Iniciar sesión</button>
+        <button class="btn btn-primary btn-full" id="btn-mobile-register">Registrarse</button>
+      </div>
+      <div id="mobile-user-actions" style="display:none;flex-direction:column;gap:0.5rem;">
+        <button class="btn btn-outline btn-full" id="btn-mobile-logout">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Notificaciones -->
 <div class="notif-panel" id="notif-panel">
@@ -1346,6 +1394,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_8"></script>
+<script src="app.js?v=20260731_9"></script>
 </body>
 </html>

@@ -1453,8 +1453,102 @@ footer { background: var(--blue-dark); color: rgba(255,255,255,0.75); margin-top
 @keyframes slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* =====================================================
-   RESPONSIVE
+   RESPONSIVE & MOBILE STYLES
    ===================================================== */
+
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--gray-100);
+}
+
+/* Drawer Móvil */
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.mobile-nav-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 82%;
+  max-width: 320px;
+  background: var(--bg-card);
+  z-index: 1201;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav-drawer.open {
+  transform: translateX(0);
+}
+
+.mobile-drawer-head {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-drawer-body {
+  padding: 1.25rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mobile-nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.mobile-nav-links .nav-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-sec);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.mobile-nav-links .nav-link.active,
+.mobile-nav-links .nav-link:hover {
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  font-weight: 600;
+}
 
 @media (max-width: 1024px) {
   .search-layout { grid-template-columns: 1fr; }
@@ -1470,19 +1564,49 @@ footer { background: var(--blue-dark); color: rgba(255,255,255,0.75); margin-top
 
 @media (max-width: 768px) {
   .nav-links { display: none; }
-  .hero h1 { font-size: 2rem; }
-  .modal-body-grid { grid-template-columns: 1fr; }
-  .modal-left { border-right: none; border-bottom: 1px solid var(--border); }
-  .footer-grid { grid-template-columns: 1fr 1fr; }
+  #nav-guest, #nav-user { display: none !important; }
+  .mobile-menu-toggle { display: flex; }
+
+  .hero { padding: 2.5rem 1.25rem 2rem; text-align: center; }
+  .hero h1 { font-size: 1.85rem; line-height: 1.25; }
+  .hero p { font-size: 0.95rem; }
+
+  /* Modales en móvil */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal-box { 
+    max-width: 100%; 
+    width: 100%; 
+    height: 94vh; 
+    max-height: 94vh; 
+    border-bottom-left-radius: 0; 
+    border-bottom-right-radius: 0; 
+    border-top-left-radius: var(--radius-md); 
+    border-top-right-radius: var(--radius-md);
+  }
+
+  .modal-body-grid { grid-template-columns: 1fr; height: auto; overflow-y: auto; }
+  .modal-left { border-right: none; border-bottom: 1px solid var(--border); max-height: 300px; }
+  .modal-right { padding: 1rem; }
+
   .roomie-modal-layout { grid-template-columns: 1fr; }
+  .direct-chat-box { height: 350px; }
+
+  .footer-grid { grid-template-columns: 1fr 1fr; }
   .plans-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .verif-grid { grid-template-columns: 1fr; }
+
+  .nav-inner { padding: 0.75rem 1rem; }
+  .view-inner { padding: 1rem; }
 }
 
 @media (max-width: 520px) {
-  .view-inner, .container { padding-left: 1rem; padding-right: 1rem; }
-  .hero { padding: 3.5rem 1rem 3rem; }
-  .hero h1 { font-size: 1.7rem; }
+  .view-inner, .container { padding-left: 0.85rem; padding-right: 0.85rem; }
+  .hero { padding: 2rem 0.85rem 1.75rem; }
+  .hero h1 { font-size: 1.55rem; }
   .footer-grid { grid-template-columns: 1fr; }
+  .direct-chat-input-bar { flex-direction: row; gap: 0.35rem; }
+  .direct-chat-input-bar input { font-size: 0.85rem; }
+  .chat-msg-row { gap: 0.4rem; }
+  .chat-msg-avatar { width: 28px; height: 28px; font-size: 0.72rem; }
 }

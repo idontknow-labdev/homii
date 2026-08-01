@@ -32,6 +32,7 @@ const APP = {
 document.addEventListener('DOMContentLoaded', async () => {
   await initAuth();
   setupNav();
+  setupMobileMenu();
   setupSegmentTabs();
   setupAuth();
   setupSearch();
@@ -286,9 +287,9 @@ function updateNavUI() {
   const userEl   = document.getElementById('nav-user');
   const nameEl   = document.getElementById('nav-username');
   const avEl     = document.getElementById('nav-avatar');
-  const llLink   = document.querySelector('.nav-landlord-link');
-  const uniLink  = document.querySelector('.nav-uni-link');
-  const profLink = document.querySelector('.nav-profile-link');
+  const llLink   = document.querySelectorAll('.nav-landlord-link');
+  const uniLink  = document.querySelectorAll('.nav-uni-link');
+  const profLink = document.querySelectorAll('.nav-profile-link');
 
   if (user) {
     const displayName = profile?.name || user.email.split('@')[0];
@@ -307,16 +308,74 @@ function updateNavUI() {
       avEl.title            = 'Ver mi perfil';
       avEl.onclick          = () => navigate('profile');
     }
-    if (llLink)   llLink.style.display   = profile?.role === 'landlord'   ? 'list-item' : 'none';
-    if (uniLink)  uniLink.style.display  = profile?.role === 'university' ? 'list-item' : 'none';
-    if (profLink) profLink.style.display = 'list-item';
+    llLink.forEach(el => el.style.display   = profile?.role === 'landlord'   ? 'block' : 'none');
+    uniLink.forEach(el => el.style.display  = profile?.role === 'university' ? 'block' : 'none');
+    profLink.forEach(el => el.style.display = 'block');
   } else {
     if (guestEl)  guestEl.style.display  = 'flex';
     if (userEl)   userEl.style.display   = 'none';
-    if (llLink)   llLink.style.display   = 'none';
-    if (uniLink)  uniLink.style.display  = 'none';
-    if (profLink) profLink.style.display = 'none';
+    llLink.forEach(el => el.style.display   = 'none');
+    uniLink.forEach(el => el.style.display  = 'none');
+    profLink.forEach(el => el.style.display = 'none');
   }
+
+  // Sincronizar UI del Menú Móvil
+  const mGuest = document.getElementById('mobile-guest-actions');
+  const mUser  = document.getElementById('mobile-user-actions');
+  const mInfo  = document.getElementById('mobile-user-info');
+  const mName  = document.getElementById('mobile-username');
+  const mRole  = document.getElementById('mobile-user-role');
+  const mAv    = document.getElementById('mobile-avatar');
+
+  if (user) {
+    const displayName = profile?.name || user.email.split('@')[0];
+    if (mGuest) mGuest.style.display = 'none';
+    if (mUser)  mUser.style.display  = 'flex';
+    if (mInfo)  mInfo.style.display  = 'flex';
+    if (mName)  mName.textContent    = displayName;
+    if (mRole)  mRole.textContent    = roleLabel(profile?.role, user.email);
+    if (mAv) {
+      if (profile?.avatar_url) {
+        mAv.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        mAv.style.background = 'transparent';
+      } else {
+        mAv.textContent = displayName.charAt(0).toUpperCase();
+        mAv.style.background = profile?.avatar_color || '#1a56db';
+      }
+    }
+  } else {
+    if (mGuest) mGuest.style.display = 'flex';
+    if (mUser)  mUser.style.display  = 'none';
+    if (mInfo)  mInfo.style.display  = 'none';
+  }
+}
+
+function setupMobileMenu() {
+  const toggleBtn = document.getElementById('mobile-menu-toggle');
+  const drawer    = document.getElementById('mobile-nav-drawer');
+  const overlay   = document.getElementById('mobile-nav-overlay');
+  const closeBtn  = document.getElementById('mobile-drawer-close');
+
+  const openDrawer  = () => { drawer?.classList.add('open'); overlay?.classList.add('open'); document.body.style.overflow = 'hidden'; };
+  const closeDrawer = () => { drawer?.classList.remove('open'); overlay?.classList.remove('open'); document.body.style.overflow = ''; };
+
+  toggleBtn?.addEventListener('click', openDrawer);
+  closeBtn?.addEventListener('click', closeDrawer);
+  overlay?.addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('#mobile-nav-drawer .nav-link').forEach(link => {
+    link.addEventListener('click', e => {
+      const view = link.getAttribute('data-view');
+      if (view) {
+        navigate(view);
+        closeDrawer();
+      }
+    });
+  });
+
+  document.getElementById('btn-mobile-login')?.addEventListener('click', () => { closeDrawer(); openAuth(); });
+  document.getElementById('btn-mobile-register')?.addEventListener('click', () => { closeDrawer(); openAuthRegister(); });
+  document.getElementById('btn-mobile-logout')?.addEventListener('click', () => { closeDrawer(); doLogout(); });
 }
 
 function guardRoute(route) {

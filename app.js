@@ -1889,26 +1889,24 @@ function escAttr(str) {
 }
 
 // Exportaciones globales necesarias para onclick en HTML dinámico
-window.navigate                  = navigate;
-window.openPropertyModal         = openPropertyModal;
-window.closePropertyModal        = closePropertyModal;
-window.openRoomieModal           = openRoomieModal;
-window.closeRoomieModal          = closeRoomieModal;
-window.closeConversationModal    = closeConversationModal;
-window.openPublicProfile         = openPublicProfile;
-window.closePublicProfileModal   = closePublicProfileModal;
+window.navigate                   = navigate;
+window.openPropertyModal          = openPropertyModal;
+window.closePropertyModal         = closePropertyModal;
+window.openRoomieModal            = openRoomieModal;
+window.closeRoomieModal           = closeRoomieModal;
+window.closeConversationModal     = closeConversationModal;
 window.openCurrentLandlordProfile = function() {
   const p = openPropertyData;
-  const targetUid  = p?.landlord_id  || 'demo_landlord';
-  const targetName = p?.landlord_name || 'Propietario Homii';
+  const uid  = p?.landlord_id  || 'demo_landlord';
+  const name = p?.landlord_name || 'Propietario Homii';
   closePropertyModal();
-  setTimeout(() => openPublicProfile(targetUid, targetName, 'landlord'), 50);
+  setTimeout(() => openPublicProfile(uid, name, 'landlord'), 80);
 };
-window.openAuth                  = openAuth;
-window.closeAuth                 = closeAuth;
-window.logout                    = logout;
-window.filterListings            = filterListings;
-window.filterRoomies             = filterRoomies;
+window.openAuth                   = openAuth;
+window.closeAuth                  = closeAuth;
+window.logout                     = logout;
+window.filterListings             = filterListings;
+window.filterRoomies              = filterRoomies;
 
 function isValidUUID(str) {
   return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
@@ -1918,7 +1916,7 @@ function isValidUUID(str) {
 // PERFIL PÚBLICO DE OTRO USUARIO / PROPIETARIO
 // ============================================================
 
-window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
+async function openPublicProfile(userId, fallbackName, fallbackRole) {
   const s = id => document.getElementById(id);
 
   // 1. Llenar datos iniciales ANTES de navegar para que la vista ya tenga contenido
@@ -2069,10 +2067,12 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   } else {
     if (roomieSec) roomieSec.style.display = 'none';
   }
-};
+}
 
-window.closePublicProfileModal = function() {
-  const modal = document.getElementById('public-profile-modal');
-  if (modal) modal.classList.remove('open');
+function closePublicProfileModal() {
   document.body.style.overflow = '';
-};
+}
+
+// Exportar al scope global para llamadas desde HTML
+window.openPublicProfile       = openPublicProfile;
+window.closePublicProfileModal = closePublicProfileModal;

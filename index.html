@@ -118,7 +118,8 @@
       <!-- Segmentos -->
       <div style="margin-bottom:3rem;">
         <div class="section-title">Diseñado para cada miembro de la comunidad</div>
-        <div class="section-desc">Una plataforma pensada para estudiantes foráneos, propietarios locales y la administración de la PUCEM.</div>
+        <div class="section-desc non-pucem-element">Una plataforma pensada para estudiantes foráneos, propietarios locales y administradores en Portoviejo.</div>
+        <div class="section-desc pucem-element">Una plataforma pensada para estudiantes foráneos, propietarios locales y la administración de la PUCEM.</div>
 
         <div class="seg-tabs">
           <button class="seg-tab active" data-seg="student">Estudiantes</button>
@@ -468,7 +469,8 @@
 
   <div>
     <div class="page-title">Panel de Propietario</div>
-    <div class="page-subtitle">Gestione sus inmuebles, suba fotos, añada la ubicación y solicite la certificación PUCEM.</div>
+    <div class="page-subtitle non-pucem-element">Gestione sus inmuebles, suba fotos, añada la ubicación y solicite la verificación de su propiedad.</div>
+    <div class="page-subtitle pucem-element">Gestione sus inmuebles, suba fotos, añada la ubicación y solicite la certificación PUCEM.</div>
   </div>
 
   <!-- Estadísticas -->
@@ -572,7 +574,8 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Distancia a PUCEM (km) *</label>
+          <label class="form-label non-pucem-element">Distancia al centro / universidad (km) *</label>
+          <label class="form-label pucem-element">Distancia a PUCEM (km) *</label>
           <input type="number" class="form-input" id="prop-distance" min="0.1" step="0.1" placeholder="Ej. 0.5" required>
         </div>
 
@@ -931,7 +934,8 @@
         </div>
 
         <div class="verif-box" id="detail-verif" style="display:none;">
-          <div class="verif-box-title">Reporte de Verificacion Homii x PUCEM</div>
+          <div class="verif-box-title non-pucem-element">Reporte de Verificación Homii</div>
+          <div class="verif-box-title pucem-element">Reporte de Verificación Homii x PUCEM</div>
           <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.75rem;" id="verif-date"></div>
           <div class="verif-grid">
             <div class="verif-item">
@@ -1334,6 +1338,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js"></script>
+<script src="app.js?v=20260731_2"></script>
 </body>
 </html>

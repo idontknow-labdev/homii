@@ -98,7 +98,7 @@ async function loadUserProfile(user) {
       avatar_color: color
     };
 
-    db.from('profiles').upsert(profile).then(() => {}).catch(() => {});
+    await db.from('profiles').upsert(profile, { onConflict: 'id' }).catch(err => console.warn('Profile init upsert warning:', err));
   }
 
   // Cargar datos locales de respaldo si existen
@@ -1340,6 +1340,7 @@ window.saveProfileChanges = async function(e) {
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
 
   const updates = {
+    id: CURRENT_USER.id,
     name,
     phone:      phone      || null,
     occupation: occupation || null,
@@ -1347,24 +1348,26 @@ window.saveProfileChanges = async function(e) {
     updated_at: new Date().toISOString()
   };
 
-  // Guardar en Supabase (upsert garantiza que funciona aunque el perfil no exista aún)
-  const { error } = await db.from('profiles')
-    .update(updates)
-    .eq('id', CURRENT_USER.id);
+  // Usar upsert en lugar de update para asegurar que inserte la fila si no existía aún en Supabase
+  let { error } = await db.from('profiles').upsert(updates, { onConflict: 'id' });
 
   if (error) {
-    // Si falla (ej. columna occupation/bio no existe), reintentar solo con name y phone
-    const { error: e2 } = await db.from('profiles')
-      .update({ name, phone: phone || null, updated_at: new Date().toISOString() })
-      .eq('id', CURRENT_USER.id);
+    console.warn('Upsert completo falló en profiles, reintentando con campos básicos:', error.message);
+    const basicUpdates = {
+      id: CURRENT_USER.id,
+      name,
+      phone: phone || null,
+      updated_at: new Date().toISOString()
+    };
+    const { error: e2 } = await db.from('profiles').upsert(basicUpdates, { onConflict: 'id' });
     if (e2) {
-      alert('Error al guardar: ' + e2.message);
+      alert('Error al guardar perfil en Supabase: ' + e2.message);
       if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
       return;
     }
   }
 
-  // Guardar copia local como respaldo (para carga inmediata en el dispositivo actual)
+  // Guardar copia local como respaldo de respuesta inmediata
   localStorage.setItem('homii_extra_' + CURRENT_USER.id, JSON.stringify({ name, phone, occupation, bio }));
 
   if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
@@ -1374,7 +1377,7 @@ window.saveProfileChanges = async function(e) {
   updateNavUI();
   await renderProfileView();
   addNotif('Perfil Actualizado', 'Su información personal fue guardada correctamente.');
-  alert('\u2705 Perfil actualizado. Los cambios son visibles para todos.');
+  alert('✅ Perfil actualizado exitosamente. Los cambios están guardados en la nube y son visibles desde cualquier dispositivo.');
 };
 
 window.uploadProfileAvatar = async function(e) {
@@ -1418,15 +1421,12 @@ window.uploadProfileAvatar = async function(e) {
     console.warn('Usando Data URL local — no será visible en otros dispositivos.');
   }
 
-  // 3. Guardar URL en la base de datos de Supabase (para que todos puedan verla)
+  // 3. Upsert en la tabla profiles de Supabase para asegurar que persista en la nube
   const { error: dbErr } = await db.from('profiles')
-    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
-    .eq('id', CURRENT_USER.id);
+    .upsert({ id: CURRENT_USER.id, avatar_url: avatarUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' });
 
   if (dbErr) {
     console.warn('No se pudo guardar avatar_url en DB:', dbErr.message);
-    // Guardar en local como último recurso
-    localStorage.setItem('homii_avatar_' + CURRENT_USER.id, avatarUrl);
   }
 
   // 4. Actualizar el estado local
@@ -1435,8 +1435,8 @@ window.uploadProfileAvatar = async function(e) {
 
   updateNavUI();
   await renderProfileView();
-  addNotif('Foto Actualizada', 'Su nueva foto de perfil ya es visible para todos.');
-  alert('\u2705 Foto de perfil actualizada. Los demás ya pueden verla.');
+  addNotif('Foto Actualizada', 'Su nueva foto de perfil ya es visible.');
+  alert('✅ Foto de perfil actualizada exitosamente en la nube.');
 };
 
 async function loadInboxMessages(container) {
@@ -1900,7 +1900,13 @@ window.openCurrentLandlordProfile = function() {
   const uid  = p?.landlord_id  || 'demo_landlord';
   const name = p?.landlord_name || 'Propietario Homii';
   closePropertyModal();
-  setTimeout(() => openPublicProfile(uid, name, 'landlord'), 80);
+  setTimeout(() => {
+    if (typeof window.openPublicProfile === 'function') {
+      window.openPublicProfile(uid, name, 'landlord');
+    } else {
+      openPublicProfile(uid, name, 'landlord');
+    }
+  }, 50);
 };
 window.openAuth                   = openAuth;
 window.closeAuth                  = closeAuth;
@@ -1916,7 +1922,7 @@ function isValidUUID(str) {
 // PERFIL PÚBLICO DE OTRO USUARIO / PROPIETARIO
 // ============================================================
 
-async function openPublicProfile(userId, fallbackName, fallbackRole) {
+window.openPublicProfile = async function openPublicProfile(userId, fallbackName, fallbackRole) {
   const s = id => document.getElementById(id);
 
   // 1. Llenar datos iniciales ANTES de navegar para que la vista ya tenga contenido

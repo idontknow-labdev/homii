@@ -124,6 +124,7 @@ async function loadUserProfile(user) {
   document.body.classList.toggle('pucem-mode', isPUCEM);
 
   updateNavUI();
+  setupGlobalChatNotifications();
 }
 
 function setupAuth() {
@@ -1132,6 +1133,15 @@ async function filterRoomies() {
 
   const { data: list } = await db.from('roomies').select('*').order('created_at', { ascending: false });
 
+  // Cargar perfiles de usuario desde profiles DB para garantizar que todas las fotos carguen
+  const userIds = [...new Set((list || []).map(r => r.user_id).filter(id => isValidUUID(id)))];
+  if (userIds.length > 0) {
+    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color').in('id', userIds);
+    (profs || []).forEach(p => {
+      CHAT_PROFILES_CACHE[p.id] = p;
+    });
+  }
+
   const filtered = (list || []).filter(r => {
     const matchBudget   = r.is_demo || r.budget <= maxBudget;
     const matchType     = type     === 'all' || r.type     === type;
@@ -1158,13 +1168,17 @@ function renderRoomieGrid(list) {
     const typeLabel = r.type === 'tiene-lugar' ? 'Tiene lugar, busca compañero' : 'Busca lugar y compañero';
     const typeClass = r.type === 'tiene-lugar' ? 'type-tiene-lugar' : 'type-busca-lugar';
     const userUid   = r.user_id || r.id;
+    const userProf  = CHAT_PROFILES_CACHE[userUid];
+    const avatarUrl = r.avatar_url || userProf?.avatar_url;
+    const avatarBg  = userProf?.avatar_color || r.avatar_color || '#1a56db';
+
     return `
     <div class="roomie-card" onclick="openRoomieModal('${r.id}')">
       <div class="roomie-card-header">
-        <div class="roomie-av" onclick="event.stopPropagation();openPublicProfile('${userUid}')" style="background:${r.avatar_color || '#1a56db'};cursor:pointer;overflow:hidden;" title="Ver perfil de ${r.name}">
-          ${r.avatar_url ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : r.name.charAt(0)}
+        <div class="roomie-av" onclick="event.stopPropagation();openPublicProfile('${userUid}', '${escAttr(r.name)}', 'student')" style="background:${avatarUrl ? 'transparent' : avatarBg};cursor:pointer;overflow:hidden;" title="Ver perfil público de ${escAttr(r.name)}">
+          ${avatarUrl ? `<img src="${avatarUrl}" alt="${escAttr(r.name)}" style="width:100%;height:100%;object-fit:cover;">` : r.name.charAt(0).toUpperCase()}
         </div>
-        <div onclick="event.stopPropagation();openPublicProfile('${userUid}')" style="cursor:pointer;">
+        <div onclick="event.stopPropagation();openPublicProfile('${userUid}', '${escAttr(r.name)}', 'student')" style="cursor:pointer;" title="Ver perfil público de ${escAttr(r.name)}">
           <div class="roomie-name" style="color:var(--blue);text-decoration:underline;">${r.name}</div>
           <div class="roomie-career">${r.career}</div>
         </div>
@@ -1401,6 +1415,7 @@ async function submitRoomieProfile() {
     description: desc,
     contact: CURRENT_USER.email,
     avatar_color: color,
+    avatar_url: CURRENT_PROFILE?.avatar_url || null,
     is_demo: false
   });
 
@@ -1510,15 +1525,11 @@ async function renderProfileView() {
     }
   }
 
-  // Mensajes recibidos (solo propietario)
+  // Mensajes recibidos (para todos los usuarios)
   const msgsSection = s('profile-messages');
   if (msgsSection) {
-    if (p.role === 'landlord') {
-      msgsSection.style.display = 'block';
-      await loadInboxMessages(msgsSection);
-    } else {
-      msgsSection.style.display = 'none';
-    }
+    msgsSection.style.display = 'block';
+    await loadInboxMessages(msgsSection);
   }
 }
 
@@ -1697,6 +1708,8 @@ window.uploadProfileAvatar = async function(e) {
 };
 
 async function loadInboxMessages(container) {
+  if (!CURRENT_USER) return;
+
   const { data: chats } = await db.from('chats')
     .select('*')
     .or(`receiver_id.eq.${CURRENT_USER.id},sender_id.eq.${CURRENT_USER.id}`)
@@ -1710,27 +1723,81 @@ async function loadInboxMessages(container) {
   const convMap = {};
   chats.forEach(m => {
     if (!convMap[m.chat_id]) {
-      const otherId   = m.sender_id === CURRENT_USER.id ? m.receiver_id : m.sender_id;
-      const otherName = m.sender_id === CURRENT_USER.id ? 'Inquilino / Usuario' : m.sender_name;
+      const isMeSender = m.sender_id === CURRENT_USER.id;
+      const otherId    = isMeSender ? m.receiver_id : m.sender_id;
+      const otherName  = isMeSender ? (m.receiver_name || 'Usuario') : (m.sender_name || 'Usuario');
       convMap[m.chat_id] = { ...m, otherId, otherName, unread: 0 };
     }
     if (m.receiver_id === CURRENT_USER.id && !m.is_read) {
       convMap[m.chat_id].unread++;
     }
   });
+
   const convs = Object.values(convMap);
+
+  // Cargar fotos de perfiles desde profiles DB para los participantes
+  const otherIds = [...new Set(convs.map(c => c.otherId).filter(id => isValidUUID(id)))];
+  if (otherIds.length > 0) {
+    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color').in('id', otherIds);
+    (profs || []).forEach(p => {
+      CHAT_PROFILES_CACHE[p.id] = p;
+    });
+  }
 
   container.innerHTML = `
     <div class="panel-card-title">Mensajes recibidos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length}</span></div>
-    ${convs.map(c => `
-      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title || 'Propiedad')}', '${escAttr(c.otherName)}', '${c.otherId}')">
+    ${convs.map(c => {
+      const cachedProf = CHAT_PROFILES_CACHE[c.otherId];
+      const otherName  = cachedProf?.name || c.otherName || 'Usuario';
+      const avatarUrl  = cachedProf?.avatar_url || null;
+      const avatarBg   = cachedProf?.avatar_color || '#1a56db';
+      const initial    = (otherName || 'U').charAt(0).toUpperCase();
+
+      const avHtml = avatarUrl
+        ? `<img src="${avatarUrl}" alt="${escAttr(otherName)}" style="width:100%;height:100%;object-fit:cover;">`
+        : initial;
+
+      return `
+      <div class="prop-row" style="cursor:pointer;display:flex;align-items:center;gap:0.85rem;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title || 'Consulta')}', '${escAttr(otherName)}', '${c.otherId}')">
+        <div class="roomie-av" onclick="event.stopPropagation();openPublicProfile('${c.otherId}', '${escAttr(otherName)}')" style="background:${avatarUrl ? 'transparent' : avatarBg};width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;" title="Ver perfil público de ${escAttr(otherName)}">
+          ${avHtml}
+        </div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${c.otherName}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title || 'Consulta'}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${otherName}</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);">${formatChatTime(c.created_at)}</div>
+          </div>
+          <div style="font-size:0.75rem;color:var(--blue);font-weight:500;">${c.property_title || 'Consulta'}</div>
           <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.message}</div>
         </div>
         ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Chat activo</span>'}
-      </div>`).join('')}`;
+      </div>`;
+    }).join('')}`;
+}
+
+let globalUserChatChannel = null;
+
+function setupGlobalChatNotifications() {
+  if (!CURRENT_USER) return;
+  if (globalUserChatChannel) { globalUserChatChannel.unsubscribe(); }
+
+  globalUserChatChannel = db.channel('user-notifications:' + CURRENT_USER.id)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'chats',
+      filter: `receiver_id=eq.${CURRENT_USER.id}`
+    }, async (payload) => {
+      const msg = payload.new;
+      const senderName = msg.sender_name || 'Un usuario';
+      addNotif('Nuevo mensaje de ' + senderName, `"${msg.message}"`);
+      
+      const msgsSec = document.getElementById('profile-messages');
+      if (msgsSec && msgsSec.style.display !== 'none') {
+        await loadInboxMessages(msgsSec);
+      }
+    })
+    .subscribe();
 }
 
 window.deleteMyRoomieProfile = async function(id) {

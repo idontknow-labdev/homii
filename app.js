@@ -1203,13 +1203,21 @@ async function openRoomieModal(id) {
   const avEl = document.getElementById('rmodal-avatar');
   if (avEl) {
     avEl.style.cursor = 'pointer';
-    avEl.title = 'Ver perfil público';
-    avEl.onclick = () => { closeRoomieModal(); openPublicProfile(userUid); };
-    if (r.avatar_url) {
-      avEl.innerHTML = `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`;
+    avEl.title = 'Ver perfil público de ' + r.name;
+    avEl.onclick = () => { closeRoomieModal(); openPublicProfile(userUid, r.name, 'student'); };
+
+    // Consultar avatar actualizado en profiles si existe
+    let avatarUrl = r.avatar_url;
+    if (isValidUUID(r.user_id)) {
+      const { data: uProf } = await db.from('profiles').select('avatar_url, name').eq('id', r.user_id).maybeSingle();
+      if (uProf?.avatar_url) avatarUrl = uProf.avatar_url;
+    }
+
+    if (avatarUrl) {
+      avEl.innerHTML = `<img src="${avatarUrl}" alt="${r.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
       avEl.style.background = 'transparent';
     } else {
-      avEl.textContent = r.name.charAt(0);
+      avEl.textContent = r.name.charAt(0).toUpperCase();
       avEl.style.background = r.avatar_color || '#1a56db';
     }
   }
@@ -1238,13 +1246,13 @@ async function openRoomieModal(id) {
   document.getElementById('rmodal-desc').textContent    = r.description;
   document.getElementById('rmodal-contact').textContent = r.is_demo ? 'soporte@homii.ec (solo ejemplo)' : r.contact;
 
-  setupRoomieChat(r);
+  await setupRoomieChat(r);
 
   document.getElementById('roomie-modal')?.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
-function setupRoomieChat(r) {
+async function setupRoomieChat(r) {
   const msgs    = document.getElementById('roomie-chat-msgs');
   const input   = document.getElementById('roomie-chat-input');
   const sendBtn = document.getElementById('roomie-chat-send');
@@ -1252,37 +1260,116 @@ function setupRoomieChat(r) {
   if (!msgs) return;
 
   if (r.is_demo) {
-    if (chatBox) chatBox.innerHTML = `<div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">Este es un perfil de demostración.<br>No hay un estudiante real para contactar.</div>`;
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">
+        Este es un perfil de demostración.<br>No hay un estudiante real para contactar.<br>
+        Cuando estudiantes reales publiquen sus perfiles, podrá chatear con ellos en tiempo real desde aquí.
+      </div>`;
     return;
   }
 
   if (!CURRENT_USER) {
-    if (chatBox) chatBox.innerHTML = `<div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">Inicie sesión para escribir a este estudiante.<br><a class="auth-link" style="cursor:pointer;" onclick="closeRoomieModal();openAuth()">Iniciar sesión</a></div>`;
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);text-align:center;line-height:1.6;">
+        Inicie sesión para escribir a este estudiante.<br>
+        <a class="auth-link" style="cursor:pointer;" onclick="closeRoomieModal();openAuth()">Iniciar sesión</a>
+      </div>`;
     return;
   }
 
-  msgs.innerHTML = `<div class="chat-bubble chat-in">Hola, vi tu perfil en Homii. ¿Sigues buscando compañero?</div>`;
-  if (sendBtn) sendBtn.style.display = '';
+  // Si el usuario actual es el propio autor de este perfil roomie
+  if (CURRENT_USER.id === r.user_id) {
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.25rem;font-size:0.82rem;color:var(--text-muted);line-height:1.6;text-align:center;">
+        Esta es su propia publicación de compañero.<br>
+        Para revisar y responder los mensajes recibidos de otros estudiantes, revise sus 
+        <a class="auth-link" style="cursor:pointer;" onclick="closeRoomieModal();navigate('profile');">Mensajes recibidos en Mi Perfil</a>.
+      </div>`;
+    return;
+  }
 
+  if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
+
+  const chatId = `roomie_${r.id}_usr_${CURRENT_USER.id}`;
+  const targetRoomieUserId = r.user_id || 'demo_roomie';
+
+  // Buscar avatar del autor si no lo tiene
+  let roomieAvatarUrl = r.avatar_url;
+  if (!roomieAvatarUrl && isValidUUID(targetRoomieUserId)) {
+    const prof = await fetchUserProfileForChat(targetRoomieUserId);
+    if (prof?.avatar_url) roomieAvatarUrl = prof.avatar_url;
+  }
+
+  // Cargar historial real desde Supabase DB
+  const { data: history } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+
+  const appendBubble = (m) => {
+    const el = renderChatMessageElement(m, CURRENT_USER.id, r.name, roomieAvatarUrl);
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+  };
+
+  msgs.innerHTML = '';
+  if (!history || history.length === 0) {
+    const defaultWelcome = {
+      sender_id: targetRoomieUserId,
+      sender_name: r.name,
+      message: `Hola, vi tu perfil en Homii ("${r.career}"). ¿Sigues buscando compañero?`,
+      created_at: new Date().toISOString()
+    };
+    msgs.appendChild(renderChatMessageElement(defaultWelcome, CURRENT_USER.id, r.name, roomieAvatarUrl));
+  } else {
+    (history || []).forEach(m => appendBubble(m));
+  }
+
+  // Suscripción real-time a Supabase
+  activeChatChannel = db.channel('chat:' + chatId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'chats',
+      filter: `chat_id=eq.${chatId}`
+    }, (payload) => {
+      if (payload.new.sender_id !== CURRENT_USER.id) appendBubble(payload.new);
+    })
+    .subscribe();
+
+  // Configurar botón e input de envío
   const newSend = sendBtn.cloneNode(true);
   sendBtn.parentNode.replaceChild(newSend, sendBtn);
-  newSend.addEventListener('click', () => {
-    if (!input?.value.trim()) return;
-    const b = document.createElement('div');
-    b.className = 'chat-bubble chat-out';
-    b.textContent = input.value;
-    msgs.appendChild(b);
+
+  const doSend = async (text) => {
+    text = (text || '').trim();
+    if (!text) return;
+
+    if (input) input.value = '';
+
+    const localMsgObj = {
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      message: text,
+      created_at: new Date().toISOString()
+    };
+    msgs.appendChild(renderChatMessageElement(localMsgObj, CURRENT_USER.id));
     msgs.scrollTop = msgs.scrollHeight;
-    input.value = '';
-    setTimeout(() => {
-      const reply = document.createElement('div');
-      reply.className = 'chat-bubble chat-in';
-      reply.textContent = 'Gracias por escribirme. Puede contactarme directamente al correo indicado en mi perfil para coordinar los detalles.';
-      msgs.appendChild(reply);
-      msgs.scrollTop = msgs.scrollHeight;
-    }, 1200);
-  });
-  if (input) { input.onkeypress = e => { if (e.key === 'Enter') newSend.click(); }; }
+
+    const { error: chatErr } = await db.from('chats').insert({
+      chat_id: chatId,
+      property_title: 'Compañero: ' + r.name + ' (' + r.career + ')',
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      receiver_id: targetRoomieUserId,
+      message: text
+    });
+
+    if (chatErr) {
+      alert('Error al enviar mensaje: ' + chatErr.message);
+      console.error('Error enviando chat roomie:', chatErr);
+    }
+  };
+
+  newSend.addEventListener('click', () => doSend(input?.value));
+  if (input) { input.onkeypress = e => { if (e.key === 'Enter') doSend(input.value); }; }
 }
 
 function closeRoomieModal() {

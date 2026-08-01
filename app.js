@@ -465,6 +465,8 @@ function navigate(viewId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+window.navigate = navigate;
+
 function setupNav() {
   document.querySelectorAll('.nav-link').forEach(l => {
     l.addEventListener('click', () => { if (l.dataset.view) navigate(l.dataset.view); });

@@ -2542,6 +2542,7 @@ window.openPublicProfile = async function openPublicProfile(userId, fallbackName
 }
 
 function closePublicProfileModal() {
+  document.getElementById('public-profile-modal')?.classList.remove('open');
   document.body.style.overflow = '';
 }
 

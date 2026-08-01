@@ -915,18 +915,29 @@ textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .modal-badges-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
 
 .modal-close-btn {
-  width: 32px; height: 32px;
+  width: 36px; height: 36px;
   border-radius: 50%;
-  background: var(--bg-section);
+  background: var(--gray-100);
   border: 1px solid var(--border);
-  color: var(--text-muted);
-  cursor: pointer;
+  color: var(--text);
+  cursor: pointer !important;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  font-size: 1rem;
-  transition: var(--t-fast);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: all var(--t-fast);
+  z-index: 100;
+  position: relative;
+  user-select: none;
+  pointer-events: auto !important;
 }
-.modal-close-btn:hover { background: var(--red-bg); color: var(--red); border-color: #fca5a5; }
+.modal-close-btn:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+  transform: scale(1.08);
+}
 
 .modal-body-grid {
   display: grid;

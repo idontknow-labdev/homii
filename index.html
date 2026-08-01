@@ -954,7 +954,7 @@
         <p id="detail-location"></p>
         <div class="modal-badges-row" id="detail-badges"></div>
       </div>
-      <button class="modal-close-btn" onclick="closePropertyModal()">&#215;</button>
+      <button class="modal-close-btn" onclick="window.closePropertyModal()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
 
     <!-- Pestañas Móviles -->
@@ -1090,7 +1090,7 @@
         <h3 id="rmodal-title">Perfil de Compañero</h3>
         <p id="rmodal-career"></p>
       </div>
-      <button class="modal-close-btn" id="roomie-modal-close">&#215;</button>
+      <button class="modal-close-btn" id="roomie-modal-close" onclick="window.closeRoomieModal()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
 
     <!-- Pestañas Móviles -->
@@ -1169,7 +1169,7 @@
         <h3 id="conv-title">Conversación</h3>
         <p style="font-size:0.78rem;color:var(--text-muted);">Chat en tiempo real</p>
       </div>
-      <button class="modal-close-btn" onclick="closeConversationModal()">&#215;</button>
+      <button class="modal-close-btn" onclick="window.closeConversationModal()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
     <div class="conv-modal-body">
       <div class="direct-chat-box">
@@ -1193,7 +1193,7 @@
         <h3 id="pub-profile-title">Perfil de Usuario</h3>
         <p style="font-size:0.78rem;color:var(--text-muted);">Información del miembro y sus publicaciones activas</p>
       </div>
-      <button class="modal-close-btn" onclick="closePublicProfileModal()">&#215;</button>
+      <button class="modal-close-btn" onclick="window.closePublicProfileModal()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
 
     <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem;">
@@ -1251,7 +1251,7 @@
         <p class="non-pucem-element">Homii — Portoviejo, Manabí</p>
         <p class="pucem-element">Homii x PUCEM — Portoviejo, Manabí</p>
       </div>
-      <button class="modal-close-btn" id="auth-close" onclick="closeAuth()" type="button">&#215;</button>
+      <button class="modal-close-btn" id="auth-close" onclick="window.closeAuth()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
 
     <!-- Panel login -->
@@ -1327,7 +1327,7 @@
   <div class="activation-box">
     <div class="activation-head">
       <h4>Simulador — Correo Institucional PUCEM</h4>
-      <button class="modal-close-btn" id="activation-close" onclick="closeActivation()" type="button">&#215;</button>
+      <button class="modal-close-btn" id="activation-close" onclick="window.closeActivation()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
     <div class="activation-body">
       <h4>Active su pase estudiantil Homii x PUCEM</h4>
@@ -1418,6 +1418,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_17"></script>
+<script src="app.js?v=20260731_18"></script>
 </body>
 </html>

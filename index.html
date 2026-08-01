@@ -1163,7 +1163,7 @@
      MODAL DE CONVERSACIÓN / CHAT
      =========================================================== -->
 <div class="modal-overlay" id="conversation-modal">
-  <div class="modal-box" style="max-width:550px;">
+  <div class="modal-box modal-box-chat" style="max-width:580px;">
     <div class="modal-head">
       <div>
         <h3 id="conv-title">Conversación</h3>
@@ -1171,10 +1171,10 @@
       </div>
       <button class="modal-close-btn" onclick="closeConversationModal()">&#215;</button>
     </div>
-    <div style="padding:1.25rem;display:flex;flex-direction:column;gap:1rem;">
-      <div class="direct-chat-box" style="height:300px;">
+    <div class="conv-modal-body">
+      <div class="direct-chat-box">
         <div class="chat-msgs" id="conv-msgs"></div>
-        <div class="chat-input-row">
+        <div class="direct-chat-input-bar">
           <input type="text" class="chat-txt" id="conv-input" placeholder="Escriba una respuesta...">
           <button class="chat-send" id="conv-send">Enviar</button>
         </div>
@@ -1418,6 +1418,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_12"></script>
+<script src="app.js?v=20260731_13"></script>
 </body>
 </html>

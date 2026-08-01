@@ -957,6 +957,12 @@
       <button class="modal-close-btn" onclick="closePropertyModal()">&#215;</button>
     </div>
 
+    <!-- Pestañas Móviles -->
+    <div class="modal-mobile-tabs" id="prop-modal-mobile-tabs">
+      <button class="modal-tab-btn active" id="prop-tab-info" onclick="switchModalTab('property-modal', 'details')">Información del Inmueble</button>
+      <button class="modal-tab-btn" id="prop-tab-chat" onclick="switchModalTab('property-modal', 'chat')">Chat Directo 💬</button>
+    </div>
+
     <div class="modal-body-grid">
       <!-- Columna izquierda -->
       <div class="modal-left">
@@ -1016,6 +1022,12 @@
         <div>
           <div class="detail-section-label">Opiniones</div>
           <div class="reviews-list" id="detail-reviews"></div>
+        </div>
+
+        <div class="mobile-cta-row" style="margin-top:1.25rem;">
+          <button class="btn btn-primary btn-full" onclick="switchModalTab('property-modal', 'chat')">
+            💬 Chatear con el propietario
+          </button>
         </div>
 
       </div>
@@ -1081,6 +1093,12 @@
       <button class="modal-close-btn" id="roomie-modal-close">&#215;</button>
     </div>
 
+    <!-- Pestañas Móviles -->
+    <div class="modal-mobile-tabs" id="roomie-modal-mobile-tabs">
+      <button class="modal-tab-btn active" id="roomie-tab-info" onclick="switchModalTab('roomie-modal', 'details')">Perfil del Estudiante</button>
+      <button class="modal-tab-btn" id="roomie-tab-chat" onclick="switchModalTab('roomie-modal', 'chat')">Chat Directo 💬</button>
+    </div>
+
     <div class="roomie-modal-layout">
       <!-- Perfil -->
       <div class="roomie-profile-section">
@@ -1105,6 +1123,12 @@
         <div style="background:var(--celeste-bg);border:1px solid var(--celeste-lt);border-radius:var(--r-md);padding:1rem;">
           <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Correo de contacto</div>
           <div style="font-size:0.88rem;color:var(--blue);" id="rmodal-contact"></div>
+        </div>
+
+        <div class="mobile-cta-row" style="margin-top:1.25rem;">
+          <button class="btn btn-primary btn-full" onclick="switchModalTab('roomie-modal', 'chat')">
+            💬 Escribir a este estudiante
+          </button>
         </div>
       </div>
 
@@ -1394,6 +1418,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_10"></script>
+<script src="app.js?v=20260731_11"></script>
 </body>
 </html>

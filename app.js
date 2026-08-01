@@ -817,6 +817,7 @@ async function openPropertyModal(id) {
 
   setupDirectChat(p);
 
+  switchModalTab('property-modal', 'details');
   document.getElementById('property-modal')?.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -863,11 +864,18 @@ window.setGallery = function(id, idx) {
 };
 
 function closePropertyModal() {
-  document.getElementById('property-modal')?.classList.remove('open');
+  const modal = document.getElementById('property-modal');
+  modal?.classList.remove('open');
   document.body.style.overflow = '';
   const f = document.getElementById('detail-map'); if (f) f.src = '';
   if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
   openPropertyData = null;
+  if (modal) {
+    const left  = modal.querySelector('.modal-left');
+    const right = modal.querySelector('.modal-right');
+    if (left)  left.style.display  = '';
+    if (right) right.style.display = '';
+  }
 }
 
 // ============================================================
@@ -1321,6 +1329,7 @@ async function openRoomieModal(id) {
 
   await setupRoomieChat(r);
 
+  switchModalTab('roomie-modal', 'details');
   document.getElementById('roomie-modal')?.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -1446,9 +1455,64 @@ async function setupRoomieChat(r) {
 }
 
 function closeRoomieModal() {
-  document.getElementById('roomie-modal')?.classList.remove('open');
+  const modal = document.getElementById('roomie-modal');
+  modal?.classList.remove('open');
   document.body.style.overflow = '';
+  if (modal) {
+    const left  = modal.querySelector('.roomie-profile-section');
+    const right = modal.querySelector('.roomie-modal-layout > div:nth-child(2)');
+    if (left)  left.style.display  = '';
+    if (right) right.style.display = '';
+  }
 }
+
+window.switchModalTab = function(modalId, tabName) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  const tabInfoBtn = modal.querySelector('.modal-mobile-tabs .modal-tab-btn:nth-child(1)');
+  const tabChatBtn = modal.querySelector('.modal-mobile-tabs .modal-tab-btn:nth-child(2)');
+
+  if (tabName === 'details') {
+    tabInfoBtn?.classList.add('active');
+    tabChatBtn?.classList.remove('active');
+  } else {
+    tabChatBtn?.classList.add('active');
+    tabInfoBtn?.classList.remove('active');
+  }
+
+  if (modalId === 'property-modal') {
+    const left  = modal.querySelector('.modal-left');
+    const right = modal.querySelector('.modal-right');
+    if (window.innerWidth <= 768) {
+      if (tabName === 'chat') {
+        if (left)  left.style.display  = 'none';
+        if (right) right.style.display = 'block';
+      } else {
+        if (left)  left.style.display  = 'block';
+        if (right) right.style.display = 'none';
+      }
+    } else {
+      if (left)  left.style.display  = '';
+      if (right) right.style.display = '';
+    }
+  } else if (modalId === 'roomie-modal') {
+    const left  = modal.querySelector('.roomie-profile-section');
+    const right = modal.querySelector('.roomie-modal-layout > div:nth-child(2)');
+    if (window.innerWidth <= 768) {
+      if (tabName === 'chat') {
+        if (left)  left.style.display  = 'none';
+        if (right) right.style.display = 'flex';
+      } else {
+        if (left)  left.style.display  = 'block';
+        if (right) right.style.display = 'none';
+      }
+    } else {
+      if (left)  left.style.display  = '';
+      if (right) right.style.display = '';
+    }
+  }
+};
 
 async function submitRoomieProfile() {
   if (!CURRENT_USER) { openAuth(); return; }

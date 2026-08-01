@@ -1794,10 +1794,20 @@ function setupGlobalChatNotifications() {
       
       const msgsSec = document.getElementById('profile-messages');
       if (msgsSec && msgsSec.style.display !== 'none') {
-        await loadInboxMessages(msgsSec);
+        await loadInboxMessages(msgsSec, 'Mensajes recibidos');
+      }
+
+      const landSec = document.getElementById('landlord-messages');
+      if (landSec && landSec.style.display !== 'none') {
+        await loadInboxMessages(landSec, 'Mensajes recibidos');
       }
     })
     .subscribe();
+}
+
+async function loadLandlordMessages() {
+  const section = document.getElementById('landlord-messages');
+  if (section) await loadInboxMessages(section, 'Mensajes recibidos');
 }
 
 window.deleteMyRoomieProfile = async function(id) {
@@ -1858,45 +1868,7 @@ async function renderLandlordPanel() {
   await loadLandlordMessages();
 }
 
-async function loadLandlordMessages() {
-  const section = document.getElementById('landlord-messages');
-  if (!section || !CURRENT_USER) return;
 
-  const { data: chats } = await db.from('chats')
-    .select('*')
-    .or(`receiver_id.eq.${CURRENT_USER.id},sender_id.eq.${CURRENT_USER.id}`)
-    .order('created_at', { ascending: false });
-
-  if (!chats || chats.length === 0) {
-    section.innerHTML = '<div class="panel-card-title">Mensajes de inquilinos</div><p style="font-size:0.83rem;color:var(--text-muted);">No tiene mensajes todavía. Cuando alguien le escriba, los mensajes aparecerán aquí.</p>';
-    return;
-  }
-
-  const convMap = {};
-  chats.forEach(m => {
-    if (!convMap[m.chat_id]) {
-      const otherId   = m.sender_id === CURRENT_USER.id ? m.receiver_id : m.sender_id;
-      const otherName = m.sender_id === CURRENT_USER.id ? 'Inquilino / Usuario' : m.sender_name;
-      convMap[m.chat_id] = { ...m, otherId, otherName, unread: 0 };
-    }
-    if (m.receiver_id === CURRENT_USER.id && !m.is_read) {
-      convMap[m.chat_id].unread++;
-    }
-  });
-  const convs = Object.values(convMap);
-
-  section.innerHTML = `
-    <div class="panel-card-title">Mensajes de inquilinos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length} conversación(es)</span></div>
-    ${convs.map(c => `
-      <div class="prop-row" style="cursor:pointer;" onclick="openConversation('${c.chat_id}', '${escAttr(c.property_title || 'Propiedad')}', '${escAttr(c.otherName)}', '${c.otherId}')">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.85rem;font-weight:600;">${c.otherName}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted);">${c.property_title || 'Consulta'}</div>
-          <div style="font-size:0.78rem;color:var(--text-sec);margin-top:0.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.message}</div>
-        </div>
-        ${c.unread > 0 ? `<span class="badge badge-blue">${c.unread} nuevo</span>` : '<span class="badge badge-gray">Chat activo</span>'}
-      </div>`).join('')}`;
-}
 
 window.makeFeatured = async function(id) {
   await db.from('properties').update({ featured: true }).eq('id', id);

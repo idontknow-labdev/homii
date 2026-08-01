@@ -350,32 +350,79 @@ function updateNavUI() {
   }
 }
 
+window.toggleMobileDrawer = function(e) {
+  if (e) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }
+  const drawer  = document.getElementById('mobile-nav-drawer');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  if (!drawer) return;
+
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+    overlay?.classList.remove('open');
+    document.body.style.overflow = '';
+  } else {
+    drawer.classList.add('open');
+    overlay?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+};
+
+window.closeMobileDrawer = function(e) {
+  if (e) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }
+  const drawer  = document.getElementById('mobile-nav-drawer');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  drawer?.classList.remove('open');
+  overlay?.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
 function setupMobileMenu() {
   const toggleBtn = document.getElementById('mobile-menu-toggle');
   const drawer    = document.getElementById('mobile-nav-drawer');
   const overlay   = document.getElementById('mobile-nav-overlay');
   const closeBtn  = document.getElementById('mobile-drawer-close');
 
-  const openDrawer  = () => { drawer?.classList.add('open'); overlay?.classList.add('open'); document.body.style.overflow = 'hidden'; };
-  const closeDrawer = () => { drawer?.classList.remove('open'); overlay?.classList.remove('open'); document.body.style.overflow = ''; };
+  if (toggleBtn) {
+    toggleBtn.onclick = (e) => window.toggleMobileDrawer(e);
+    toggleBtn.ontouchstart = (e) => window.toggleMobileDrawer(e);
+  }
 
-  toggleBtn?.addEventListener('click', openDrawer);
-  closeBtn?.addEventListener('click', closeDrawer);
-  overlay?.addEventListener('click', closeDrawer);
+  if (closeBtn) {
+    closeBtn.onclick = (e) => window.closeMobileDrawer(e);
+    closeBtn.ontouchstart = (e) => window.closeMobileDrawer(e);
+  }
+
+  if (overlay) {
+    overlay.onclick = (e) => window.closeMobileDrawer(e);
+    overlay.ontouchstart = (e) => window.closeMobileDrawer(e);
+  }
 
   document.querySelectorAll('#mobile-nav-drawer .nav-link').forEach(link => {
-    link.addEventListener('click', e => {
+    const handleNav = (e) => {
+      e.preventDefault();
       const view = link.getAttribute('data-view');
       if (view) {
         navigate(view);
-        closeDrawer();
+        window.closeMobileDrawer();
       }
-    });
+    };
+    link.onclick = handleNav;
   });
 
-  document.getElementById('btn-mobile-login')?.addEventListener('click', () => { closeDrawer(); openAuth(); });
-  document.getElementById('btn-mobile-register')?.addEventListener('click', () => { closeDrawer(); openAuthRegister(); });
-  document.getElementById('btn-mobile-logout')?.addEventListener('click', () => { closeDrawer(); doLogout(); });
+  const mLogin  = document.getElementById('btn-mobile-login');
+  const mReg    = document.getElementById('btn-mobile-register');
+  const mLogout = document.getElementById('btn-mobile-logout');
+
+  if (mLogin)  mLogin.onclick  = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
+  if (mReg)    mReg.onclick    = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
+  if (mLogout) mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); doLogout(); };
 }
 
 function guardRoute(route) {

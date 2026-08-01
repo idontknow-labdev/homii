@@ -1458,18 +1458,29 @@ footer { background: var(--blue-dark); color: rgba(255,255,255,0.75); margin-top
 
 .mobile-menu-toggle {
   display: none;
-  background: transparent;
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--gray-50);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: var(--radius-sm);
-  padding: 0.4rem 0.55rem;
+  padding: 0.5rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
   transition: background var(--transition-fast);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 1002;
 }
 
-.mobile-menu-toggle:hover {
+.mobile-menu-toggle * {
+  pointer-events: none !important;
+}
+
+.mobile-menu-toggle:hover,
+.mobile-menu-toggle:active {
   background: var(--gray-100);
 }
 

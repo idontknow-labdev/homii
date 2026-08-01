@@ -1639,6 +1639,51 @@ footer { background: var(--blue-dark); color: rgba(255,255,255,0.75); margin-top
     overflow: hidden;
   }
 
+  /* Botones de cierre táctil en móvil (44px min area) */
+  .modal-close-btn, .modal-close, #auth-close, #mobile-drawer-close, #roomie-modal-close, #activation-close {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1050 !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    pointer-events: auto !important;
+  }
+
+  /* Modal Autenticación (Login / Registro) en Móvil */
+  .auth-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    z-index: 1500 !important;
+  }
+
+  .auth-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: var(--radius-md) !important;
+    border-top-right-radius: var(--radius-md) !important;
+    overflow-y: auto !important;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.25) !important;
+  }
+
+  .auth-head {
+    padding: 1.1rem 1.25rem !important;
+  }
+
+  .auth-form {
+    padding: 1.25rem 1rem 2.25rem !important;
+  }
+
   .modal-body-grid { 
     grid-template-columns: 1fr; 
     flex: 1;

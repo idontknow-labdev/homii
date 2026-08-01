@@ -1251,7 +1251,7 @@
         <p class="non-pucem-element">Homii — Portoviejo, Manabí</p>
         <p class="pucem-element">Homii x PUCEM — Portoviejo, Manabí</p>
       </div>
-      <button class="modal-close-btn" id="auth-close">&#215;</button>
+      <button class="modal-close-btn" id="auth-close" onclick="closeAuth()" type="button">&#215;</button>
     </div>
 
     <!-- Panel login -->
@@ -1275,7 +1275,7 @@
       </form>
 
       <div class="auth-toggle">
-        ¿No tiene cuenta? <a class="auth-link" id="to-register">Regístrese aquí</a>
+        ¿No tiene cuenta? <a class="auth-link" id="to-register" onclick="switchPanel('register')">Regístrese aquí</a>
       </div>
     </div>
 
@@ -1314,7 +1314,7 @@
         <button type="submit" class="btn btn-primary btn-full">Crear cuenta</button>
       </form>
       <div class="auth-toggle">
-        ¿Ya tiene cuenta? <a class="auth-link" id="to-login">Inicie sesión</a>
+        ¿Ya tiene cuenta? <a class="auth-link" id="to-login" onclick="switchPanel('login')">Inicie sesión</a>
       </div>
     </div>
   </div>
@@ -1327,7 +1327,7 @@
   <div class="activation-box">
     <div class="activation-head">
       <h4>Simulador — Correo Institucional PUCEM</h4>
-      <button class="modal-close-btn" id="activation-close" style="width:28px;height:28px;font-size:0.85rem;">&#215;</button>
+      <button class="modal-close-btn" id="activation-close" onclick="closeActivation()" type="button">&#215;</button>
     </div>
     <div class="activation-body">
       <h4>Active su pase estudiantil Homii x PUCEM</h4>
@@ -1418,6 +1418,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_15"></script>
+<script src="app.js?v=20260731_16"></script>
 </body>
 </html>

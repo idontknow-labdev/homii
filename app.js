@@ -1,4 +1,4 @@
-// ============================================================
+  // ============================================================
 // HOMII — Application Logic v4.0
 // Backend: Supabase (Base de datos real + Chat en tiempo real)
 // ============================================================
@@ -416,18 +416,13 @@ function setupMobileMenu() {
     link.onclick = handleNav;
   });
 
-  if (mLogin) {
-    mLogin.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
-    mLogin.ontouchstart = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
-  }
-  if (mReg) {
-    mReg.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
-    mReg.ontouchstart = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
-  }
-  if (mLogout) {
-    mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); logout(); };
-    mLogout.ontouchstart = (e) => { e.preventDefault(); window.closeMobileDrawer(); logout(); };
-  }
+  const mLogin  = document.getElementById('btn-mobile-login');
+  const mReg    = document.getElementById('btn-mobile-register');
+  const mLogout = document.getElementById('btn-mobile-logout');
+
+  if (mLogin)  mLogin.onclick  = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
+  if (mReg)    mReg.onclick    = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
+  if (mLogout) mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); doLogout(); };
 }
 
 function guardRoute(route) {
@@ -464,8 +459,6 @@ function navigate(viewId) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-window.navigate = navigate;
 
 function setupNav() {
   document.querySelectorAll('.nav-link').forEach(l => {
@@ -2382,15 +2375,10 @@ window.openCurrentLandlordProfile = function() {
   }, 50);
 };
 window.openAuth                   = openAuth;
-window.openAuthRegister           = openAuthRegister;
 window.closeAuth                  = closeAuth;
-window.switchPanel                = switchPanel;
 window.logout                     = logout;
 window.filterListings             = filterListings;
 window.filterRoomies              = filterRoomies;
-window.closeConversationModal     = closeConversationModal;
-window.closePublicProfileModal    = function() { document.getElementById('public-profile-modal')?.classList.remove('open'); };
-window.closeActivation            = function() { document.getElementById('activation-popup')?.classList.remove('open'); };
 
 function isValidUUID(str) {
   return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);

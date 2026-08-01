@@ -1,4 +1,4 @@
-  // ============================================================
+  3// ============================================================
 // HOMII — Application Logic v4.0
 // Backend: Supabase (Base de datos real + Chat en tiempo real)
 // ============================================================
@@ -82,32 +82,24 @@ async function loadUserProfile(user) {
 
   CURRENT_USER = user;
   
-  // 1. Consultar perfil de la tabla profiles en Supabase
+  // Consultar perfil de la tabla profiles
   let { data: profile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
   
-  const metaName  = user.user_metadata?.name || user.email.split('@')[0];
-  const metaRole  = user.user_metadata?.role || 'student';
-  const metaPhone = user.user_metadata?.phone || null;
-
   if (!profile) {
-    // Si la tabla no devolvió fila, crear perfil con metadata de Supabase Auth
+    // Si la tabla no devolvió fila, crear perfil por defecto inmediatamente
+    const defaultName = user.user_metadata?.name || user.email.split('@')[0];
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
-    const color  = colors[Math.floor(Math.random() * colors.length)];
+    const color = colors[Math.floor(Math.random() * colors.length)];
 
     profile = {
       id: user.id,
-      name: metaName,
-      role: metaRole,
-      phone: metaPhone,
+      name: defaultName,
+      role: 'student',
+      phone: null,
       avatar_color: color
     };
 
-    // Upsert para guardar la fila en Supabase public.profiles
     await db.from('profiles').upsert(profile, { onConflict: 'id' }).catch(err => console.warn('Profile init upsert warning:', err));
-  } else {
-    // Si la fila existía pero le faltaban campos, sincronizar con metadata si es necesario
-    if (!profile.role && metaRole) profile.role = metaRole;
-    if ((!profile.name || profile.name === user.email.split('@')[0]) && metaName) profile.name = metaName;
   }
 
   // Cargar datos locales de respaldo si existen
@@ -126,11 +118,6 @@ async function loadUserProfile(user) {
   }
 
   CURRENT_PROFILE = profile;
-
-  // Sincronizar en segundo plano la metadata en Supabase Auth si es necesario
-  db.auth.updateUser({
-    data: { name: profile.name, role: profile.role, phone: profile.phone }
-  }).catch(() => {});
 
   // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
   const em = (user.email || '').toLowerCase();
@@ -229,11 +216,11 @@ async function doRegister() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  // Intento 1: Registrar nuevo usuario con metadata completa
+  // Intento 1: Registrar nuevo usuario
   let { data, error } = await db.auth.signUp({
     email,
     password: pass,
-    options: { data: { name, role, phone } }
+    options: { data: { name, role } }
   });
 
   // Si Supabase responde con rate limit o correo ya existente, intentamos iniciar sesión de forma transparente
@@ -268,24 +255,18 @@ async function doRegister() {
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
-    const profilePayload = {
+    await db.from('profiles').upsert({
       id: data.user.id,
       name,
       role,
       phone: phone || null,
-      avatar_color: color,
-      updated_at: new Date().toISOString()
-    };
-
-    const { error: upsertErr } = await db.from('profiles').upsert(profilePayload, { onConflict: 'id' });
-    if (upsertErr) console.warn('Registration profile upsert error:', upsertErr.message);
-
-    localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
+      avatar_color: color
+    });
 
     await loadUserProfile(data.user);
     closeAuth();
     addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
-    if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
+    if (role === 'landlord') { APP.pendingRoute = 'landlord'; }
   }
 }
 
@@ -1776,11 +1757,6 @@ window.saveProfileChanges = async function(e) {
   // Guardar copia local como respaldo de respuesta inmediata
   localStorage.setItem('homii_extra_' + CURRENT_USER.id, JSON.stringify({ name, phone, occupation, bio }));
 
-  // Actualizar también user_metadata en Supabase Auth
-  db.auth.updateUser({
-    data: { name, phone }
-  }).catch(() => {});
-
   if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
 
   Object.assign(CURRENT_PROFILE, updates);
@@ -2566,7 +2542,6 @@ window.openPublicProfile = async function openPublicProfile(userId, fallbackName
 }
 
 function closePublicProfileModal() {
-  document.getElementById('public-profile-modal')?.classList.remove('open');
   document.body.style.overflow = '';
 }
 

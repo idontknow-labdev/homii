@@ -416,13 +416,18 @@ function setupMobileMenu() {
     link.onclick = handleNav;
   });
 
-  const mLogin  = document.getElementById('btn-mobile-login');
-  const mReg    = document.getElementById('btn-mobile-register');
-  const mLogout = document.getElementById('btn-mobile-logout');
-
-  if (mLogin)  mLogin.onclick  = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
-  if (mReg)    mReg.onclick    = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
-  if (mLogout) mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); doLogout(); };
+  if (mLogin) {
+    mLogin.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
+    mLogin.ontouchstart = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
+  }
+  if (mReg) {
+    mReg.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
+    mReg.ontouchstart = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
+  }
+  if (mLogout) {
+    mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); logout(); };
+    mLogout.ontouchstart = (e) => { e.preventDefault(); window.closeMobileDrawer(); logout(); };
+  }
 }
 
 function guardRoute(route) {
@@ -2375,6 +2380,7 @@ window.openCurrentLandlordProfile = function() {
   }, 50);
 };
 window.openAuth                   = openAuth;
+window.openAuthRegister           = openAuthRegister;
 window.closeAuth                  = closeAuth;
 window.logout                     = logout;
 window.filterListings             = filterListings;

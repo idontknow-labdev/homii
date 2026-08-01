@@ -31,17 +31,17 @@
     <div class="nav-actions">
       <!-- Invitado -->
       <div id="nav-guest" style="display:flex;gap:0.5rem;align-items:center;">
-        <button class="btn btn-outline btn-sm" id="btn-login">Iniciar sesión</button>
-        <button class="btn btn-primary btn-sm" id="btn-register">Registrarse</button>
+        <button class="btn btn-outline btn-sm" id="btn-login" onclick="openAuth()" type="button">Iniciar sesión</button>
+        <button class="btn btn-primary btn-sm" id="btn-register" onclick="openAuthRegister()" type="button">Registrarse</button>
       </div>
 
       <!-- Usuario con sesión -->
       <div id="nav-user" style="display:none;gap:0.75rem;align-items:center;">
-        <div class="user-chip">
+        <div class="user-chip" onclick="navigate('profile')" style="cursor:pointer;" title="Ver mi perfil">
           <div class="user-avatar" id="nav-avatar">U</div>
           <span class="user-name" id="nav-username">Usuario</span>
         </div>
-        <button class="btn btn-outline btn-sm" id="btn-logout">Salir</button>
+        <button class="btn btn-outline btn-sm" id="btn-logout" onclick="logout()" type="button">Salir</button>
       </div>
 
       <!-- Campana -->
@@ -93,11 +93,11 @@
 
     <div class="mobile-drawer-actions" style="margin-top:1.5rem;">
       <div id="mobile-guest-actions" style="display:flex;flex-direction:column;gap:0.5rem;">
-        <button class="btn btn-outline btn-full" id="btn-mobile-login">Iniciar sesión</button>
-        <button class="btn btn-primary btn-full" id="btn-mobile-register">Registrarse</button>
+        <button class="btn btn-outline btn-full" id="btn-mobile-login" onclick="window.closeMobileDrawer();openAuth();" type="button">Iniciar sesión</button>
+        <button class="btn btn-primary btn-full" id="btn-mobile-register" onclick="window.closeMobileDrawer();openAuthRegister();" type="button">Registrarse</button>
       </div>
       <div id="mobile-user-actions" style="display:none;flex-direction:column;gap:0.5rem;">
-        <button class="btn btn-outline btn-full" id="btn-mobile-logout">Cerrar sesión</button>
+        <button class="btn btn-outline btn-full" id="btn-mobile-logout" onclick="window.closeMobileDrawer();logout();" type="button">Cerrar sesión</button>
       </div>
     </div>
   </div>
@@ -1418,6 +1418,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_14"></script>
+<script src="app.js?v=20260731_15"></script>
 </body>
 </html>

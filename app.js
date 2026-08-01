@@ -336,7 +336,8 @@ function navigate(viewId) {
 
   APP.currentView = viewId;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const target = document.getElementById(viewId + '-view');
+  // Soporte para vistas con id explícito que no siguen el patrón viewId+'-view'
+  const target = document.getElementById(viewId + '-view') || document.getElementById(viewId);
   if (target) target.classList.add('active');
 
   document.querySelectorAll('.nav-link').forEach(l => {
@@ -1239,7 +1240,7 @@ async function renderProfileView() {
 
   if (s('profile-name'))       s('profile-name').textContent       = p.name;
   if (s('profile-email'))      s('profile-email').textContent      = CURRENT_USER.email;
-  if (s('profile-role'))       s('profile-role').textContent       = roleLabel(p.role);
+  if (s('profile-role'))       s('profile-role').textContent       = roleLabel(p.role, CURRENT_USER?.email);
   if (s('profile-phone'))      s('profile-phone').textContent      = p.phone || 'No registrado';
   if (s('profile-occupation')) s('profile-occupation').textContent = p.occupation || 'No especificada';
   if (s('profile-bio'))        s('profile-bio').textContent        = p.bio || 'No ha añadido una descripción a su perfil todavía. Haga clic en "Editar Perfil" para agregar información sobre usted.';
@@ -1456,8 +1457,15 @@ window.deleteMyRoomieProfile = async function(id) {
   addNotif('Perfil eliminado', 'Su perfil de compañero fue eliminado.');
 };
 
-function roleLabel(role) {
-  return { student: 'Estudiante / Arrendatario', landlord: 'Propietario de inmuebles', university: 'Administrador PUCEM' }[role] || role;
+function roleLabel(role, email) {
+  if (role === 'student')  return 'Estudiante / Arrendatario';
+  if (role === 'landlord') return 'Propietario de inmuebles';
+  if (role === 'university') {
+    const em = (email || CURRENT_USER?.email || '').toLowerCase();
+    const isPucem = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
+    return isPucem ? 'Administrador PUCEM' : 'Administrador';
+  }
+  return role;
 }
 
 // ============================================================
@@ -1681,13 +1689,14 @@ async function renderUniPanel() {
 
 window.certifyProp = async function(id) {
   const email = (CURRENT_USER?.email || '').toLowerCase();
-  const isPucemAdmin = email.includes('@pucem.edu.ec') || email.includes('@pucesm.edu.ec');
-  const certType = isPucemAdmin ? 'pucem' : 'standard';
+  const isPucemAdmin = email.endsWith('@pucem.edu.ec') || email.endsWith('@pucesm.edu.ec');
+  const badgeName = isPucemAdmin ? 'Certificado PUCEM' : 'Certificado';
 
   const report = {
     inspectionDate: new Date().toISOString().split('T')[0],
     certifiedBy: CURRENT_PROFILE?.name || CURRENT_USER?.email,
     certificationType: isPucemAdmin ? 'Certificación Oficial PUCEM' : 'Verificación Estándar Homii',
+    certType: isPucemAdmin ? 'pucem' : 'standard',
     standards: {
       waterPressure: 'Aprobado — Buena presión (42 PSI)',
       internetSpeed: 'Aprobado — Fibra Óptica 300 Mbps',
@@ -1696,30 +1705,31 @@ window.certifyProp = async function(id) {
     }
   };
 
-  const { data, error } = await db.from('properties')
-    .update({
-      university_certified: true,
-      certification_type: certType,
-      verification_report: report
-    })
+  // Primer intento: con certification_type (si la columna existe en Supabase)
+  let res = await db.from('properties')
+    .update({ university_certified: true, certification_type: isPucemAdmin ? 'pucem' : 'standard', verification_report: report })
     .eq('id', id)
     .select();
 
-  if (error) {
-    alert('Error al certificar la propiedad: ' + error.message);
-    console.error('Certify error:', error);
+  // Fallback: si Supabase no reconoce certification_type en el schema cache, reintentar sin ella
+  if (res.error && (res.error.message?.includes('Could not find') || res.error.code === 'PGRST204')) {
+    res = await db.from('properties')
+      .update({ university_certified: true, verification_report: report })
+      .eq('id', id)
+      .select();
+  }
+
+  if (res.error) {
+    alert('Error al certificar la propiedad: ' + res.error.message);
+    console.error('Certify error:', res.error);
     return;
   }
 
-  if (data && data.length > 0) {
-    const badgeName = isPucemAdmin ? 'Certificado PUCEM' : 'Certificado Homii';
-    addNotif('Inmueble Certificado', `"${data[0].title}" ha recibido la marca ${badgeName}.`);
-    await renderUniPanel();
-    filterListings();
-    alert(`Propiedad certificada exitosamente como: ${badgeName}`);
-  } else {
-    alert('No se pudo certificar la propiedad. Asegúrese de haber ejecutado la política RLS en Supabase.');
-  }
+  const propTitle = res.data?.[0]?.title || 'El inmueble';
+  addNotif('Inmueble Certificado', `"${propTitle}" recibió la etiqueta "${badgeName}".`);
+  alert(`✅ Propiedad certificada exitosamente como: "${badgeName}"`);
+  await renderUniPanel();
+  filterListings();
 };
 
 // ============================================================
@@ -1863,9 +1873,10 @@ window.openPublicProfile         = openPublicProfile;
 window.closePublicProfileModal   = closePublicProfileModal;
 window.openCurrentLandlordProfile = function() {
   const p = openPropertyData;
-  const targetUid  = p?.landlord_id || 'demo_landlord';
+  const targetUid  = p?.landlord_id  || 'demo_landlord';
   const targetName = p?.landlord_name || 'Propietario Homii';
-  openPublicProfile(targetUid, targetName, 'landlord');
+  closePropertyModal();
+  setTimeout(() => openPublicProfile(targetUid, targetName, 'landlord'), 50);
 };
 window.openAuth                  = openAuth;
 window.closeAuth                 = closeAuth;
@@ -1883,66 +1894,55 @@ function isValidUUID(str) {
 
 window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   const s = id => document.getElementById(id);
-  const targetView = s('public-user-profile-view');
 
-  // 1. Cerrar modales inmediatamente
-  closePropertyModal();
-  closeRoomieModal();
-  closeConversationModal();
-
-  // 2. Cambiar la vista de la página INMEDIATAMENTE de forma síncrona
-  if (targetView) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    targetView.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }
-
-  // 3. Colocar datos iniciales de inmediato (Instant UI render)
+  // 1. Llenar datos iniciales ANTES de navegar para que la vista ya tenga contenido
   const roleStr = fallbackRole || 'landlord';
   let profile = {
-    name: fallbackName || 'Usuario Registrado',
+    name: fallbackName || 'Usuario',
     role: roleStr,
     phone: null,
     occupation: roleStr === 'landlord' ? 'Propietario Verificado Homii' : 'Estudiante Universitario',
-    bio: 'Cargando información del perfil...',
+    bio: 'Cargando información...',
     avatar_color: '#1a56db'
   };
 
-  // Cargar datos de respaldo local si existen
   if (userId) {
     const localAvatar = localStorage.getItem('homii_avatar_' + userId);
     if (localAvatar) profile.avatar_url = localAvatar;
-
     const localExtraStr = localStorage.getItem('homii_extra_' + userId);
     if (localExtraStr) {
       try {
-        const localExtra = JSON.parse(localExtraStr);
-        if (localExtra.bio) profile.bio = localExtra.bio;
-        if (localExtra.occupation) profile.occupation = localExtra.occupation;
-        if (localExtra.phone) profile.phone = localExtra.phone;
-        if (localExtra.name) profile.name = localExtra.name;
-      } catch(e) {}
+        const e = JSON.parse(localExtraStr);
+        if (e.bio)        profile.bio        = e.bio;
+        if (e.occupation) profile.occupation = e.occupation;
+        if (e.phone)      profile.phone      = e.phone;
+        if (e.name)       profile.name       = e.name;
+      } catch(_) {}
     }
   }
 
-  // Renderizar datos locales de forma instantánea
+  // 2. Renderizar datos en la vista antes de mostrarla
   const avEl = s('pub-view-avatar');
   if (avEl) {
     if (profile.avatar_url) {
-      avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       avEl.style.background = 'transparent';
     } else {
       avEl.textContent = (profile.name || 'U').charAt(0).toUpperCase();
       avEl.style.background = profile.avatar_color || '#1a56db';
     }
   }
-
-  if (s('pub-view-name'))       s('pub-view-name').textContent       = profile.name || 'Usuario';
+  if (s('pub-view-name'))       s('pub-view-name').textContent       = profile.name;
   if (s('pub-view-role'))       s('pub-view-role').textContent       = roleLabel(profile.role);
   if (s('pub-view-occupation')) s('pub-view-occupation').textContent = profile.occupation;
   if (s('pub-view-phone'))      s('pub-view-phone').textContent      = profile.phone || 'No especificado';
-  if (s('pub-view-email'))      s('pub-view-email').textContent      = profile.email || 'Contacto directo vía Homii Chat';
+  if (s('pub-view-email'))      s('pub-view-email').textContent      = 'Contacto vía Homii Chat';
   if (s('pub-view-bio'))        s('pub-view-bio').textContent        = profile.bio;
+  if (s('pub-view-props-section'))  s('pub-view-props-section').style.display  = 'none';
+  if (s('pub-view-roomie-section')) s('pub-view-roomie-section').style.display = 'none';
+
+  // 3. Navegar a la vista de perfil público usando el sistema estándar
+  navigate('public-user-profile-view');
 
   // 4. Consultar base de datos en segundo plano para enriquecer la vista
   const validUid = isValidUUID(userId);

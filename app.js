@@ -1341,25 +1341,31 @@ window.saveProfileChanges = async function(e) {
 
   const updates = {
     name,
-    phone: phone || null,
+    phone:      phone      || null,
     occupation: occupation || null,
-    bio: bio || null,
+    bio:        bio        || null,
     updated_at: new Date().toISOString()
   };
 
-  // Guardar copia local de respaldo inmediatamente para asegurar que el usuario nunca pierda sus cambios
-  localStorage.setItem('homii_extra_' + CURRENT_USER.id, JSON.stringify({ name, phone, occupation, bio }));
+  // Guardar en Supabase (upsert garantiza que funciona aunque el perfil no exista aún)
+  const { error } = await db.from('profiles')
+    .update(updates)
+    .eq('id', CURRENT_USER.id);
 
-  // Intentar actualizar la base de datos de Supabase silenciosamente
-  try {
-    const { error } = await db.from('profiles').update(updates).eq('id', CURRENT_USER.id);
-    if (error) {
-      // Reintentar solo con los campos base (name, phone)
-      await db.from('profiles').update({ name, phone: phone || null, updated_at: new Date().toISOString() }).eq('id', CURRENT_USER.id);
+  if (error) {
+    // Si falla (ej. columna occupation/bio no existe), reintentar solo con name y phone
+    const { error: e2 } = await db.from('profiles')
+      .update({ name, phone: phone || null, updated_at: new Date().toISOString() })
+      .eq('id', CURRENT_USER.id);
+    if (e2) {
+      alert('Error al guardar: ' + e2.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
+      return;
     }
-  } catch(err) {
-    console.log('Info: Datos guardados en cliente.');
   }
+
+  // Guardar copia local como respaldo (para carga inmediata en el dispositivo actual)
+  localStorage.setItem('homii_extra_' + CURRENT_USER.id, JSON.stringify({ name, phone, occupation, bio }));
 
   if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
 
@@ -1368,49 +1374,69 @@ window.saveProfileChanges = async function(e) {
   updateNavUI();
   await renderProfileView();
   addNotif('Perfil Actualizado', 'Su información personal fue guardada correctamente.');
-  alert('Perfil actualizado exitosamente.');
+  alert('\u2705 Perfil actualizado. Los cambios son visibles para todos.');
 };
 
 window.uploadProfileAvatar = async function(e) {
   const file = e.target.files?.[0];
   if (!file || !CURRENT_USER || !CURRENT_PROFILE) return;
 
-  const ext = file.name.split('.').pop().toLowerCase();
-  const path = `avatars/${CURRENT_USER.id}_${Date.now()}.${ext}`;
+  // Validar tamaño (máx. 3MB)
+  if (file.size > 3 * 1024 * 1024) {
+    alert('La imagen es demasiado grande. El tamaño máximo permitido es 3 MB.');
+    return;
+  }
+
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const path = `avatars/${CURRENT_USER.id}.${ext}`;
 
   let avatarUrl = null;
-  try {
-    const { error: upErr } = await db.storage.from('homii-images').upload(path, file, { upsert: true });
-    if (!upErr) {
-      const { data: { publicUrl } } = db.storage.from('homii-images').getPublicUrl(path);
-      avatarUrl = publicUrl;
-    }
-  } catch(err) {}
 
+  // 1. Intentar subir al bucket de Supabase Storage
+  try {
+    const { error: upErr } = await db.storage
+      .from('homii-images')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (!upErr) {
+      const { data: urlData } = db.storage.from('homii-images').getPublicUrl(path);
+      avatarUrl = urlData?.publicUrl || null;
+    } else {
+      console.warn('Storage upload error:', upErr.message);
+    }
+  } catch (err) {
+    console.warn('Storage not available:', err);
+  }
+
+  // 2. Si storage falla, convertir a base64 como Data URL (solo válido para el dispositivo actual)
   if (!avatarUrl) {
-    // Usar Data URL como fallback rápido si no hay bucket de storage disponible
     avatarUrl = await new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.readAsDataURL(file);
     });
+    console.warn('Usando Data URL local — no será visible en otros dispositivos.');
   }
 
-  // Guardar avatar en local storage inmediatamente para que siempre funcione en la app
-  localStorage.setItem('homii_avatar_' + CURRENT_USER.id, avatarUrl);
+  // 3. Guardar URL en la base de datos de Supabase (para que todos puedan verla)
+  const { error: dbErr } = await db.from('profiles')
+    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+    .eq('id', CURRENT_USER.id);
+
+  if (dbErr) {
+    console.warn('No se pudo guardar avatar_url en DB:', dbErr.message);
+    // Guardar en local como último recurso
+    localStorage.setItem('homii_avatar_' + CURRENT_USER.id, avatarUrl);
+  }
+
+  // 4. Actualizar el estado local
   CURRENT_PROFILE.avatar_url = avatarUrl;
-
-  // Intentar guardar en la base de datos sin lanzar ventanas de alerta si la columna no existe aún
-  try {
-    await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', CURRENT_USER.id);
-  } catch(dbErr) {
-    console.log('Info: Foto guardada localmente.');
-  }
+  localStorage.setItem('homii_avatar_' + CURRENT_USER.id, avatarUrl);
 
   updateNavUI();
   await renderProfileView();
-  addNotif('Foto Actualizada', 'Su nueva foto de perfil ya es visible.');
-  alert('Foto de perfil actualizada exitosamente.');
+  addNotif('Foto Actualizada', 'Su nueva foto de perfil ya es visible para todos.');
+  alert('\u2705 Foto de perfil actualizada. Los demás ya pueden verla.');
 };
 
 async function loadInboxMessages(container) {
@@ -1941,8 +1967,27 @@ window.openPublicProfile = async function(userId, fallbackName, fallbackRole) {
   if (s('pub-view-props-section'))  s('pub-view-props-section').style.display  = 'none';
   if (s('pub-view-roomie-section')) s('pub-view-roomie-section').style.display = 'none';
 
-  // 3. Navegar a la vista de perfil público usando el sistema estándar
-  navigate('public-user-profile-view');
+  // 3. Activar la vista de perfil público DIRECTAMENTE (sin navigate())
+  //    navigate() añade -view al id; aquí usamos el id exacto
+  const allViews = document.querySelectorAll('.view');
+  console.log('[openPublicProfile] Total vistas encontradas:', allViews.length);
+  allViews.forEach(v => {
+    v.classList.remove('active');
+  });
+
+  const pubView = document.getElementById('public-user-profile-view');
+  console.log('[openPublicProfile] Vista de perfil público encontrada:', pubView ? 'SÍ ✅' : 'NO ❌');
+
+  if (pubView) {
+    pubView.classList.add('active');
+    document.body.style.overflow = '';
+    window.scrollTo({ top: 0 });
+    console.log('[openPublicProfile] Vista activada exitosamente ✅');
+  } else {
+    console.error('[openPublicProfile] ERROR: No se encontró #public-user-profile-view en el DOM');
+    alert('Error interno: Vista de perfil no encontrada. Por favor recarga la página.');
+    return;
+  }
 
   // 4. Consultar base de datos en segundo plano para enriquecer la vista
   const validUid = isValidUUID(userId);

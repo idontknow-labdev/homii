@@ -1490,14 +1490,25 @@ window.uploadProfileAvatar = async function(e) {
   }
 
   // 4. Guardar URL/DataURL comprimido en la tabla profiles de Supabase DB para que persista en todos los dispositivos
+  const profileUpsertPayload = {
+    id: CURRENT_USER.id,
+    name: CURRENT_PROFILE?.name || CURRENT_USER.email.split('@')[0],
+    role: CURRENT_PROFILE?.role || 'student',
+    avatar_url: avatarUrl,
+    updated_at: new Date().toISOString()
+  };
+
   const { error: dbErr } = await db.from('profiles')
-    .upsert({ id: CURRENT_USER.id, avatar_url: avatarUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    .upsert(profileUpsertPayload, { onConflict: 'id' });
 
   if (dbErr) {
     console.error('Error al guardar avatar_url en Supabase DB:', dbErr.message);
     alert('Error al guardar foto en la base de datos: ' + dbErr.message);
     return;
   }
+
+  // Actualizar también la foto en la tabla roomies si el usuario tiene una publicación
+  await db.from('roomies').update({ avatar_url: avatarUrl }).eq('user_id', CURRENT_USER.id).catch(() => {});
 
   // 5. Actualizar estado local
   CURRENT_PROFILE.avatar_url = avatarUrl;

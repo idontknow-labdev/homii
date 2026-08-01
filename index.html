@@ -245,10 +245,18 @@
         </select>
       </div>
 
-      <div class="filter-block pucem-element">
-        <div class="filter-block-title">Certificación</div>
+      <div class="filter-block non-pucem-element">
+        <div class="filter-block-title">Verificación</div>
         <label class="checkbox-label">
-          <input type="checkbox" id="filter-certified">
+          <input type="checkbox" id="filter-certified-homii">
+          Solo arriendos verificados por Homii
+        </label>
+      </div>
+
+      <div class="filter-block pucem-element">
+        <div class="filter-block-title">Certificación PUCEM</div>
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-certified-pucem">
           Solo arriendos certificados por PUCEM
         </label>
       </div>
@@ -1338,6 +1346,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260731_2"></script>
+<script src="app.js?v=20260731_3"></script>
 </body>
 </html>

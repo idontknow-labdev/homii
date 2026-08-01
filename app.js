@@ -483,7 +483,7 @@ function setupSearch() {
   if (distSlider && distVal) {
     distSlider.addEventListener('input', () => { distVal.textContent = distSlider.value + ' km'; filterListings(); });
   }
-  ['filter-keyword','filter-rooms','filter-certified','sort-by'].forEach(id => {
+  ['filter-keyword','filter-rooms','filter-certified','filter-certified-pucem','filter-certified-homii','sort-by'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', filterListings);
     document.getElementById(id)?.addEventListener('input',  filterListings);
   });
@@ -495,16 +495,31 @@ async function filterListings() {
   if (!grid) return;
   grid.innerHTML = '<div class="no-results-msg">Cargando propiedades...</div>';
 
-  const kw       = (document.getElementById('filter-keyword')?.value || '').toLowerCase().trim();
-  const maxPrice = parseInt(document.getElementById('filter-price')?.value || '1200');
-  const minRooms = document.getElementById('filter-rooms')?.value || 'any';
-  const certOnly = document.getElementById('filter-certified')?.checked || false;
-  const maxDist  = parseFloat(document.getElementById('filter-distance')?.value || '10');
-  const sortBy   = document.getElementById('sort-by')?.value || 'featured';
-  const amenities = [...document.querySelectorAll('.filter-amenity:checked')].map(cb => cb.value);
+  const kw          = (document.getElementById('filter-keyword')?.value || '').toLowerCase().trim();
+  const maxPrice    = parseInt(document.getElementById('filter-price')?.value || '1200');
+  const minRooms    = document.getElementById('filter-rooms')?.value || 'any';
+  const certPucem   = document.getElementById('filter-certified-pucem')?.checked || false;
+  const certHomii   = document.getElementById('filter-certified-homii')?.checked || false;
+  const legacyCert  = document.getElementById('filter-certified')?.checked || false;
+  const maxDist     = parseFloat(document.getElementById('filter-distance')?.value || '10');
+  const sortBy      = document.getElementById('sort-by')?.value || 'featured';
+  const amenities   = [...document.querySelectorAll('.filter-amenity:checked')].map(cb => cb.value);
+  const isPucemMode = document.body.classList.contains('pucem-mode');
 
   let query = db.from('properties').select('*');
-  if (certOnly) query = query.eq('university_certified', true);
+
+  // En la consulta de Supabase:
+  if (certPucem) {
+    query = query.eq('university_certified', true).eq('certification_type', 'pucem');
+  } else if (certHomii) {
+    query = query.eq('university_certified', true);
+  } else if (legacyCert) {
+    if (isPucemMode) {
+      query = query.eq('university_certified', true).eq('certification_type', 'pucem');
+    } else {
+      query = query.eq('university_certified', true);
+    }
+  }
 
   const { data: props, error } = await query;
 
@@ -519,7 +534,22 @@ async function filterListings() {
     const matchRoom = minRooms === 'any' || p.rooms >= parseInt(minRooms);
     const matchDist = p.is_demo || p.distance_to_campus <= maxDist;
     const matchAmen = amenities.every(a => (p.amenities || []).includes(a));
-    return matchKw && matchPrc && matchRoom && matchDist && matchAmen;
+
+    // Filtro estricto de certificación en JS como respaldo
+    let matchCert = true;
+    if (certPucem) {
+      matchCert = p.university_certified === true && p.certification_type === 'pucem';
+    } else if (certHomii) {
+      matchCert = p.university_certified === true;
+    } else if (legacyCert) {
+      if (isPucemMode) {
+        matchCert = p.university_certified === true && p.certification_type === 'pucem';
+      } else {
+        matchCert = p.university_certified === true;
+      }
+    }
+
+    return matchKw && matchPrc && matchRoom && matchDist && matchAmen && matchCert;
   });
 
   if (sortBy === 'price-asc')  filtered.sort((a, b) => a.price - b.price);
@@ -1380,22 +1410,60 @@ window.saveProfileChanges = async function(e) {
   alert('✅ Perfil actualizado exitosamente. Los cambios están guardados en la nube y son visibles desde cualquier dispositivo.');
 };
 
+function compressAndResizeAvatar(file, maxDimension = 250, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 window.uploadProfileAvatar = async function(e) {
   const file = e.target.files?.[0];
   if (!file || !CURRENT_USER || !CURRENT_PROFILE) return;
 
-  // Validar tamaño (máx. 3MB)
-  if (file.size > 3 * 1024 * 1024) {
-    alert('La imagen es demasiado grande. El tamaño máximo permitido es 3 MB.');
+  if (file.size > 5 * 1024 * 1024) {
+    alert('La imagen es demasiado grande. El tamaño máximo permitido es 5 MB.');
     return;
   }
+
+  // 1. Comprimir y redimensionar imagen a max 250x250 px (Data URL liviano ~15KB)
+  const compressedDataUrl = await compressAndResizeAvatar(file, 250, 0.75);
 
   const ext  = file.name.split('.').pop().toLowerCase();
   const path = `avatars/${CURRENT_USER.id}.${ext}`;
 
   let avatarUrl = null;
 
-  // 1. Intentar subir al bucket de Supabase Storage
+  // 2. Intentar subir al bucket de Supabase Storage
   try {
     const { error: upErr } = await db.storage
       .from('homii-images')
@@ -1403,7 +1471,7 @@ window.uploadProfileAvatar = async function(e) {
 
     if (!upErr) {
       const { data: urlData } = db.storage.from('homii-images').getPublicUrl(path);
-      avatarUrl = urlData?.publicUrl || null;
+      if (urlData?.publicUrl) avatarUrl = urlData.publicUrl;
     } else {
       console.warn('Storage upload error:', upErr.message);
     }
@@ -1411,25 +1479,27 @@ window.uploadProfileAvatar = async function(e) {
     console.warn('Storage not available:', err);
   }
 
-  // 2. Si storage falla, convertir a base64 como Data URL (solo válido para el dispositivo actual)
+  // 3. Fallback al Data URL comprimido (15KB) si Storage no retornó URL pública
   if (!avatarUrl) {
-    avatarUrl = await new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    });
-    console.warn('Usando Data URL local — no será visible en otros dispositivos.');
+    avatarUrl = compressedDataUrl;
   }
 
-  // 3. Upsert en la tabla profiles de Supabase para asegurar que persista en la nube
+  if (!avatarUrl) {
+    alert('No se pudo procesar la foto de perfil. Por favor intente con otra imagen.');
+    return;
+  }
+
+  // 4. Guardar URL/DataURL comprimido en la tabla profiles de Supabase DB para que persista en todos los dispositivos
   const { error: dbErr } = await db.from('profiles')
     .upsert({ id: CURRENT_USER.id, avatar_url: avatarUrl, updated_at: new Date().toISOString() }, { onConflict: 'id' });
 
   if (dbErr) {
-    console.warn('No se pudo guardar avatar_url en DB:', dbErr.message);
+    console.error('Error al guardar avatar_url en Supabase DB:', dbErr.message);
+    alert('Error al guardar foto en la base de datos: ' + dbErr.message);
+    return;
   }
 
-  // 4. Actualizar el estado local
+  // 5. Actualizar estado local
   CURRENT_PROFILE.avatar_url = avatarUrl;
   localStorage.setItem('homii_avatar_' + CURRENT_USER.id, avatarUrl);
 

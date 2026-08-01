@@ -811,8 +811,88 @@ function closePropertyModal() {
 }
 
 // ============================================================
-// CHAT EN TIEMPO REAL (Supabase Real-time)
+// CHAT EN TIEMPO REAL CON AVATAR, HORA Y PERFIL CLICKEABLE
 // ============================================================
+
+const CHAT_PROFILES_CACHE = {};
+
+async function fetchUserProfileForChat(userId) {
+  if (!userId || userId === 'demo_landlord' || userId === 'demo_roomie') return null;
+  if (CHAT_PROFILES_CACHE[userId]) return CHAT_PROFILES_CACHE[userId];
+  try {
+    const { data } = await db.from('profiles').select('id, name, avatar_url, avatar_color, role').eq('id', userId).maybeSingle();
+    if (data) CHAT_PROFILES_CACHE[userId] = data;
+    return data;
+  } catch(e) {
+    return null;
+  }
+}
+
+function formatChatTime(dateStr) {
+  if (!dateStr) return new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
+  } catch(e) {
+    return new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+}
+
+function renderChatMessageElement(m, currentUserId, defaultAuthorName = '', defaultAvatarUrl = null) {
+  const isOut = (m.sender_id === currentUserId) || (m.sender === 'user');
+  const senderId = m.sender_id || (isOut ? currentUserId : 'demo_landlord');
+  const authorName = m.sender_name || (isOut ? (CURRENT_PROFILE?.name || 'Yo') : defaultAuthorName || 'Usuario');
+  
+  // Buscar avatar
+  let avatarUrl = isOut ? CURRENT_PROFILE?.avatar_url : (m.avatar_url || defaultAvatarUrl);
+  const cachedProf = CHAT_PROFILES_CACHE[senderId];
+  if (cachedProf && cachedProf.avatar_url) {
+    avatarUrl = cachedProf.avatar_url;
+  }
+
+  const initial = (authorName || 'U').charAt(0).toUpperCase();
+  const avatarBg = cachedProf?.avatar_color || (isOut ? '#1a56db' : '#059669');
+
+  const avatarHtml = avatarUrl
+    ? `<div class="chat-msg-avatar" onclick="openPublicProfile('${senderId}', '${escAttr(authorName)}')" title="Ver perfil público de ${escAttr(authorName)}">
+        <img src="${avatarUrl}" alt="${escAttr(authorName)}">
+       </div>`
+    : `<div class="chat-msg-avatar" style="background:${avatarBg}" onclick="openPublicProfile('${senderId}', '${escAttr(authorName)}')" title="Ver perfil público de ${escAttr(authorName)}">
+        ${initial}
+       </div>`;
+
+  const timeStr = formatChatTime(m.created_at);
+
+  const row = document.createElement('div');
+  row.className = `chat-msg-row ${isOut ? 'chat-msg-out' : 'chat-msg-in'}`;
+  row.innerHTML = `
+    ${avatarHtml}
+    <div class="chat-msg-body">
+      ${!isOut ? `<div class="chat-msg-author" onclick="openPublicProfile('${senderId}', '${escAttr(authorName)}')" title="Ver perfil público de ${escAttr(authorName)}">${authorName}</div>` : ''}
+      <div class="chat-bubble ${isOut ? 'chat-out' : 'chat-in'}">
+        <div class="chat-msg-text">${m.message || m.text || ''}</div>
+        <div class="chat-msg-footer">
+          <span>${timeStr}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Cargar avatar en segundo plano si es de otro usuario y aún no está cacheado
+  if (!avatarUrl && isValidUUID(senderId) && !CHAT_PROFILES_CACHE[senderId]) {
+    fetchUserProfileForChat(senderId).then(prof => {
+      if (prof?.avatar_url) {
+        const avDiv = row.querySelector('.chat-msg-avatar');
+        if (avDiv) {
+          avDiv.innerHTML = `<img src="${prof.avatar_url}" alt="${escAttr(authorName)}">`;
+          avDiv.style.background = 'transparent';
+        }
+      }
+    });
+  }
+
+  return row;
+}
 
 async function setupDirectChat(p) {
   const msgs     = document.getElementById('direct-chat-msgs');
@@ -860,16 +940,20 @@ async function setupDirectChat(p) {
   const { data: history } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
 
   const appendBubble = (m) => {
-    const b = document.createElement('div');
-    b.className = `chat-bubble chat-${m.sender_id === CURRENT_USER.id ? 'out' : 'in'}`;
-    b.textContent = m.message;
-    msgs.appendChild(b);
+    const el = renderChatMessageElement(m, CURRENT_USER.id, p.landlord_name, null);
+    msgs.appendChild(el);
     msgs.scrollTop = msgs.scrollHeight;
   };
 
   msgs.innerHTML = '';
   if (!history || history.length === 0) {
-    msgs.innerHTML = `<div class="chat-bubble chat-in">Hola, gracias por su interés en "${p.title}". ¿En qué le puedo ayudar?</div>`;
+    const defaultWelcome = {
+      sender_id: p.landlord_id || 'demo_landlord',
+      sender_name: p.landlord_name || 'Propietario Homii',
+      message: `Hola, gracias por su interés en "${p.title}". ¿En qué le puedo ayudar?`,
+      created_at: new Date().toISOString()
+    };
+    msgs.appendChild(renderChatMessageElement(defaultWelcome, CURRENT_USER.id, p.landlord_name, null));
   } else {
     (history || []).forEach(m => appendBubble(m));
   }
@@ -903,11 +987,15 @@ async function setupDirectChat(p) {
 
     if (input) input.value = '';
 
-    // Añadir burbuja local inmediatamente (optimistic)
-    const bubble = document.createElement('div');
-    bubble.className = 'chat-bubble chat-out';
-    bubble.textContent = text;
-    msgs.appendChild(bubble);
+    // Añadir mensaje local inmediatamente (optimistic)
+    const localMsgObj = {
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      message: text,
+      created_at: new Date().toISOString()
+    };
+    const bubbleEl = renderChatMessageElement(localMsgObj, CURRENT_USER.id);
+    msgs.appendChild(bubbleEl);
     msgs.scrollTop = msgs.scrollHeight;
 
     const { error: chatErr } = await db.from('chats').insert({
@@ -957,9 +1045,10 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const { data: history } = await db.from('chats')
     .select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
 
-  msgs.innerHTML = (history || []).map(m =>
-    `<div class="chat-bubble chat-${m.sender_id === CURRENT_USER.id ? 'out' : 'in'}">${m.message}</div>`
-  ).join('');
+  msgs.innerHTML = '';
+  (history || []).forEach(m => {
+    msgs.appendChild(renderChatMessageElement(m, CURRENT_USER.id, senderName, null));
+  });
   msgs.scrollTop = msgs.scrollHeight;
 
   // Marcar como leídos
@@ -969,10 +1058,7 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   activeChatChannel = db.channel('conv:' + chatId)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats', filter: `chat_id=eq.${chatId}` }, (payload) => {
       if (payload.new.sender_id !== CURRENT_USER.id) {
-        const b = document.createElement('div');
-        b.className = 'chat-bubble chat-in';
-        b.textContent = payload.new.message;
-        msgs.appendChild(b);
+        msgs.appendChild(renderChatMessageElement(payload.new, CURRENT_USER.id, senderName, null));
         msgs.scrollTop = msgs.scrollHeight;
       }
     }).subscribe();
@@ -984,10 +1070,13 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
     text = (text || '').trim();
     if (!text) return;
     if (input) input.value = '';
-    const b = document.createElement('div');
-    b.className = 'chat-bubble chat-out';
-    b.textContent = text;
-    msgs.appendChild(b);
+    const localMsgObj = {
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      message: text,
+      created_at: new Date().toISOString()
+    };
+    msgs.appendChild(renderChatMessageElement(localMsgObj, CURRENT_USER.id));
     msgs.scrollTop = msgs.scrollHeight;
     await db.from('chats').insert({
       chat_id: chatId,

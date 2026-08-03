@@ -2892,10 +2892,10 @@ window.selectPremiumPlan = function(tier) {
   const planLifetime = document.getElementById('plan-lifetime');
 
   if (tier === 'annual') {
-    if (planAnnual) { planAnnual.style.border = '2px solid #f59e0b'; planAnnual.style.background = '#fffbeb'; }
+    if (planAnnual) { planAnnual.style.border = '2px solid var(--blue)'; planAnnual.style.background = '#eff6ff'; }
     if (planLifetime) { planLifetime.style.border = '2px solid var(--border)'; planLifetime.style.background = 'var(--bg-section)'; }
   } else {
-    if (planLifetime) { planLifetime.style.border = '2px solid #f59e0b'; planLifetime.style.background = '#fffbeb'; }
+    if (planLifetime) { planLifetime.style.border = '2px solid var(--blue)'; planLifetime.style.background = '#eff6ff'; }
     if (planAnnual) { planAnnual.style.border = '2px solid var(--border)'; planAnnual.style.background = 'var(--bg-section)'; }
   }
 };

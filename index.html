@@ -1385,21 +1385,21 @@
      MODAL HOMII PREMIUM
      =========================================================== -->
 <div class="modal-overlay" id="premium-modal">
-  <div class="modal-box" style="max-width: 520px; border-radius: var(--radius-xl); border: 2px solid #f59e0b;">
-    <div class="modal-head" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 1.25rem 1.5rem;">
+  <div class="modal-box" style="max-width: 520px; border-radius: var(--radius-xl); border: 1px solid var(--border);">
+    <div class="modal-head" style="background: var(--bg-white); color: var(--text); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
       <div>
-        <h3 style="margin: 0; font-size: 1.35rem; color: white; display: flex; align-items: center; gap: 0.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem; color: var(--blue-dark); display: flex; align-items: center; gap: 0.5rem;">
           👑 Homii Premium
         </h3>
-        <p style="margin: 0.25rem 0 0; font-size: 0.825rem; opacity: 0.9;">Prioridad 1 en Listas de Espera y Beneficios Exclusivos</p>
+        <p style="margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--text-muted);">Prioridad 1 en Listas de Espera y Beneficios Exclusivos</p>
       </div>
-      <button class="modal-close-btn" onclick="window.closePremiumModal()" type="button" style="color: white; background: rgba(255,255,255,0.2);" aria-label="Cerrar">&#215;</button>
+      <button class="modal-close-btn" onclick="window.closePremiumModal()" type="button" aria-label="Cerrar">&#215;</button>
     </div>
 
     <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
         <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-          <div style="background: #fef3c7; color: #d97706; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+          <div style="background: #eff6ff; color: var(--blue); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
           <div>
             <h5 style="margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--text);">Prioridad Nivel 1 en Arriendos</h5>
             <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Tus solicitudes saltan al primer puesto en la lista de espera de los propietarios.</p>
@@ -1407,7 +1407,7 @@
         </div>
 
         <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-          <div style="background: #e0f2fe; color: #0284c7; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
+          <div style="background: #eff6ff; color: var(--blue); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
           <div>
             <h5 style="margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--text);">Notificaciones de Zonas de Prioridad</h5>
             <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Sé el primero en enterarte de nuevos departamentos disponibles cerca de tu universidad o trabajo.</p>
@@ -1415,7 +1415,7 @@
         </div>
 
         <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-          <div style="background: #d1fae5; color: #059669; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+          <div style="background: #eff6ff; color: var(--blue); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
           <div>
             <h5 style="margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--text);">Descuentos Especiales en Mudanza</h5>
             <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Acceso a tarifas preferenciales con transportistas y servicios de flete asociados a Homii.</p>
@@ -1431,11 +1431,11 @@
           <span style="font-size: 0.7rem; color: var(--text-muted);">Facturado por 1 año</span>
         </div>
 
-        <div class="premium-plan-card selected" id="plan-lifetime" onclick="selectPremiumPlan('lifetime')" style="border: 2px solid #f59e0b; border-radius: var(--radius-lg); padding: 1rem; text-align: center; cursor: pointer; background: #fffbeb; transition: all 0.2s; position: relative;">
-          <span style="position: absolute; top: -10px; right: 10px; background: #f59e0b; color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">RECOMENDADO</span>
-          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #d97706;">De por Vida</span>
-          <div style="font-size: 1.5rem; font-weight: 800; color: #b45309; margin: 0.25rem 0;">$24.99</div>
-          <span style="font-size: 0.7rem; color: #b45309;">Acceso vitalicio único</span>
+        <div class="premium-plan-card selected" id="plan-lifetime" onclick="selectPremiumPlan('lifetime')" style="border: 2px solid var(--blue); border-radius: var(--radius-lg); padding: 1rem; text-align: center; cursor: pointer; background: #eff6ff; transition: all 0.2s; position: relative;">
+          <span style="position: absolute; top: -10px; right: 10px; background: var(--blue); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">RECOMENDADO</span>
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--blue);">De por Vida</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--blue-dark); margin: 0.25rem 0;">$24.99</div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Acceso vitalicio único</span>
         </div>
       </div>
 
@@ -1455,7 +1455,7 @@
             <input type="text" class="form-input" id="pay-cvc" placeholder="123" required pattern="^[0-9]{3,4}$">
           </div>
         </div>
-        <button type="submit" class="btn btn-full" id="btn-pay-premium" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 700; margin-top: 0.5rem; border: none; padding: 0.85rem;">
+        <button type="submit" class="btn btn-primary btn-full" id="btn-pay-premium" style="margin-top: 0.5rem; padding: 0.85rem;">
           💳 Activar Homii Premium Ahora
         </button>
       </form>

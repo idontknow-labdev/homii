@@ -153,10 +153,35 @@ async function loadUserProfile(user) {
 
   CURRENT_PROFILE = profile;
 
-  // Banner de advertencia si la cuenta está pendiente de verificación biométrica
+  // Banner de advertencia si la cuenta está pendiente o rechazada en la verificación biométrica
   const warningBanner = document.getElementById('biometric-warning-banner');
   if (warningBanner) {
-    warningBanner.style.display = (profile.role === 'student' && profile.is_verified === 'pending') ? 'flex' : 'none';
+    if (profile.role === 'student') {
+      if (profile.is_verified === 'pending') {
+        warningBanner.style.display = 'flex';
+        warningBanner.style.background = '#fffbeb';
+        warningBanner.style.color = '#b45309';
+        warningBanner.style.borderBottom = '1px solid #fef3c7';
+        warningBanner.innerHTML = `
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span><strong>Verificación Biométrica Pendiente:</strong> Tu registro está siendo revisado por el equipo de Homii. La asignación y reserva de propiedades estarán deshabilitadas hasta que se apruebe tu cuenta (máx. 24h).</span>
+        `;
+      } else if (profile.is_verified === 'rejected') {
+        warningBanner.style.display = 'flex';
+        warningBanner.style.background = '#fef2f2';
+        warningBanner.style.color = '#b91c1c';
+        warningBanner.style.borderBottom = '1px solid #fee2e2';
+        const reason = profile.rejection_reason || localMeta.rejection_reason || 'Documentos inconsistentes o no legibles.';
+        warningBanner.innerHTML = `
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="flex-shrink:0; margin-right:0.3rem;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          <span><strong>Registro Biométrico Rechazado:</strong> ${reason} <a class="auth-link" style="color:#b91c1c; font-weight:700; text-decoration:underline; margin-left:0.5rem;" onclick="navigate('profile')">Vuelve a subir tus documentos aquí.</a></span>
+        `;
+      } else {
+        warningBanner.style.display = 'none';
+      }
+    } else {
+      warningBanner.style.display = 'none';
+    }
   }
 
   // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
@@ -224,6 +249,8 @@ function setupAuth() {
     }
   }
 
+  window.tempBiometricData = { selfie: '', front: '', back: '' };
+
   document.getElementById('reg-selfie')?.addEventListener('change', e => {
     const file = e.target.files?.[0];
     const preview = document.getElementById('selfie-preview-name');
@@ -231,6 +258,9 @@ function setupAuth() {
       preview.textContent = '📸 Selfie: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
       preview.style.color = '#10b981';
       preview.style.fontWeight = '600';
+      const r = new FileReader();
+      r.onload = ev => { window.tempBiometricData.selfie = ev.target.result; };
+      r.readAsDataURL(file);
     }
   });
 
@@ -241,6 +271,9 @@ function setupAuth() {
       preview.textContent = 'Frente: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
       preview.style.color = '#10b981';
       preview.style.fontWeight = '600';
+      const r = new FileReader();
+      r.onload = ev => { window.tempBiometricData.front = ev.target.result; };
+      r.readAsDataURL(file);
     }
   });
 
@@ -251,6 +284,9 @@ function setupAuth() {
       preview.textContent = 'Reverso: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
       preview.style.color = '#10b981';
       preview.style.fontWeight = '600';
+      const r = new FileReader();
+      r.onload = ev => { window.tempBiometricData.back = ev.target.result; };
+      r.readAsDataURL(file);
     }
   });
 }
@@ -415,9 +451,9 @@ async function doRegister() {
     const profileMeta = {
       cedula,
       is_verified: isVerified,
-      selfie_url: role === 'student' ? 'selfie_placeholder.png' : null,
-      id_card_front_url: role === 'student' ? 'idcard_front_placeholder.png' : null,
-      id_card_back_url: role === 'student' ? 'idcard_back_placeholder.png' : null,
+      selfie_url: role === 'student' ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null,
+      id_card_front_url: role === 'student' ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null,
+      id_card_back_url: role === 'student' ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null,
       is_premium: false,
       premium_tier: 'none'
     };
@@ -478,6 +514,7 @@ function updateNavUI() {
   const avEl     = document.getElementById('nav-avatar');
   const llLink   = document.querySelectorAll('.nav-landlord-link');
   const uniLink  = document.querySelectorAll('.nav-uni-link');
+  const adminLink = document.querySelectorAll('.nav-admin-link');
   const profLink = document.querySelectorAll('.nav-profile-link');
 
   if (user) {
@@ -504,12 +541,14 @@ function updateNavUI() {
     }
     llLink.forEach(el => el.style.display   = profile?.role === 'landlord'   ? 'block' : 'none');
     uniLink.forEach(el => el.style.display  = profile?.role === 'university' ? 'block' : 'none');
+    adminLink.forEach(el => el.style.display = profile?.role === 'admin'      ? 'block' : 'none');
     profLink.forEach(el => el.style.display = 'block');
   } else {
     if (guestEl)  guestEl.style.display  = 'flex';
     if (userEl)   userEl.style.display   = 'none';
     llLink.forEach(el => el.style.display   = 'none');
     uniLink.forEach(el => el.style.display  = 'none');
+    adminLink.forEach(el => el.style.display = 'none');
     profLink.forEach(el => el.style.display = 'none');
   }
 
@@ -629,6 +668,7 @@ function guardRoute(route) {
   const role = CURRENT_PROFILE?.role;
   if (route === 'landlord'   && role !== 'landlord')   { APP.pendingRoute = route; openAuth(); return false; }
   if (route === 'university' && role !== 'university') { APP.pendingRoute = route; openAuth(); return false; }
+  if (route === 'admin'      && role !== 'admin')      { APP.pendingRoute = route; openAuth(); return false; }
   return true;
 }
 
@@ -637,7 +677,7 @@ function guardRoute(route) {
 // ============================================================
 
 function navigate(viewId) {
-  if ((viewId === 'landlord' || viewId === 'university') && !guardRoute(viewId)) return;
+  if ((viewId === 'landlord' || viewId === 'university' || viewId === 'admin') && !guardRoute(viewId)) return;
   if (viewId === 'profile' && !CURRENT_USER) { openAuth(); return; }
 
   APP.currentView = viewId;
@@ -655,6 +695,7 @@ function navigate(viewId) {
   if (viewId === 'landlord')   renderLandlordPanel();
   if (viewId === 'university') renderUniPanel();
   if (viewId === 'profile')    renderProfileView();
+  if (viewId === 'admin')      renderAdminPanel();
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1891,6 +1932,62 @@ async function renderProfileView() {
   if (s('edit-occupation')) s('edit-occupation').value = p.occupation || '';
   if (s('edit-bio'))        s('edit-bio').value        = p.bio || '';
 
+  // Estado de Verificación Biométrica (solo estudiantes)
+  const bioCard = s('profile-biometric-card');
+  const bioArea = s('profile-biometric-status-area');
+  
+  if (bioCard && bioArea) {
+    if (p.role === 'student') {
+      bioCard.style.display = 'block';
+      const localMetaStr = localStorage.getItem('homii_profile_meta_' + CURRENT_USER.id);
+      const localMeta = localMetaStr ? JSON.parse(localMetaStr) : {};
+      const status = p.is_verified || localMeta.is_verified || 'pending';
+      const reason = p.rejection_reason || localMeta.rejection_reason || '';
+      
+      let html = '';
+      if (status === 'approved') {
+        html = `
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem;">
+            <strong>✓ Cuenta Verificada Exitosamente:</strong> Tu identidad ha sido validada por el Administrador de Homii. Ya puedes reservar y postular a inmuebles con normalidad.
+          </div>`;
+      } else if (status === 'pending') {
+        html = `
+          <div style="background:#fffbeb; border:1px solid #fef3c7; color:#b45309; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem;">
+            <strong>⏳ Verificación Biométrica en Proceso:</strong> Tus documentos (selfie y cédula de identidad) están siendo validados por el equipo de Homii. Te notificaremos en un plazo máximo de 24 horas.
+          </div>`;
+      } else if (status === 'rejected') {
+        html = `
+          <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <div><strong>❌ Verificación Rechazada:</strong> ${reason || 'Documentos inconsistentes o ilegibles.'}</div>
+            <div style="font-size:0.8rem; font-weight:500; margin-top:0.25rem;">Por favor, vuelve a subir tus archivos corregidos a continuación:</div>
+          </div>
+          
+          <form onsubmit="event.preventDefault(); window.reuploadBiometrics();" style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.5rem;">
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div>
+                <label class="form-label" style="font-size:0.8rem; font-weight:600;">Nueva Foto de tu Rostro (Selfie) *</label>
+                <input type="file" id="re-selfie" accept="image/*" class="form-input" style="padding:0.4rem;" required onchange="window.handleReuploadFileChange('selfie')">
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div>
+                  <label class="form-label" style="font-size:0.8rem; font-weight:600;">Cédula Frente *</label>
+                  <input type="file" id="re-idcard-front" accept="image/*" class="form-input" style="padding:0.4rem;" required onchange="window.handleReuploadFileChange('front')">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.8rem; font-weight:600;">Cédula Reverso *</label>
+                  <input type="file" id="re-idcard-back" accept="image/*" class="form-input" style="padding:0.4rem;" required onchange="window.handleReuploadFileChange('back')">
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self:flex-start; margin-top:0.5rem; padding:0.6rem 1.2rem; font-weight:600;">Re-enviar Documentos</button>
+          </form>`;
+      }
+      bioArea.innerHTML = html;
+    } else {
+      bioCard.style.display = 'none';
+    }
+  }
+
   // Mis propiedades (solo propietario)
   const propSection = s('profile-my-props');
   if (propSection) {
@@ -3123,6 +3220,272 @@ window.generateAndCompleteRent = async function() {
   }, 1000);
 };
 
+// ============================================================
+// PANEL DE ADMINISTRACIÓN GLOBAL DE HOMII & BIOMETRÍA MANUAL
+// ============================================================
+
+window.tempReuploadBiometricData = { selfie: '', front: '', back: '' };
+
+window.handleReuploadFileChange = function(type) {
+  let inputId = 're-selfie';
+  if (type === 'front') inputId = 're-idcard-front';
+  if (type === 'back') inputId = 're-idcard-back';
+  
+  const file = document.getElementById(inputId)?.files?.[0];
+  if (file) {
+    const r = new FileReader();
+    r.onload = ev => {
+      window.tempReuploadBiometricData[type] = ev.target.result;
+    };
+    r.readAsDataURL(file);
+  }
+};
+
+window.reuploadBiometrics = async function() {
+  if (!CURRENT_USER) return;
+  
+  const selfieFile = document.getElementById('re-selfie')?.files?.[0];
+  const frontFile = document.getElementById('re-idcard-front')?.files?.[0];
+  const backFile = document.getElementById('re-idcard-back')?.files?.[0];
+
+  if (!selfieFile || !frontFile || !backFile) {
+    alert('Por favor selecciona las tres fotos (Selfie, Frente y Reverso).');
+    return;
+  }
+
+  const localMetaStr = localStorage.getItem('homii_profile_meta_' + CURRENT_USER.id);
+  const localMeta = localMetaStr ? JSON.parse(localMetaStr) : {};
+  
+  localMeta.is_verified = 'pending';
+  localMeta.rejection_reason = '';
+  localMeta.selfie_url = window.tempReuploadBiometricData.selfie || localMeta.selfie_url || 'selfie_placeholder.png';
+  localMeta.id_card_front_url = window.tempReuploadBiometricData.front || localMeta.id_card_front_url || 'idcard_front_placeholder.png';
+  localMeta.id_card_back_url = window.tempReuploadBiometricData.back || localMeta.id_card_back_url || 'idcard_back_placeholder.png';
+
+  localStorage.setItem('homii_profile_meta_' + CURRENT_USER.id, JSON.stringify(localMeta));
+
+  // Intentar actualizar Supabase
+  await db.from('profiles').update({ is_verified: 'pending', rejection_reason: '' }).eq('id', CURRENT_USER.id).catch(() => {});
+  
+  CURRENT_PROFILE.is_verified = 'pending';
+  CURRENT_PROFILE.rejection_reason = '';
+
+  alert('¡Documentos re-enviados con éxito!\n\nTu solicitud de verificación volverá a ser revisada por el Administrador de Homii.');
+  
+  // Recargar vistas
+  loadUserProfile(CURRENT_USER);
+  renderProfileView();
+};
+
+window.zoomBiometricImage = function(src, title) {
+  const modal = document.getElementById('biometric-zoom-modal');
+  const img = document.getElementById('zoom-modal-image');
+  const titleEl = document.getElementById('zoom-modal-title');
+  if (modal && img && titleEl) {
+    img.src = src;
+    titleEl.textContent = title;
+    modal.classList.add('open');
+  }
+};
+
+window.closeBiometricZoomModal = function() {
+  const modal = document.getElementById('biometric-zoom-modal');
+  if (modal) modal.classList.remove('open');
+};
+
+window.renderAdminPanel = async function() {
+  const listEl = document.getElementById('admin-verification-list');
+  const countEl = document.getElementById('admin-request-count');
+  const pendingStat = document.getElementById('admin-stat-pending');
+  if (!listEl) return;
+
+  let pendingList = [];
+
+  // 1. Intentar consultar base de datos real (Supabase)
+  try {
+    const { data } = await db.from('profiles').select('*').eq('role', 'student').eq('is_verified', 'pending');
+    if (data && data.length > 0) {
+      pendingList = data.map(u => {
+        // Enlazar metadatos de fotos locales
+        const metaStr = localStorage.getItem('homii_profile_meta_' + u.id);
+        const meta = metaStr ? JSON.parse(metaStr) : {};
+        return {
+          id: u.id,
+          name: u.name,
+          email: u.email || 'Estudiante Homii',
+          phone: u.phone || 'No registrado',
+          cedula: u.cedula || '1310000000',
+          selfie_url: meta.selfie_url || 'selfie_placeholder.png',
+          id_card_front_url: meta.id_card_front_url || 'idcard_front_placeholder.png',
+          id_card_back_url: meta.id_card_back_url || 'idcard_back_placeholder.png'
+        };
+      });
+    }
+  } catch (e) {}
+
+  // 2. Escanear local storage por si hay registros locales pendientes
+  const localList = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('homii_profile_meta_')) {
+      const uid = key.replace('homii_profile_meta_', '');
+      const meta = JSON.parse(localStorage.getItem(key));
+      if (meta.is_verified === 'pending') {
+        const extraStr = localStorage.getItem('homii_extra_' + uid);
+        const extra = extraStr ? JSON.parse(extraStr) : {};
+        // Evitar duplicados con Supabase
+        if (!pendingList.some(u => u.id === uid)) {
+          localList.push({
+            id: uid,
+            name: extra.name || 'Estudiante Local',
+            email: 'correo_local@ejemplo.com',
+            phone: extra.phone || '0990000000',
+            cedula: meta.cedula || '1310000000',
+            selfie_url: meta.selfie_url || 'selfie_placeholder.png',
+            id_card_front_url: meta.id_card_front_url || 'idcard_front_placeholder.png',
+            id_card_back_url: meta.id_card_back_url || 'idcard_back_placeholder.png'
+          });
+        }
+      }
+    }
+  }
+  pendingList = [...pendingList, ...localList];
+
+  // 3. Fallback de ejemplo/demostración si la lista está vacía
+  if (pendingList.length === 0) {
+    pendingList.push({
+      id: 'demo-stud-1',
+      name: 'Andrés Eduardo Cevallos',
+      email: 'acevallos829@pucem.edu.ec',
+      phone: '0983456712',
+      cedula: '1314569201',
+      selfie_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60',
+      id_card_front_url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60',
+      id_card_back_url: 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60',
+      is_demo: true
+    });
+    pendingList.push({
+      id: 'demo-stud-2',
+      name: 'María Valentina Intriago',
+      email: 'mvalen.intriago@pucem.edu.ec',
+      phone: '0959821345',
+      cedula: '1310984532',
+      selfie_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=60',
+      id_card_front_url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60',
+      id_card_back_url: 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60',
+      is_demo: true
+    });
+  }
+
+  // 4. Renderizar UI
+  if (countEl) countEl.textContent = pendingList.length + ' Pendientes';
+  if (pendingStat) pendingStat.textContent = pendingList.length;
+
+  listEl.innerHTML = pendingList.map(u => `
+    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; background: var(--bg-white);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <h5 style="margin:0; font-size:1rem; color:var(--text); font-weight:600;">${u.name}</h5>
+            ${u.is_demo ? '<span class="badge badge-amber" style="font-size:0.65rem;">Solicitud Demo</span>' : '<span class="badge badge-blue" style="font-size:0.65rem;">Nueva Cuenta</span>'}
+          </div>
+          <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--text-muted);">
+            Cédula: <strong>${u.cedula}</strong> &middot; Email: ${u.email} &middot; Tel: ${u.phone}
+          </p>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveUserBiometrics('${u.id}', ${!!u.is_demo})">✓ Aprobar</button>
+          <button class="btn btn-sm" style="background:#ef4444; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.rejectUserBiometrics('${u.id}', ${!!u.is_demo})">✗ Rechazar</button>
+        </div>
+      </div>
+      
+      <!-- Documentos -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; background: var(--bg-section); padding: 0.85rem; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+        <div>
+          <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Selfie Rostro</span>
+          <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.selfie_url}', 'Selfie - ${escAttr(u.name)}')">
+            <img src="${u.selfie_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60'">
+          </div>
+        </div>
+        <div>
+          <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Cédula Frente</span>
+          <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.id_card_front_url}', 'Cédula Frente - ${escAttr(u.name)}')">
+            <img src="${u.id_card_front_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60'">
+          </div>
+        </div>
+        <div>
+          <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Cédula Reverso</span>
+          <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.id_card_back_url}', 'Cédula Reverso - ${escAttr(u.name)}')">
+            <img src="${u.id_card_back_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60'">
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+};
+
+window.approveUserBiometrics = async function(userId, isDemo) {
+  if (isDemo) {
+    alert('✓ Demo Aprobada\n\nHas simulado la aprobación de esta cuenta de ejemplo.');
+    // Remover de la vista de ejemplo
+    document.getElementById('admin-verification-list').innerHTML = '<p style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;">Todas las solicitudes han sido gestionadas.</p>';
+    if (document.getElementById('admin-stat-pending')) document.getElementById('admin-stat-pending').textContent = '0';
+    if (document.getElementById('admin-request-count')) document.getElementById('admin-request-count').textContent = '0 Pendientes';
+    return;
+  }
+
+  // Actualizar metadatos locales
+  const metaStr = localStorage.getItem('homii_profile_meta_' + userId);
+  if (metaStr) {
+    const meta = JSON.parse(metaStr);
+    meta.is_verified = 'approved';
+    meta.rejection_reason = '';
+    localStorage.setItem('homii_profile_meta_' + userId, JSON.stringify(meta));
+  }
+
+  // Actualizar en base de datos Supabase si es posible
+  await db.from('profiles').update({ is_verified: 'approved', rejection_reason: '' }).eq('id', userId).catch(() => {});
+
+  alert('🚀 Cuenta Aprobada Exitosamente.\n\nEl estudiante ha sido verificado y ahora tiene acceso completo para postular a arriendos.');
+  
+  // Recargar panel
+  renderAdminPanel();
+};
+
+window.rejectUserBiometrics = async function(userId, isDemo) {
+  const reason = prompt('Ingrese el motivo de rechazo de la verificación:', 'Fotos de la cédula borrosas o no legibles.');
+  if (reason === null) return; // canceló el prompt
+  if (reason.trim() === '') {
+    alert('Debes ingresar un motivo de rechazo.');
+    return;
+  }
+
+  if (isDemo) {
+    alert('✗ Demo Rechazada\n\nHas simulado el rechazo de esta cuenta de ejemplo.');
+    document.getElementById('admin-verification-list').innerHTML = '<p style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;">Todas las solicitudes han sido gestionadas.</p>';
+    if (document.getElementById('admin-stat-pending')) document.getElementById('admin-stat-pending').textContent = '0';
+    if (document.getElementById('admin-request-count')) document.getElementById('admin-request-count').textContent = '0 Pendientes';
+    return;
+  }
+
+  // Actualizar metadatos locales
+  const metaStr = localStorage.getItem('homii_profile_meta_' + userId);
+  if (metaStr) {
+    const meta = JSON.parse(metaStr);
+    meta.is_verified = 'rejected';
+    meta.rejection_reason = reason.trim();
+    localStorage.setItem('homii_profile_meta_' + userId, JSON.stringify(meta));
+  }
+
+  // Actualizar base de datos Supabase
+  await db.from('profiles').update({ is_verified: 'rejected', rejection_reason: reason.trim() }).eq('id', userId).catch(() => {});
+
+  alert('❌ Cuenta Rechazada.\n\nSe ha guardado el motivo. El estudiante será notificado al iniciar sesión y podrá volver a enviar sus fotos.');
+  
+  renderAdminPanel();
+};
+
 // Exportar al scope global para llamadas desde HTML
 window.openPublicProfile       = openPublicProfile;
 window.closePublicProfileModal = closePublicProfileModal;
+

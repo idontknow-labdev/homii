@@ -1,4 +1,4 @@
-  3// ============================================================
+// ============================================================
 // HOMII — Application Logic v4.0
 // Backend: Supabase (Base de datos real + Chat en tiempo real)
 // ============================================================
@@ -82,24 +82,38 @@ async function loadUserProfile(user) {
 
   CURRENT_USER = user;
   
-  // Consultar perfil de la tabla profiles
+  // 1. Consultar perfil de la tabla profiles en Supabase
   let { data: profile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
   
+  const metaName  = user.user_metadata?.name || user.email.split('@')[0];
+  const metaRole  = user.user_metadata?.role || 'student';
+  const metaPhone = user.user_metadata?.phone || null;
+
   if (!profile) {
-    // Si la tabla no devolvió fila, crear perfil por defecto inmediatamente
-    const defaultName = user.user_metadata?.name || user.email.split('@')[0];
+    // Si la tabla no devolvió fila, crear perfil con metadata de Supabase Auth
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
+    const color  = colors[Math.floor(Math.random() * colors.length)];
 
     profile = {
       id: user.id,
-      name: defaultName,
-      role: 'student',
-      phone: null,
+      name: metaName,
+      role: metaRole,
+      phone: metaPhone,
       avatar_color: color
     };
 
+    // Upsert para guardar la fila en Supabase public.profiles
     await db.from('profiles').upsert(profile, { onConflict: 'id' }).catch(err => console.warn('Profile init upsert warning:', err));
+  } else {
+    // Si la fila existía pero le faltaban campos, sincronizar con metadata si es necesario
+    let needsUpdate = false;
+    if (!profile.role && metaRole) { profile.role = metaRole; needsUpdate = true; }
+    if ((!profile.name || profile.name === user.email.split('@')[0]) && metaName) { profile.name = metaName; needsUpdate = true; }
+    if (!profile.phone && metaPhone) { profile.phone = metaPhone; needsUpdate = true; }
+
+    if (needsUpdate) {
+      await db.from('profiles').upsert(profile, { onConflict: 'id' }).catch(err => console.warn('Profile sync upsert warning:', err));
+    }
   }
 
   // Cargar datos locales de respaldo si existen
@@ -118,6 +132,11 @@ async function loadUserProfile(user) {
   }
 
   CURRENT_PROFILE = profile;
+
+  // Sincronizar en segundo plano la metadata en Supabase Auth si es necesario
+  db.auth.updateUser({
+    data: { name: profile.name, role: profile.role, phone: profile.phone }
+  }).catch(() => {});
 
   // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
   const em = (user.email || '').toLowerCase();
@@ -216,11 +235,17 @@ async function doRegister() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  // Intento 1: Registrar nuevo usuario
+  // Registrar nuevo usuario con metadata completa
   let { data, error } = await db.auth.signUp({
     email,
     password: pass,
-    options: { data: { name, role } }
+    options: {
+      data: {
+        name,
+        role,
+        phone: phone || null
+      }
+    }
   });
 
   // Si Supabase responde con rate limit o correo ya existente, intentamos iniciar sesión de forma transparente
@@ -243,7 +268,7 @@ async function doRegister() {
     if (errStr.includes('already') || errStr.includes('registered')) {
       msg = 'Este correo ya está registrado. Por favor ingrese a "Iniciar sesión" con su contraseña.';
     } else if (errStr.includes('rate limit')) {
-      msg = 'Supabase ha alcanzado el límite de envío de correos (Email rate limit exceeded).\n\nPara quitar este límite en Supabase de forma definitiva:\n• Vaya a Supabase Dashboard → Authentication → Providers → Email y desactive la casilla "Confirm email".';
+      msg = 'Supabase ha alcanzado el límite de envío de correos (Email rate limit exceeded).\n\nPara solucionar esto:\n• Verifique si se creó la cuenta e intente iniciar sesión.\n• Si es administrador, desactive "Confirm email" en Supabase Dashboard → Authentication → Providers → Email.';
     } else if (error.message) {
       msg = error.message;
     }
@@ -255,18 +280,31 @@ async function doRegister() {
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
+    // Si la confirmación de correo está activada en Supabase y no hay sesión inmediata
+    if (!data.session) {
+      alert('¡Registro exitoso!\n\nSe ha enviado un correo de confirmación. Por favor, confirme su cuenta desde su correo electrónico antes de iniciar sesión.');
+      showAuthError('register-error', 'Por favor confirme su correo antes de iniciar sesión.');
+      switchPanel('login');
+      const loginEmailInput = document.getElementById('login-email');
+      if (loginEmailInput) loginEmailInput.value = email;
+      return;
+    }
+
+    // Si la confirmación está desactivada y la sesión se inició automáticamente
     await db.from('profiles').upsert({
       id: data.user.id,
       name,
       role,
       phone: phone || null,
       avatar_color: color
-    });
+    }, { onConflict: 'id' }).catch(err => console.warn('Registration profile upsert error:', err.message));
+
+    localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
 
     await loadUserProfile(data.user);
     closeAuth();
     addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
-    if (role === 'landlord') { APP.pendingRoute = 'landlord'; }
+    if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
   }
 }
 
@@ -1756,6 +1794,11 @@ window.saveProfileChanges = async function(e) {
 
   // Guardar copia local como respaldo de respuesta inmediata
   localStorage.setItem('homii_extra_' + CURRENT_USER.id, JSON.stringify({ name, phone, occupation, bio }));
+
+  // Actualizar también user_metadata en Supabase Auth
+  db.auth.updateUser({
+    data: { name, phone }
+  }).catch(() => {});
 
   if (btn) { btn.disabled = false; btn.textContent = 'Guardar Cambios'; }
 

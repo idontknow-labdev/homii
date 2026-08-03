@@ -2212,11 +2212,11 @@ async function renderLandlordPanel() {
         const status = propMeta.status || 'available';
         const waitingList = propMeta.waiting_list || [];
 
-        let statusBadge = '<span class="badge badge-green">✅ Disponible</span>';
+        let statusBadge = '<span class="badge badge-green">Disponible</span>';
         if (status === 'assigned') {
-          statusBadge = '<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔐 Alquilado</span>';
+          statusBadge = '<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">Alquilado</span>';
         } else if (status === 'in_progress') {
-          statusBadge = `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">⏳ En Asignación (${waitingList.length} en espera)</span>`;
+          statusBadge = `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">En Asignación (${waitingList.length} en espera)</span>`;
         }
 
         return `

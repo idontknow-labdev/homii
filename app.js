@@ -194,13 +194,34 @@ function setupAuth() {
     const toggleBiometrics = () => {
       const isStudent = regRole.value === 'student';
       biometricFields.style.display = isStudent ? 'flex' : 'none';
-      if (regCedula) regCedula.required = isStudent;
+      if (regCedula) {
+        regCedula.required = isStudent;
+        if (!isStudent) regCedula.setCustomValidity('');
+      }
       if (regSelfie) regSelfie.required = isStudent;
       if (regIdcardFront) regIdcardFront.required = isStudent;
       if (regIdcardBack) regIdcardBack.required = isStudent;
     };
     regRole.addEventListener('change', toggleBiometrics);
     toggleBiometrics();
+
+    if (regCedula) {
+      const validateCedulaLive = () => {
+        const isStudent = regRole.value === 'student';
+        if (!isStudent) {
+          regCedula.setCustomValidity('');
+          return;
+        }
+        const val = regCedula.value.trim();
+        if (!validarCedulaEcuatoriana(val)) {
+          regCedula.setCustomValidity('El número de cédula ingresado no es válido en Ecuador.');
+        } else {
+          regCedula.setCustomValidity('');
+        }
+      };
+      regCedula.addEventListener('input', validateCedulaLive);
+      regRole.addEventListener('change', validateCedulaLive);
+    }
   }
 
   document.getElementById('reg-selfie')?.addEventListener('change', e => {

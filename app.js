@@ -187,7 +187,8 @@ function setupAuth() {
   const biometricFields = document.getElementById('biometric-fields');
   const regCedula = document.getElementById('reg-cedula');
   const regSelfie = document.getElementById('reg-selfie');
-  const regIdcard = document.getElementById('reg-idcard');
+  const regIdcardFront = document.getElementById('reg-idcard-front');
+  const regIdcardBack = document.getElementById('reg-idcard-back');
 
   if (regRole && biometricFields) {
     const toggleBiometrics = () => {
@@ -195,7 +196,8 @@ function setupAuth() {
       biometricFields.style.display = isStudent ? 'flex' : 'none';
       if (regCedula) regCedula.required = isStudent;
       if (regSelfie) regSelfie.required = isStudent;
-      if (regIdcard) regIdcard.required = isStudent;
+      if (regIdcardFront) regIdcardFront.required = isStudent;
+      if (regIdcardBack) regIdcardBack.required = isStudent;
     };
     regRole.addEventListener('change', toggleBiometrics);
     toggleBiometrics();
@@ -205,17 +207,27 @@ function setupAuth() {
     const file = e.target.files?.[0];
     const preview = document.getElementById('selfie-preview-name');
     if (file && preview) {
-      preview.textContent = '📸 Selfie cargado: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      preview.textContent = '📸 Selfie: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
       preview.style.color = '#10b981';
       preview.style.fontWeight = '600';
     }
   });
 
-  document.getElementById('reg-idcard')?.addEventListener('change', e => {
+  document.getElementById('reg-idcard-front')?.addEventListener('change', e => {
     const file = e.target.files?.[0];
-    const preview = document.getElementById('idcard-preview-name');
+    const preview = document.getElementById('idcard-front-preview-name');
     if (file && preview) {
-      preview.textContent = '📄 Cédula cargada: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      preview.textContent = 'Frente: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      preview.style.color = '#10b981';
+      preview.style.fontWeight = '600';
+    }
+  });
+
+  document.getElementById('reg-idcard-back')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    const preview = document.getElementById('idcard-back-preview-name');
+    if (file && preview) {
+      preview.textContent = 'Reverso: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
       preview.style.color = '#10b981';
       preview.style.fontWeight = '600';
     }
@@ -359,7 +371,8 @@ async function doRegister() {
       cedula,
       is_verified: isVerified,
       selfie_url: role === 'student' ? 'selfie_placeholder.png' : null,
-      id_card_url: role === 'student' ? 'idcard_placeholder.png' : null,
+      id_card_front_url: role === 'student' ? 'idcard_front_placeholder.png' : null,
+      id_card_back_url: role === 'student' ? 'idcard_back_placeholder.png' : null,
       is_premium: false,
       premium_tier: 'none'
     };

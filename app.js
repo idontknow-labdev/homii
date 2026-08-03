@@ -553,7 +553,7 @@ function setupMobileMenu() {
 
   if (mLogin)  mLogin.onclick  = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuth(); };
   if (mReg)    mReg.onclick    = (e) => { e.preventDefault(); window.closeMobileDrawer(); openAuthRegister(); };
-  if (mLogout) mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); doLogout(); };
+  if (mLogout) mLogout.onclick = (e) => { e.preventDefault(); window.closeMobileDrawer(); logout(); };
 }
 
 function guardRoute(route) {

@@ -1262,7 +1262,7 @@
 
       <div id="login-error" class="form-error"></div>
 
-      <form id="login-form" style="display:flex;flex-direction:column;gap:1rem;">
+      <form id="login-form" onsubmit="event.preventDefault(); window.doLogin();" style="display:flex;flex-direction:column;gap:1rem;">
         <div class="form-group">
           <label class="form-label">Correo electronico</label>
           <input type="email" class="form-input" id="login-email" placeholder="su@correo.com" required autocomplete="email">
@@ -1282,7 +1282,7 @@
     <!-- Panel registro -->
     <div id="panel-register" class="auth-form" style="display:none;">
       <div id="register-error" class="form-error"></div>
-      <form id="register-form" style="display:flex;flex-direction:column;gap:1rem;">
+      <form id="register-form" onsubmit="event.preventDefault(); window.doRegister();" style="display:flex;flex-direction:column;gap:1rem;">
         <div class="form-group">
           <label class="form-label">Nombre completo *</label>
           <input type="text" class="form-input" id="reg-name" placeholder="Su nombre completo" required>
@@ -1418,6 +1418,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260803_01"></script>
+<script src="app.js?v=20260803_02"></script>
 </body>
 </html>

@@ -2418,10 +2418,15 @@ window.openCurrentLandlordProfile = function() {
   }, 50);
 };
 window.openAuth                   = openAuth;
+window.openAuthRegister           = openAuthRegister;
 window.closeAuth                  = closeAuth;
+window.switchPanel                = switchPanel;
+window.doLogin                    = doLogin;
+window.doRegister                 = doRegister;
 window.logout                     = logout;
 window.filterListings             = filterListings;
 window.filterRoomies              = filterRoomies;
+window.closeActivation            = function() { document.getElementById('activation-popup')?.classList.remove('open'); };
 
 function isValidUUID(str) {
   return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);

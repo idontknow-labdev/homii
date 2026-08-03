@@ -376,7 +376,7 @@ async function doRegister() {
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-password').value;
   let role  = document.getElementById('reg-role')?.value || 'student';
-  if (role !== 'landlord' && role !== 'student') role = 'student';
+  if (role !== 'landlord' && role !== 'student' && role !== 'university') role = 'student';
   const phone = document.getElementById('reg-phone').value.trim();
   const terms = document.getElementById('reg-terms')?.checked;
   const btn   = document.querySelector('#register-form button[type=submit]');
@@ -492,6 +492,17 @@ async function doRegister() {
       addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
     }
     if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
+    if (role === 'university') {
+      const em = email.toLowerCase();
+      const isPucem = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
+      if (isPucem) {
+        APP.pendingRoute = 'university';
+        navigate('university');
+      } else {
+        APP.pendingRoute = 'admin';
+        navigate('admin');
+      }
+    }
   }
 }
 
@@ -539,9 +550,15 @@ function updateNavUI() {
         avEl.classList.remove('premium-avatar');
       }
     }
-    llLink.forEach(el => el.style.display   = profile?.role === 'landlord'   ? 'block' : 'none');
-    uniLink.forEach(el => el.style.display  = profile?.role === 'university' ? 'block' : 'none');
-    adminLink.forEach(el => el.style.display = profile?.role === 'admin'      ? 'block' : 'none');
+    const em = (user.email || '').toLowerCase();
+    const isPucemEmail = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
+    const isUniRole = profile?.role === 'university' || profile?.role === 'admin';
+    const isHomiiAdmin = isUniRole && !isPucemEmail;
+    const isPucemAdmin = isUniRole && isPucemEmail;
+
+    llLink.forEach(el => el.style.display   = profile?.role === 'landlord' ? 'block' : 'none');
+    uniLink.forEach(el => el.style.display  = isPucemAdmin ? 'block' : 'none');
+    adminLink.forEach(el => el.style.display = isHomiiAdmin ? 'block' : 'none');
     profLink.forEach(el => el.style.display = 'block');
   } else {
     if (guestEl)  guestEl.style.display  = 'flex';
@@ -666,9 +683,15 @@ function setupMobileMenu() {
 function guardRoute(route) {
   if (!CURRENT_USER) { APP.pendingRoute = route; openAuth(); return false; }
   const role = CURRENT_PROFILE?.role;
+  const em = (CURRENT_USER.email || '').toLowerCase();
+  const isPucemEmail = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
+  const isUniRole = role === 'university' || role === 'admin';
+  const isHomiiAdmin = isUniRole && !isPucemEmail;
+  const isPucemAdmin = isUniRole && isPucemEmail;
+
   if (route === 'landlord'   && role !== 'landlord')   { APP.pendingRoute = route; openAuth(); return false; }
-  if (route === 'university' && role !== 'university') { APP.pendingRoute = route; openAuth(); return false; }
-  if (route === 'admin'      && role !== 'admin')      { APP.pendingRoute = route; openAuth(); return false; }
+  if (route === 'university' && !isPucemAdmin) { APP.pendingRoute = route; openAuth(); return false; }
+  if (route === 'admin'      && !isHomiiAdmin) { APP.pendingRoute = route; openAuth(); return false; }
   return true;
 }
 

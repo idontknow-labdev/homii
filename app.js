@@ -76,18 +76,28 @@ async function loadUserProfile(user) {
     CURRENT_USER = null;
     CURRENT_PROFILE = null;
     document.body.classList.remove('pucem-mode');
+    const warningBanner = document.getElementById('biometric-warning-banner');
+    if (warningBanner) warningBanner.style.display = 'none';
     updateNavUI();
     return;
   }
 
   CURRENT_USER = user;
+
+  // Cargar metadatos locales de respaldo
+  const localMetaStr = localStorage.getItem('homii_profile_meta_' + user.id);
+  const localMeta = localMetaStr ? JSON.parse(localMetaStr) : {};
   
   // 1. Consultar perfil de la tabla profiles en Supabase
   let { data: profile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
   
-  const metaName  = user.user_metadata?.name || user.email.split('@')[0];
-  const metaRole  = user.user_metadata?.role || 'student';
-  const metaPhone = user.user_metadata?.phone || null;
+  const metaName       = user.user_metadata?.name || user.email.split('@')[0];
+  const metaRole       = user.user_metadata?.role || 'student';
+  const metaPhone      = user.user_metadata?.phone || null;
+  const metaCedula     = user.user_metadata?.cedula || localMeta.cedula || null;
+  const metaIsVerified = user.user_metadata?.is_verified || localMeta.is_verified || (metaRole === 'landlord' ? 'approved' : 'pending');
+  const metaIsPremium  = user.user_metadata?.is_premium || localMeta.is_premium || false;
+  const metaPremiumTier= user.user_metadata?.premium_tier || localMeta.premium_tier || 'none';
 
   if (!profile) {
     // Si la tabla no devolvió fila, crear perfil con metadata de Supabase Auth
@@ -99,6 +109,10 @@ async function loadUserProfile(user) {
       name: metaName,
       role: metaRole,
       phone: metaPhone,
+      cedula: metaCedula,
+      is_verified: metaIsVerified,
+      is_premium: metaIsPremium,
+      premium_tier: metaPremiumTier,
       avatar_color: color
     };
 
@@ -111,6 +125,10 @@ async function loadUserProfile(user) {
     if (!profile.role && metaRole) { profile.role = metaRole; needsUpdate = true; }
     if ((!profile.name || profile.name === user.email.split('@')[0]) && metaName) { profile.name = metaName; needsUpdate = true; }
     if (!profile.phone && metaPhone) { profile.phone = metaPhone; needsUpdate = true; }
+    if (profile.cedula === undefined || profile.cedula === null) profile.cedula = metaCedula;
+    if (profile.is_verified === undefined || profile.is_verified === null) profile.is_verified = metaIsVerified;
+    if (profile.is_premium === undefined || profile.is_premium === null) profile.is_premium = metaIsPremium;
+    if (profile.premium_tier === undefined || profile.premium_tier === null) profile.premium_tier = metaPremiumTier;
 
     if (needsUpdate) {
       const { error: syncErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });
@@ -135,6 +153,12 @@ async function loadUserProfile(user) {
 
   CURRENT_PROFILE = profile;
 
+  // Banner de advertencia si la cuenta está pendiente de verificación biométrica
+  const warningBanner = document.getElementById('biometric-warning-banner');
+  if (warningBanner) {
+    warningBanner.style.display = (profile.role === 'student' && profile.is_verified === 'pending') ? 'flex' : 'none';
+  }
+
   // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
   const em = (user.email || '').toLowerCase();
   const isPUCEM = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
@@ -156,6 +180,45 @@ function setupAuth() {
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeAuth(); closePropertyModal(); closeRoomieModal(); closeConversationModal(); }
+  });
+
+  // Controladores dinámicos para los campos de registro biométrico
+  const regRole = document.getElementById('reg-role');
+  const biometricFields = document.getElementById('biometric-fields');
+  const regCedula = document.getElementById('reg-cedula');
+  const regSelfie = document.getElementById('reg-selfie');
+  const regIdcard = document.getElementById('reg-idcard');
+
+  if (regRole && biometricFields) {
+    const toggleBiometrics = () => {
+      const isStudent = regRole.value === 'student';
+      biometricFields.style.display = isStudent ? 'flex' : 'none';
+      if (regCedula) regCedula.required = isStudent;
+      if (regSelfie) regSelfie.required = isStudent;
+      if (regIdcard) regIdcard.required = isStudent;
+    };
+    regRole.addEventListener('change', toggleBiometrics);
+    toggleBiometrics();
+  }
+
+  document.getElementById('reg-selfie')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    const preview = document.getElementById('selfie-preview-name');
+    if (file && preview) {
+      preview.textContent = '📸 Selfie cargado: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      preview.style.color = '#10b981';
+      preview.style.fontWeight = '600';
+    }
+  });
+
+  document.getElementById('reg-idcard')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    const preview = document.getElementById('idcard-preview-name');
+    if (file && preview) {
+      preview.textContent = '📄 Cédula cargada: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      preview.style.color = '#10b981';
+      preview.style.fontWeight = '600';
+    }
   });
 }
 
@@ -225,6 +288,18 @@ async function doRegister() {
   const terms = document.getElementById('reg-terms')?.checked;
   const btn   = document.querySelector('#register-form button[type=submit]');
 
+  // Campos adicionales biométricos
+  let cedula = null;
+  let isVerified = 'approved'; // Los arrendadores o admin se auto-aprueban para fluidez
+  if (role === 'student') {
+    cedula = document.getElementById('reg-cedula')?.value.trim();
+    if (!cedula || !/^[0-9]{10}$/.test(cedula)) {
+      showAuthError('register-error', 'La cédula es obligatoria para estudiantes y debe contener 10 dígitos numéricos.');
+      return;
+    }
+    isVerified = 'pending'; // Estudiantes inician como pendientes de aprobación biométrica
+  }
+
   if (!name)  { showAuthError('register-error', 'Ingrese su nombre completo.'); return; }
   if (!email) { showAuthError('register-error', 'Ingrese un correo electrónico.'); return; }
   if (pass.length < 6) { showAuthError('register-error', 'La contraseña debe tener al menos 6 caracteres.'); return; }
@@ -240,7 +315,9 @@ async function doRegister() {
       data: {
         name,
         role,
-        phone: phone || null
+        phone: phone || null,
+        cedula: cedula || null,
+        is_verified: isVerified
       }
     }
   });
@@ -277,6 +354,17 @@ async function doRegister() {
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
+    // Guardar respaldo local de los datos de la verificación biométrica simulada
+    const profileMeta = {
+      cedula,
+      is_verified: isVerified,
+      selfie_url: role === 'student' ? 'selfie_placeholder.png' : null,
+      id_card_url: role === 'student' ? 'idcard_placeholder.png' : null,
+      is_premium: false,
+      premium_tier: 'none'
+    };
+    localStorage.setItem('homii_profile_meta_' + data.user.id, JSON.stringify(profileMeta));
+
     // Si la confirmación de correo está activada en Supabase y no hay sesión inmediata
     if (!data.session) {
       alert('¡Registro exitoso!\n\nSe ha enviado un correo de confirmación. Por favor, confirme su cuenta desde su correo electrónico antes de iniciar sesión.');
@@ -287,12 +375,14 @@ async function doRegister() {
       return;
     }
 
-    // Si la confirmación está desactivada y la sesión se inició automáticamente
+    // Si la confirmación está desactivada y la sesión se inició automáticamente, guardar en profiles
     const { error: upsertErr } = await db.from('profiles').upsert({
       id: data.user.id,
       name,
       role,
       phone: phone || null,
+      cedula: cedula || null,
+      is_verified: isVerified,
       avatar_color: color
     }, { onConflict: 'id' });
     if (upsertErr) console.warn('Registration profile upsert error:', upsertErr.message);
@@ -301,7 +391,12 @@ async function doRegister() {
 
     await loadUserProfile(data.user);
     closeAuth();
-    addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
+    
+    if (role === 'student' && isVerified === 'pending') {
+      alert('¡Registro biométrico recibido!\n\nSu cuenta se ha creado y está pendiente de verificación biométrica por un administrador. Homii validará su identidad en un plazo máximo de 24 horas.');
+    } else {
+      addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
+    }
     if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
   }
 }
@@ -796,9 +891,28 @@ async function openPropertyModal(id) {
   document.getElementById('detail-distance').textContent = `${p.distance_to_campus} km`;
   document.getElementById('detail-desc').textContent     = p.description;
 
+  const propMetaStr = localStorage.getItem('homii_prop_meta_' + p.id);
+  const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: p.status || 'available', waiting_list: p.waiting_list || [] };
+  const currentStatus = propMeta.status || 'available';
+  const waitingList = propMeta.waiting_list || [];
+
+  // Ordenar lista de espera: Premium primero, luego por tiempo de llegada
+  const sortedList = [...waitingList].sort((a, b) => {
+    if (a.is_premium && !b.is_premium) return -1;
+    if (!a.is_premium && b.is_premium) return 1;
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  });
+
   const badgesRow = document.getElementById('detail-badges');
   if (badgesRow) {
     badgesRow.innerHTML = '';
+    if (currentStatus === 'assigned') {
+      badgesRow.innerHTML += `<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔐 Alquilado</span> `;
+    } else if (currentStatus === 'in_progress') {
+      badgesRow.innerHTML += `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">⏳ En Asignación (${waitingList.length} en espera)</span> `;
+    } else {
+      badgesRow.innerHTML += `<span class="badge badge-green" style="background:#d1fae5;color:#059669;font-weight:700;">✅ Disponible</span> `;
+    }
     if (p.is_demo) badgesRow.innerHTML += `<span class="badge badge-amber">Anuncio de Ejemplo</span> `;
     if (p.university_certified) {
       if (p.certification_type === 'pucem') {
@@ -808,6 +922,40 @@ async function openPropertyModal(id) {
       }
     }
     if (p.featured) badgesRow.innerHTML += `<span class="badge badge-blue">Destacado</span>`;
+  }
+
+  // Renderizar botones de acción para Lista de Espera y Reservas
+  const reserveContainer = document.getElementById('detail-reserve-container');
+  if (reserveContainer) {
+    if (currentStatus === 'assigned') {
+      reserveContainer.innerHTML = `
+        <button class="btn btn-full" disabled style="background:#fee2e2;color:#dc2626;border:none;font-weight:700;padding:0.85rem;">
+          🔐 Inmueble Alquilado — Contrato Formalizado
+        </button>`;
+    } else {
+      const myIndex = CURRENT_USER ? sortedList.findIndex(u => u.user_id === CURRENT_USER.id) : -1;
+      if (myIndex !== -1) {
+        const myEntry = sortedList[myIndex];
+        reserveContainer.innerHTML = `
+          <button class="btn btn-primary btn-full" style="background:#059669;font-weight:700;padding:0.85rem;" disabled>
+            ✓ Estás en el Turno #${myIndex + 1} de la Lista de Espera ${myEntry.is_premium ? '👑 [Prioridad 1]' : ''}
+          </button>
+          <button class="btn btn-outline btn-full btn-sm" onclick="leaveWaitingList('${p.id}')">
+            Salir de la lista de espera
+          </button>`;
+      } else {
+        const isUserPremium = CURRENT_PROFILE?.is_premium;
+        reserveContainer.innerHTML = `
+          <button class="btn btn-primary btn-full" onclick="joinWaitingList('${p.id}')" style="font-weight:700;padding:0.85rem;">
+            📝 Unirse a la Lista de Espera (Turno #${sortedList.length + 1})
+          </button>
+          ${!isUserPremium ? `
+            <div style="font-size:0.75rem;text-align:center;color:var(--text-muted);margin-top:0.25rem;">
+              👑 ¿Quieres saltar al Turno #1? <a class="auth-link" onclick="openPremiumModal()">Hazte Homii Premium</a>
+            </div>
+          ` : ''}`;
+      }
+    }
   }
 
   const amenEl = document.getElementById('detail-amenities');
@@ -2058,21 +2206,63 @@ async function renderLandlordPanel() {
     if (count === 0) {
       list.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1.5rem;">No ha publicado propiedades todavía. Use el formulario para crear su primer anuncio.</p>';
     } else {
-      list.innerHTML = (myProps || []).map(p => `
-        <div class="prop-row">
-          <div class="prop-row-img">
-            ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${p.title}">` : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`}
+      list.innerHTML = (myProps || []).map(p => {
+        const propMetaStr = localStorage.getItem('homii_prop_meta_' + p.id);
+        const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: p.status || 'available', waiting_list: p.waiting_list || [] };
+        const status = propMeta.status || 'available';
+        const waitingList = propMeta.waiting_list || [];
+
+        let statusBadge = '<span class="badge badge-green">✅ Disponible</span>';
+        if (status === 'assigned') {
+          statusBadge = '<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔐 Alquilado</span>';
+        } else if (status === 'in_progress') {
+          statusBadge = `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">⏳ En Asignación (${waitingList.length} en espera)</span>`;
+        }
+
+        return `
+        <div class="prop-row" style="flex-direction:column;align-items:stretch;gap:0.75rem;">
+          <div style="display:flex;align-items:center;gap:0.85rem;">
+            <div class="prop-row-img">
+              ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${p.title}">` : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--border-blue)" stroke-width="1.5" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:0.88rem;color:var(--text);">${p.title}</span>
+                ${statusBadge}
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">${(p.location || '').split(',')[0]} &middot; <span style="color:var(--blue);font-weight:600;">$${p.price}/mes</span></div>
+            </div>
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+              ${status !== 'assigned' ? `<button class="btn btn-primary btn-sm" onclick="openContractModal('${p.id}')">📜 Generar Contrato / Dar de Baja</button>` : ''}
+              ${p.university_certified ? `<span class="badge badge-green">Verificado PUCEM</span>` : `<button class="btn btn-secondary btn-sm" onclick="requestVerif('${p.id}', '${escAttr(p.title)}')">Pedir verificación</button>`}
+              ${p.featured ? `<span class="badge badge-blue">Destacado</span>` : `<button class="btn btn-outline btn-sm" onclick="makeFeatured('${p.id}')">Destacar</button>`}
+              <button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Eliminar</button>
+            </div>
           </div>
-          <div style="flex:1;min-width:0;margin-left:0.85rem;">
-            <div style="font-weight:600;font-size:0.88rem;color:var(--text);">${p.title}</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);">${(p.location || '').split(',')[0]} &middot; <span style="color:var(--blue);font-weight:600;">$${p.price}/mes</span></div>
-          </div>
-          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
-            ${p.university_certified ? `<span class="badge badge-green">Verificado PUCEM</span>` : `<button class="btn btn-secondary btn-sm" onclick="requestVerif('${p.id}', '${escAttr(p.title)}')">Pedir verificación</button>`}
-            ${p.featured ? `<span class="badge badge-blue">Destacado</span>` : `<button class="btn btn-outline btn-sm" onclick="makeFeatured('${p.id}')">Destacar</button>`}
-            <button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Eliminar</button>
-          </div>
-        </div>`).join('');
+          ${waitingList.length > 0 ? `
+            <div style="background:var(--bg-section);border:1px solid var(--border);border-radius:var(--radius-md);padding:0.75rem;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:0.5rem;text-transform:uppercase;">
+                📋 Lista de Espera por Orden Estricto (${waitingList.length} Solicitantes)
+              </div>
+              <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                ${[...waitingList].sort((a,b)=>(a.is_premium && !b.is_premium ? -1 : (!a.is_premium && b.is_premium ? 1 : new Date(a.timestamp)-new Date(b.timestamp)))).map((u, idx) => `
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;background:var(--bg);padding:0.4rem 0.6rem;border-radius:var(--radius-sm);">
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <span style="font-weight:700;color:var(--text-muted);">${idx + 1}.</span>
+                      <span style="font-weight:600;color:var(--text);">${u.name}</span>
+                      ${u.is_premium ? `<span class="badge badge-amber" style="font-size:0.65rem;padding:2px 6px;">👑 Prioridad 1 Premium</span>` : ''}
+                      <span style="color:var(--text-muted);font-size:0.72rem;">(Cédula: ${u.cedula || 'Verificada'})</span>
+                    </div>
+                    <button class="btn btn-primary btn-sm" style="font-size:0.7rem;padding:0.2rem 0.5rem;" onclick="openContractModal('${p.id}')">
+                      Asignar y Firmar
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>`;
+      }).join('');
     }
   }
 
@@ -2590,6 +2780,264 @@ window.openPublicProfile = async function openPublicProfile(userId, fallbackName
 function closePublicProfileModal() {
   document.body.style.overflow = '';
 }
+
+// ============================================================
+// SISTEMA DE LISTA DE ESPERA Y ESTADOS DE PROPIEDAD
+// ============================================================
+
+window.joinWaitingList = async function(propId) {
+  if (!CURRENT_USER) {
+    openAuth();
+    return;
+  }
+
+  if (CURRENT_PROFILE?.role === 'student' && CURRENT_PROFILE?.is_verified === 'pending') {
+    alert('⚠️ Verificación Biométrica Pendiente\n\nTu registro está siendo revisado por el equipo de Homii. La asignación y reserva de propiedades estarán habilitadas tan pronto como tu cuenta sea aprobada.');
+    return;
+  }
+
+  // Buscar la propiedad en APP.properties o Supabase
+  let prop = APP.properties.find(p => p.id === propId);
+  if (!prop) {
+    const { data } = await db.from('properties').select('*').eq('id', propId).maybeSingle();
+    prop = data;
+  }
+  if (!prop) { alert('No se encontró la propiedad.'); return; }
+
+  // Cargar lista de espera existente de metadatos locales o columna DB
+  const propMetaStr = localStorage.getItem('homii_prop_meta_' + propId);
+  const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: prop.status || 'available', waiting_list: prop.waiting_list || [] };
+
+  const isAlreadyInList = propMeta.waiting_list.some(u => u.user_id === CURRENT_USER.id);
+  if (isAlreadyInList) {
+    alert('Ya estás registrado en la lista de espera de esta propiedad.');
+    return;
+  }
+
+  const isPremium = CURRENT_PROFILE?.is_premium || false;
+
+  const newEntry = {
+    user_id: CURRENT_USER.id,
+    name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+    cedula: CURRENT_PROFILE?.cedula || '1310000000',
+    phone: CURRENT_PROFILE?.phone || '0990000000',
+    avatar_color: CURRENT_PROFILE?.avatar_color || '#1a56db',
+    timestamp: new Date().toISOString(),
+    is_premium: isPremium
+  };
+
+  propMeta.waiting_list.push(newEntry);
+  propMeta.status = 'in_progress'; // Cambia el estado a En Asignación
+
+  // Guardar en local storage y si es posible en Supabase
+  localStorage.setItem('homii_prop_meta_' + propId, JSON.stringify(propMeta));
+  await db.from('properties').update({ status: 'in_progress', waiting_list: propMeta.waiting_list }).eq('id', propId).catch(() => {});
+
+  // Actualizar objeto en memoria
+  prop.status = 'in_progress';
+  prop.waiting_list = propMeta.waiting_list;
+
+  addNotif('Unido a la Lista de Espera', 'Te has unido a la lista de espera para ' + prop.title + '.');
+  alert(`¡Registrado con éxito!\n\nTe has unido a la lista de espera.\n${isPremium ? '👑 Prioridad 1 Activa: Tu solicitud encabeza la lista.' : 'Recuerda que con Homii Premium cuentas con Prioridad Nivel 1.'}`);
+  
+  if (openPropertyData && openPropertyData.id === propId) {
+    openPropertyData.status = 'in_progress';
+    openPropertyData.waiting_list = propMeta.waiting_list;
+    openPropertyModal(openPropertyData);
+  }
+};
+
+window.leaveWaitingList = async function(propId) {
+  if (!CURRENT_USER) return;
+  const propMetaStr = localStorage.getItem('homii_prop_meta_' + propId);
+  let propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: 'available', waiting_list: [] };
+
+  propMeta.waiting_list = propMeta.waiting_list.filter(u => u.user_id !== CURRENT_USER.id);
+  if (propMeta.waiting_list.length === 0) propMeta.status = 'available';
+
+  localStorage.setItem('homii_prop_meta_' + propId, JSON.stringify(propMeta));
+  await db.from('properties').update({ status: propMeta.status, waiting_list: propMeta.waiting_list }).eq('id', propId).catch(() => {});
+
+  alert('Has salido de la lista de espera.');
+  if (openPropertyData && openPropertyData.id === propId) {
+    openPropertyData.status = propMeta.status;
+    openPropertyData.waiting_list = propMeta.waiting_list;
+    openPropertyModal(openPropertyData);
+  }
+};
+
+// ============================================================
+// HOMII PREMIUM & SIMULADOR DE PAGO
+// ============================================================
+
+let selectedPremiumTier = 'lifetime';
+
+window.openPremiumModal = function() {
+  const modal = document.getElementById('premium-modal');
+  if (modal) modal.classList.add('open');
+};
+
+window.closePremiumModal = function() {
+  const modal = document.getElementById('premium-modal');
+  if (modal) modal.classList.remove('open');
+};
+
+window.selectPremiumPlan = function(tier) {
+  selectedPremiumTier = tier;
+  const planAnnual = document.getElementById('plan-annual');
+  const planLifetime = document.getElementById('plan-lifetime');
+
+  if (tier === 'annual') {
+    if (planAnnual) { planAnnual.style.border = '2px solid #f59e0b'; planAnnual.style.background = '#fffbeb'; }
+    if (planLifetime) { planLifetime.style.border = '2px solid var(--border)'; planLifetime.style.background = 'var(--bg-section)'; }
+  } else {
+    if (planLifetime) { planLifetime.style.border = '2px solid #f59e0b'; planLifetime.style.background = '#fffbeb'; }
+    if (planAnnual) { planAnnual.style.border = '2px solid var(--border)'; planAnnual.style.background = 'var(--bg-section)'; }
+  }
+};
+
+window.processPremiumPayment = async function() {
+  if (!CURRENT_USER) {
+    closePremiumModal();
+    openAuth();
+    return;
+  }
+
+  const btn = document.getElementById('btn-pay-premium');
+  if (btn) { btn.disabled = true; btn.textContent = 'Procesando Pago Seguro...'; }
+
+  setTimeout(async () => {
+    if (btn) { btn.disabled = false; btn.textContent = '💳 Activar Homii Premium Ahora'; }
+
+    // Actualizar metadatos y perfil
+    if (CURRENT_PROFILE) {
+      CURRENT_PROFILE.is_premium = true;
+      CURRENT_PROFILE.premium_tier = selectedPremiumTier;
+    }
+
+    const profileMeta = JSON.parse(localStorage.getItem('homii_profile_meta_' + CURRENT_USER.id) || '{}');
+    profileMeta.is_premium = true;
+    profileMeta.premium_tier = selectedPremiumTier;
+    localStorage.setItem('homii_profile_meta_' + CURRENT_USER.id, JSON.stringify(profileMeta));
+
+    await db.auth.updateUser({ data: { is_premium: true, premium_tier: selectedPremiumTier } }).catch(() => {});
+    await db.from('profiles').update({ is_premium: true, premium_tier: selectedPremiumTier }).eq('id', CURRENT_USER.id).catch(() => {});
+
+    closePremiumModal();
+    addNotif('👑 Homii Premium Activado', '¡Felicidades! Ahora cuentas con Prioridad Nivel 1 en arriendos.');
+    alert('🎉 ¡Pago procesado exitosamente!\n\nTu cuenta ahora es Homii Premium (Prioridad Nivel 1). Tus solicitudes en listas de espera serán atendidas primero.');
+  }, 1200);
+};
+
+// ============================================================
+// GENERADOR DE CONTRATOS Y ALQUILER
+// ============================================================
+
+window.openContractModal = function(propId) {
+  const prop = APP.properties.find(p => p.id === propId) || openPropertyData;
+  if (!prop) { alert('No se encontró el inmueble.'); return; }
+
+  const modal = document.getElementById('contract-modal');
+  const titleEl = document.getElementById('contract-prop-title');
+  const propIdInp = document.getElementById('contract-prop-id');
+  const priceInp = document.getElementById('contract-price');
+  const selectTenant = document.getElementById('contract-tenant-select');
+
+  if (titleEl) titleEl.textContent = 'Inmueble: ' + prop.title + ' ($' + prop.price + '/mes)';
+  if (propIdInp) propIdInp.value = prop.id;
+  if (priceInp) priceInp.value = prop.price;
+
+  // Cargar lista de espera cargada
+  const propMetaStr = localStorage.getItem('homii_prop_meta_' + prop.id);
+  const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: prop.status || 'available', waiting_list: prop.waiting_list || [] };
+  
+  // Ordenar lista de espera: Premium primero, luego por tiempo de llegada
+  const sortedList = (propMeta.waiting_list || []).sort((a, b) => {
+    if (a.is_premium && !b.is_premium) return -1;
+    if (!a.is_premium && b.is_premium) return 1;
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  });
+
+  if (selectTenant) {
+    if (sortedList.length === 0) {
+      selectTenant.innerHTML = '<option value="">No hay usuarios en lista de espera (Inquilino directo)</option>';
+    } else {
+      selectTenant.innerHTML = sortedList.map((u, i) => `
+        <option value="${u.user_id}">
+          ${i + 1}. ${u.name} ${u.is_premium ? '👑 [Prioridad 1 Premium]' : ''} (Cédula: ${u.cedula || 'Verificada'})
+        </option>
+      `).join('');
+    }
+  }
+
+  if (modal) modal.classList.add('open');
+};
+
+window.closeContractModal = function() {
+  const modal = document.getElementById('contract-modal');
+  if (modal) modal.classList.remove('open');
+};
+
+window.generateAndCompleteRent = async function() {
+  const propId = document.getElementById('contract-prop-id')?.value;
+  const price = document.getElementById('contract-price')?.value;
+  const deposit = document.getElementById('contract-deposit')?.value;
+  const months = document.getElementById('contract-months')?.value;
+  const startDate = document.getElementById('contract-start-date')?.value;
+  const tenantSelect = document.getElementById('contract-tenant-select');
+  const tenantId = tenantSelect?.value;
+
+  if (!propId || !price || !deposit || !startDate) {
+    alert('Por favor complete todos los campos obligatorios del contrato.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-generate-contract');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generando Contrato...'; }
+
+  setTimeout(async () => {
+    if (btn) { btn.disabled = false; btn.textContent = '🔐 Generar Contrato y Marcar Inmueble como Alquilado'; }
+
+    const propMetaStr = localStorage.getItem('homii_prop_meta_' + propId);
+    const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: 'available', waiting_list: [] };
+    propMeta.status = 'assigned'; // Cambiar a Alquilado
+    localStorage.setItem('homii_prop_meta_' + propId, JSON.stringify(propMeta));
+
+    // Intentar actualizar la base de datos Supabase
+    await db.from('properties').update({ status: 'assigned' }).eq('id', propId).catch(() => {});
+
+    // Guardar el contrato en local y Supabase
+    const contractObj = {
+      id: 'contract_' + Date.now(),
+      property_id: propId,
+      landlord_id: CURRENT_USER?.id,
+      tenant_id: tenantId || 'tenant_direct',
+      price: parseFloat(price),
+      deposit: parseFloat(deposit),
+      months: parseInt(months),
+      start_date: startDate,
+      created_at: new Date().toISOString()
+    };
+
+    const contracts = JSON.parse(localStorage.getItem('homii_contracts') || '[]');
+    contracts.push(contractObj);
+    localStorage.setItem('homii_contracts', JSON.stringify(contracts));
+
+    await db.from('contracts').insert(contractObj).catch(() => {});
+
+    closeContractModal();
+    if (openPropertyData && openPropertyData.id === propId) {
+      closePropertyModal();
+    }
+
+    addNotif('Contrato Formalizado', 'La propiedad ha sido dada de baja y registrada oficialmente como Alquilada.');
+    alert('✅ Contrato de Arrendamiento Generado Exitosamente.\n\nEl inmueble ha sido dado de baja de las búsquedas públicas y registrado en el historial de Homii.');
+
+    if (APP.currentView === 'landlord') {
+      renderLandlordDashboard();
+    }
+  }, 1000);
+};
 
 // Exportar al scope global para llamadas desde HTML
 window.openPublicProfile       = openPublicProfile;

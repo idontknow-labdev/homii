@@ -62,6 +62,12 @@
   </div>
 </header>
 
+<!-- Banner de advertencia biométrica pendiente -->
+<div id="biometric-warning-banner" style="display:none; background:#fffbeb; border-bottom:1px solid #fef3c7; color:#b45309; padding:0.75rem 1rem; text-align:center; font-size:0.85rem; font-weight:500; align-items:center; justify-content:center; gap:0.5rem; width:100%; box-sizing:border-box; z-index:100; position:relative;">
+  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+  <span><strong>Verificación Biométrica Pendiente:</strong> Tu registro está siendo revisado por el equipo de Homii. La asignación y reserva de propiedades estarán deshabilitadas hasta que se apruebe tu cuenta (máx. 24h).</span>
+</div>
+
 <!-- Drawer de Navegación Móvil -->
 <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
 <div class="mobile-nav-drawer" id="mobile-nav-drawer">
@@ -1065,10 +1071,11 @@
           </div>
         </div>
 
-        <button class="btn btn-primary btn-full"
-          onclick="alert('Solicitud enviada.\n\nEl propietario ha recibido su solicitud y le contactará en un máximo de 24 horas para coordinar la visita y los detalles del contrato.')">
-          Solicitar reserva
-        </button>
+        <div id="detail-reserve-container" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;">
+          <button class="btn btn-primary btn-full" id="btn-detail-reserve" onclick="joinWaitingList('${openPropertyData?.id}')">
+            📝 Unirse a la Lista de Espera / Solicitar Reserva
+          </button>
+        </div>
 
         <a id="detail-map-cta" href="#" target="_blank" rel="noopener noreferrer"
            class="btn btn-outline btn-full" style="text-align:center;">
@@ -1306,6 +1313,39 @@
           <label class="form-label">Telefono (opcional)</label>
           <input type="tel" class="form-input" id="reg-phone" placeholder="09XXXXXXXX">
         </div>
+
+        <!-- Campos de verificación biométrica para estudiantes -->
+        <div id="biometric-fields" style="display: flex; flex-direction: column; gap: 1rem; border-top: 1px dashed var(--border); padding-top: 1rem; margin-top: 0.5rem;">
+          <div class="form-group">
+            <label class="form-label">Número de Cédula de Identidad *</label>
+            <input type="text" class="form-input" id="reg-cedula" placeholder="13XXXXXXXX" required pattern="^[0-9]{10}$" title="La cédula debe contener exactamente 10 dígitos numéricos.">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Registro Biométrico — Foto de tu Rostro (Selfie) *</label>
+            <div class="biometric-upload-area" id="selfie-upload-area">
+              <input type="file" id="reg-selfie" accept="image/*" style="display:none;" required>
+              <div class="upload-trigger" onclick="document.getElementById('reg-selfie').click()" style="border: 2px dashed var(--blue); border-radius: var(--radius-md); padding: 1rem; text-align: center; cursor: pointer; background: var(--bg-section);">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" style="margin: 0 auto 0.5rem; display: block; color: var(--blue);"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                <span style="font-size:0.8rem; color:var(--text); font-weight:500;">Subir o tomar foto de tu rostro</span>
+                <p id="selfie-preview-name" style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem;">Recomendado: Buena iluminación y rostro visible</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Foto de Cédula (Frente y Posterior) *</label>
+            <div class="biometric-upload-area" id="id-upload-area">
+              <input type="file" id="reg-idcard" accept="image/*" style="display:none;" required>
+              <div class="upload-trigger" onclick="document.getElementById('reg-idcard').click()" style="border: 2px dashed var(--blue); border-radius: var(--radius-md); padding: 1rem; text-align: center; cursor: pointer; background: var(--bg-section);">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" style="margin: 0 auto 0.5rem; display: block; color: var(--blue);"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="4"></line><line x1="8" y1="2" x2="8" y2="4"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span style="font-size:0.8rem; color:var(--text); font-weight:500;">Subir foto legible de tu cédula</span>
+                <p id="idcard-preview-name" style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem;">Asegura que los datos sean legibles</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label class="checkbox-label" style="font-size:0.75rem;">
             <input type="checkbox" id="reg-terms" required> Acepto los <a class="auth-link" style="margin-left:0.25rem;" onclick="closeAuth(); navigate('terms');">Términos y Condiciones</a>
@@ -1337,6 +1377,159 @@
         universitarios y condiciones preferenciales para la comunidad PUCEM.
       </p>
       <button class="btn btn-primary btn-full" id="btn-activate">Activar pase universitario</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     MODAL HOMII PREMIUM
+     =========================================================== -->
+<div class="modal-overlay" id="premium-modal">
+  <div class="modal-box" style="max-width: 520px; border-radius: var(--radius-xl); border: 2px solid #f59e0b;">
+    <div class="modal-head" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 1.25rem 1.5rem;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.35rem; color: white; display: flex; align-items: center; gap: 0.5rem;">
+          👑 Homii Premium
+        </h3>
+        <p style="margin: 0.25rem 0 0; font-size: 0.825rem; opacity: 0.9;">Prioridad 1 en Listas de Espera y Beneficios Exclusivos</p>
+      </div>
+      <button class="modal-close-btn" onclick="window.closePremiumModal()" type="button" style="color: white; background: rgba(255,255,255,0.2);" aria-label="Cerrar">&#215;</button>
+    </div>
+
+    <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+          <div style="background: #fef3c7; color: #d97706; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+          <div>
+            <h5 style="margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--text);">Prioridad Nivel 1 en Arriendos</h5>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Tus solicitudes saltan al primer puesto en la lista de espera de los propietarios.</p>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+          <div style="background: #e0f2fe; color: #0284c7; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
+          <div>
+            <h5 style="margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--text);">Notificaciones de Zonas de Prioridad</h5>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Sé el primero en enterarte de nuevos departamentos disponibles cerca de tu universidad o trabajo.</p>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+          <div style="background: #d1fae5; color: #059669; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+          <div>
+            <h5 style="margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--text);">Descuentos Especiales en Mudanza</h5>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Acceso a tarifas preferenciales con transportistas y servicios de flete asociados a Homii.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selección de Planes -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+        <div class="premium-plan-card" id="plan-annual" onclick="selectPremiumPlan('annual')" style="border: 2px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; text-align: center; cursor: pointer; background: var(--bg-section); transition: all 0.2s;">
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Plan Anual</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin: 0.25rem 0;">$4.99</div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Facturado por 1 año</span>
+        </div>
+
+        <div class="premium-plan-card selected" id="plan-lifetime" onclick="selectPremiumPlan('lifetime')" style="border: 2px solid #f59e0b; border-radius: var(--radius-lg); padding: 1rem; text-align: center; cursor: pointer; background: #fffbeb; transition: all 0.2s; position: relative;">
+          <span style="position: absolute; top: -10px; right: 10px; background: #f59e0b; color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">RECOMENDADO</span>
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #d97706;">De por Vida</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #b45309; margin: 0.25rem 0;">$24.99</div>
+          <span style="font-size: 0.7rem; color: #b45309;">Acceso vitalicio único</span>
+        </div>
+      </div>
+
+      <!-- Formulario de Pago Simulado -->
+      <form id="premium-checkout-form" onsubmit="event.preventDefault(); window.processPremiumPayment();" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed var(--border); padding-top: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Número de Tarjeta de Crédito / Débito</label>
+          <input type="text" class="form-input" id="pay-card" placeholder="4000 1234 5678 9010" required pattern="^[0-9\s]{16,19}$">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Expiración</label>
+            <input type="text" class="form-input" id="pay-exp" placeholder="MM/AA" required pattern="^[0-9]{2}\/[0-9]{2}$">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVC / CVV</label>
+            <input type="text" class="form-input" id="pay-cvc" placeholder="123" required pattern="^[0-9]{3,4}$">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-full" id="btn-pay-premium" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 700; margin-top: 0.5rem; border: none; padding: 0.85rem;">
+          💳 Activar Homii Premium Ahora
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     MODAL GENERADOR DE CONTRATO DE ARRENDAMIENTO
+     =========================================================== -->
+<div class="modal-overlay" id="contract-modal">
+  <div class="modal-box" style="max-width: 580px; border-radius: var(--radius-xl);">
+    <div class="modal-head" style="background: var(--bg-section); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
+      <div>
+        <h3 style="margin: 0; font-size: 1.25rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem;">
+          📜 Generador Oficial de Contrato de Arrendamiento
+        </h3>
+        <p style="margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--text-muted);" id="contract-prop-title">Inmueble: Cargando...</p>
+      </div>
+      <button class="modal-close-btn" onclick="window.closeContractModal()" type="button" aria-label="Cerrar">&#215;</button>
+    </div>
+
+    <div style="padding: 1.5rem;">
+      <form id="contract-form" onsubmit="event.preventDefault(); window.generateAndCompleteRent();" style="display: flex; flex-direction: column; gap: 1rem;">
+        <input type="hidden" id="contract-prop-id">
+        
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.8rem; color: #1e40af;">
+          <strong>Regla Obligatoria Homii:</strong> Para dar de baja este inmueble de la plataforma, debe formalizar el contrato de arrendamiento oficial o subir una copia firmada. Esto protege a ambas partes y formaliza la adjudicación.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Seleccionar Arrendatario (Lista de Espera por Orden Estricto)</label>
+          <select class="form-select" id="contract-tenant-select" required>
+            <!-- Opciones cargadas dinámicamente -->
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Canon de Arriendo ($/mes) *</label>
+            <input type="number" class="form-input" id="contract-price" required min="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Garantía / Depósito ($) *</label>
+            <input type="number" class="form-input" id="contract-deposit" required min="0">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Plazo de Duración (Meses) *</label>
+            <input type="number" class="form-input" id="contract-months" value="6" required min="1" max="60">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de Inicio *</label>
+            <input type="date" class="form-input" id="contract-start-date" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Adjuntar o subir Contrato Firmado (Opcional - PDF / Imagen)</label>
+          <input type="file" class="form-input" id="contract-file-upload" accept="application/pdf,image/*">
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label" style="font-size:0.75rem;">
+            <input type="checkbox" id="contract-confirm" required> Declaro que los datos ingresados corresponden al acuerdo legal de arrendamiento y procedo a dar de baja la propiedad.
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="btn-generate-contract" style="font-weight: 700; padding: 0.85rem;">
+          🔐 Generar Contrato y Marcar Inmueble como Alquilado
+        </button>
+      </form>
     </div>
   </div>
 </div>
@@ -1418,6 +1611,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260803_04"></script>
+<script src="app.js?v=20260803_05"></script>
 </body>
 </html>

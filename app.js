@@ -103,7 +103,8 @@ async function loadUserProfile(user) {
     };
 
     // Upsert para guardar la fila en Supabase public.profiles
-    await db.from('profiles').upsert(profile, { onConflict: 'id' }).catch(err => console.warn('Profile init upsert warning:', err));
+    const { error: upsertErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });
+    if (upsertErr) console.warn('Profile init upsert warning:', upsertErr.message);
   } else {
     // Si la fila existía pero le faltaban campos, sincronizar con metadata si es necesario
     let needsUpdate = false;
@@ -112,7 +113,8 @@ async function loadUserProfile(user) {
     if (!profile.phone && metaPhone) { profile.phone = metaPhone; needsUpdate = true; }
 
     if (needsUpdate) {
-      await db.from('profiles').upsert(profile, { onConflict: 'id' }).catch(err => console.warn('Profile sync upsert warning:', err));
+      const { error: syncErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });
+      if (syncErr) console.warn('Profile sync upsert warning:', syncErr.message);
     }
   }
 
@@ -286,13 +288,14 @@ async function doRegister() {
     }
 
     // Si la confirmación está desactivada y la sesión se inició automáticamente
-    await db.from('profiles').upsert({
+    const { error: upsertErr } = await db.from('profiles').upsert({
       id: data.user.id,
       name,
       role,
       phone: phone || null,
       avatar_color: color
-    }, { onConflict: 'id' }).catch(err => console.warn('Registration profile upsert error:', err.message));
+    }, { onConflict: 'id' });
+    if (upsertErr) console.warn('Registration profile upsert error:', upsertErr.message);
 
     localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
 
@@ -1903,7 +1906,7 @@ window.uploadProfileAvatar = async function(e) {
   }
 
   // Actualizar también la foto en la tabla roomies si el usuario tiene una publicación
-  await db.from('roomies').update({ avatar_url: avatarUrl }).eq('user_id', CURRENT_USER.id).catch(() => {});
+  await db.from('roomies').update({ avatar_url: avatarUrl }).eq('user_id', CURRENT_USER.id);
 
   // 5. Actualizar estado local
   CURRENT_PROFILE.avatar_url = avatarUrl;

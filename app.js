@@ -2786,6 +2786,10 @@ function closePublicProfileModal() {
 // ============================================================
 
 window.joinWaitingList = async function(propId) {
+  if (!propId || typeof propId !== 'string' || propId.includes('${') || propId === 'undefined') {
+    propId = openPropertyData?.id;
+  }
+
   if (!CURRENT_USER) {
     openAuth();
     return;
@@ -2797,8 +2801,8 @@ window.joinWaitingList = async function(propId) {
   }
 
   // Buscar la propiedad en APP.properties o Supabase
-  let prop = APP.properties.find(p => p.id === propId);
-  if (!prop) {
+  let prop = APP.properties.find(p => p.id === propId) || openPropertyData;
+  if (!prop && propId) {
     const { data } = await db.from('properties').select('*').eq('id', propId).maybeSingle();
     prop = data;
   }
@@ -2934,6 +2938,10 @@ window.processPremiumPayment = async function() {
 // ============================================================
 
 window.openContractModal = function(propId) {
+  if (!propId || typeof propId !== 'string' || propId.includes('${') || propId === 'undefined') {
+    propId = openPropertyData?.id;
+  }
+
   const prop = APP.properties.find(p => p.id === propId) || openPropertyData;
   if (!prop) { alert('No se encontró el inmueble.'); return; }
 

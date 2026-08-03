@@ -1953,7 +1953,7 @@ window.saveProfileChanges = async function(e) {
   updateNavUI();
   await renderProfileView();
   addNotif('Perfil Actualizado', 'Su información personal fue guardada correctamente.');
-  alert('✅ Perfil actualizado exitosamente. Los cambios están guardados en la nube y son visibles desde cualquier dispositivo.');
+  alert(' Perfil actualizado exitosamente. Los cambios están guardados en la nube y son visibles desde cualquier dispositivo.');
 };
 
 function compressAndResizeAvatar(file, maxDimension = 250, quality = 0.75) {
@@ -2062,8 +2062,8 @@ window.uploadProfileAvatar = async function(e) {
 
   updateNavUI();
   await renderProfileView();
-  addNotif('Foto Actualizada', 'Su nueva foto de perfil ya es visible.');
-  alert('✅ Foto de perfil actualizada exitosamente en la nube.');
+  addNotif('Foto Actualizada');
+  alert('FOTO DE PERFIL ACTUALIZADA CORRECTAMENTE.');
 };
 
 async function loadInboxMessages(container) {

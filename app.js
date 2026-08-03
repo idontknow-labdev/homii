@@ -907,11 +907,11 @@ async function openPropertyModal(id) {
   if (badgesRow) {
     badgesRow.innerHTML = '';
     if (currentStatus === 'assigned') {
-      badgesRow.innerHTML += `<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔐 Alquilado</span> `;
+      badgesRow.innerHTML += `<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">Alquilado</span> `;
     } else if (currentStatus === 'in_progress') {
-      badgesRow.innerHTML += `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">⏳ En Asignación (${waitingList.length} en espera)</span> `;
+      badgesRow.innerHTML += `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">En Asignación (${waitingList.length} en espera)</span> `;
     } else {
-      badgesRow.innerHTML += `<span class="badge badge-green" style="background:#d1fae5;color:#059669;font-weight:700;">✅ Disponible</span> `;
+      badgesRow.innerHTML += `<span class="badge badge-green" style="background:#d1fae5;color:#059669;font-weight:700;">Disponible</span> `;
     }
     if (p.is_demo) badgesRow.innerHTML += `<span class="badge badge-amber">Anuncio de Ejemplo</span> `;
     if (p.university_certified) {

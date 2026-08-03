@@ -133,11 +133,6 @@ async function loadUserProfile(user) {
 
   CURRENT_PROFILE = profile;
 
-  // Sincronizar en segundo plano la metadata en Supabase Auth si es necesario
-  db.auth.updateUser({
-    data: { name: profile.name, role: profile.role, phone: profile.phone }
-  }).catch(() => {});
-
   // Activar modo PUCEM únicamente si el correo termina en @pucem.edu.ec o @pucesm.edu.ec
   const em = (user.email || '').toLowerCase();
   const isPUCEM = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');

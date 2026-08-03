@@ -438,6 +438,11 @@ function updateNavUI() {
       avEl.style.cursor     = 'pointer';
       avEl.title            = 'Ver mi perfil';
       avEl.onclick          = () => navigate('profile');
+      if (profile?.is_premium) {
+        avEl.classList.add('premium-avatar');
+      } else {
+        avEl.classList.remove('premium-avatar');
+      }
     }
     llLink.forEach(el => el.style.display   = profile?.role === 'landlord'   ? 'block' : 'none');
     uniLink.forEach(el => el.style.display  = profile?.role === 'university' ? 'block' : 'none');
@@ -472,6 +477,11 @@ function updateNavUI() {
       } else {
         mAv.textContent = displayName.charAt(0).toUpperCase();
         mAv.style.background = profile?.avatar_color || '#1a56db';
+      }
+      if (profile?.is_premium) {
+        mAv.classList.add('premium-avatar');
+      } else {
+        mAv.classList.remove('premium-avatar');
       }
     }
   } else {
@@ -908,8 +918,6 @@ async function openPropertyModal(id) {
     badgesRow.innerHTML = '';
     if (currentStatus === 'assigned') {
       badgesRow.innerHTML += `<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">Alquilado</span> `;
-    } else if (currentStatus === 'in_progress') {
-      badgesRow.innerHTML += `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">En Asignación (${waitingList.length} en espera)</span> `;
     } else {
       badgesRow.innerHTML += `<span class="badge badge-green" style="background:#d1fae5;color:#059669;font-weight:700;">Disponible</span> `;
     }
@@ -924,36 +932,29 @@ async function openPropertyModal(id) {
     if (p.featured) badgesRow.innerHTML += `<span class="badge badge-blue">Destacado</span>`;
   }
 
-  // Renderizar botones de acción para Lista de Espera y Reservas
+  // Renderizar botones de acción para Lista de Espera y Reservas (Vista limpia del arrendatario)
   const reserveContainer = document.getElementById('detail-reserve-container');
   if (reserveContainer) {
     if (currentStatus === 'assigned') {
       reserveContainer.innerHTML = `
         <button class="btn btn-full" disabled style="background:#fee2e2;color:#dc2626;border:none;font-weight:700;padding:0.85rem;">
-          🔐 Inmueble Alquilado — Contrato Formalizado
+          Inmueble Alquilado
         </button>`;
     } else {
       const myIndex = CURRENT_USER ? sortedList.findIndex(u => u.user_id === CURRENT_USER.id) : -1;
       if (myIndex !== -1) {
-        const myEntry = sortedList[myIndex];
         reserveContainer.innerHTML = `
           <button class="btn btn-primary btn-full" style="background:#059669;font-weight:700;padding:0.85rem;" disabled>
-            ✓ Estás en el Turno #${myIndex + 1} de la Lista de Espera ${myEntry.is_premium ? '👑 [Prioridad 1]' : ''}
+            ✓ Solicitud de Reserva Enviada
           </button>
           <button class="btn btn-outline btn-full btn-sm" onclick="leaveWaitingList('${p.id}')">
-            Salir de la lista de espera
+            Cancelar solicitud de reserva
           </button>`;
       } else {
-        const isUserPremium = CURRENT_PROFILE?.is_premium;
         reserveContainer.innerHTML = `
           <button class="btn btn-primary btn-full" onclick="joinWaitingList('${p.id}')" style="font-weight:700;padding:0.85rem;">
-            📝 Unirse a la Lista de Espera (Turno #${sortedList.length + 1})
-          </button>
-          ${!isUserPremium ? `
-            <div style="font-size:0.75rem;text-align:center;color:var(--text-muted);margin-top:0.25rem;">
-              👑 ¿Quieres saltar al Turno #1? <a class="auth-link" onclick="openPremiumModal()">Hazte Homii Premium</a>
-            </div>
-          ` : ''}`;
+            Solicitar Reserva
+          </button>`;
       }
     }
   }
@@ -1811,6 +1812,11 @@ async function renderProfileView() {
       s('profile-avatar').textContent      = p.name.charAt(0).toUpperCase();
       s('profile-avatar').style.background = p.avatar_color || '#1a56db';
     }
+    if (p.is_premium) {
+      s('profile-avatar').classList.add('premium-avatar');
+    } else {
+      s('profile-avatar').classList.remove('premium-avatar');
+    }
   }
 
   if (s('profile-name'))       s('profile-name').textContent       = p.name;
@@ -2663,6 +2669,11 @@ window.openPublicProfile = async function openPublicProfile(userId, fallbackName
       avEl.textContent = (profile.name || 'U').charAt(0).toUpperCase();
       avEl.style.background = profile.avatar_color || '#1a56db';
     }
+    if (profile.is_premium) {
+      avEl.classList.add('premium-avatar');
+    } else {
+      avEl.classList.remove('premium-avatar');
+    }
   }
   if (s('pub-view-name'))       s('pub-view-name').textContent       = profile.name;
   if (s('pub-view-role'))       s('pub-view-role').textContent       = roleLabel(profile.role);
@@ -2710,6 +2721,13 @@ window.openPublicProfile = async function openPublicProfile(userId, fallbackName
         if (avEl && profile.avatar_url) {
           avEl.innerHTML = `<img src="${profile.avatar_url}" alt="${profile.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
           avEl.style.background = 'transparent';
+        }
+        if (avEl) {
+          if (profile.is_premium) {
+            avEl.classList.add('premium-avatar');
+          } else {
+            avEl.classList.remove('premium-avatar');
+          }
         }
       }
     } catch(e) {}
@@ -2841,8 +2859,8 @@ window.joinWaitingList = async function(propId) {
   prop.status = 'in_progress';
   prop.waiting_list = propMeta.waiting_list;
 
-  addNotif('Unido a la Lista de Espera', 'Te has unido a la lista de espera para ' + prop.title + '.');
-  alert(`¡Registrado con éxito!\n\nTe has unido a la lista de espera.\n${isPremium ? '👑 Prioridad 1 Activa: Tu solicitud encabeza la lista.' : 'Recuerda que con Homii Premium cuentas con Prioridad Nivel 1.'}`);
+  addNotif('Solicitud de Reserva', 'Has solicitado reservar la propiedad ' + prop.title + '.');
+  alert('¡Solicitud de reserva enviada con éxito!\n\nEl propietario ha recibido tu solicitud y se pondrá en contacto contigo.');
   
   if (openPropertyData && openPropertyData.id === propId) {
     openPropertyData.status = 'in_progress';
@@ -2862,7 +2880,7 @@ window.leaveWaitingList = async function(propId) {
   localStorage.setItem('homii_prop_meta_' + propId, JSON.stringify(propMeta));
   await db.from('properties').update({ status: propMeta.status, waiting_list: propMeta.waiting_list }).eq('id', propId).catch(() => {});
 
-  alert('Has salido de la lista de espera.');
+  alert('Has cancelado tu solicitud de reserva.');
   if (openPropertyData && openPropertyData.id === propId) {
     openPropertyData.status = propMeta.status;
     openPropertyData.waiting_list = propMeta.waiting_list;

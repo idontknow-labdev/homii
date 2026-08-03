@@ -1072,8 +1072,8 @@
         </div>
 
         <div id="detail-reserve-container" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;">
-          <button class="btn btn-primary btn-full" id="btn-detail-reserve" onclick="joinWaitingList('${openPropertyData?.id}')">
-            📝 Unirse a la Lista de Espera / Solicitar Reserva
+          <button class="btn btn-primary btn-full" id="btn-detail-reserve" onclick="joinWaitingList(openPropertyData ? openPropertyData.id : '')">
+            Solicitar Reserva
           </button>
         </div>
 
@@ -1611,6 +1611,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260803_08"></script>
+<script src="app.js?v=20260803_09"></script>
 </body>
 </html>

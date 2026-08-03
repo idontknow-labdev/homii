@@ -279,6 +279,12 @@ header {
   justify-content: center;
 }
 
+.premium-avatar {
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6) !important;
+  position: relative;
+}
+
 .user-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
 
 .bell-btn {

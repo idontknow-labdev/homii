@@ -415,19 +415,21 @@
     <div class="roomie-hero-form-card" id="roomie-form-card">
       <h4>Publique su perfil de compañero</h4>
       <form id="roomie-form" style="display:flex;flex-direction:column;gap:0.85rem;">
-        <div class="form-group">
-          <label class="form-label">Nombre (primer nombre) *</label>
-          <input type="text" class="form-input" id="rp-name" placeholder="Ej. Camila" required>
+        
+        <!-- Insignia de datos del perfil de usuario -->
+        <div id="rp-user-info-badge" style="background:var(--bg-section); border:1px solid var(--border); padding:0.65rem 0.85rem; border-radius:var(--radius-md); font-size:0.85rem; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <span style="color:var(--text-muted); font-size:0.72rem; font-weight:700; text-transform:uppercase; display:block; letter-spacing:0.04em;">Publicando como</span>
+            <strong id="rp-user-display-name" style="color:var(--blue-dark); font-size:0.95rem;">Usuario</strong>
+            <span id="rp-user-display-career" style="color:var(--text-sec); font-size:0.82rem; margin-left:0.25rem;">— Ocupación no especificada</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="navigate('profile')" style="font-size:0.75rem; padding:0.25rem 0.5rem; border-radius:var(--radius-md);">✏️ Editar Perfil</button>
         </div>
-        <div class="form-group">
-          <label class="form-label non-pucem-element">Carrera / Ocupación *</label>
-          <label class="form-label pucem-element">Carrera en PUCEM *</label>
-          <input type="text" class="form-input" id="rp-career" placeholder="Ej. Medicina — 2do año, Diseñador, etc." required>
-        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Presupuesto mensual ($) *</label>
-            <input type="number" class="form-input" id="rp-budget" min="50" max="500" placeholder="Ej. 140" required>
+            <input type="number" class="form-input" id="rp-budget" min="50" max="1000" placeholder="Ej. 140" required>
           </div>
           <div class="form-group">
             <label class="form-label">Disponible desde</label>
@@ -451,6 +453,19 @@
             </select>
           </div>
         </div>
+
+        <!-- Campos condicionales si tiene lugar disponible -->
+        <div id="tiene-lugar-fields" style="display:none; flex-direction:column; gap:0.85rem; background:rgba(26, 86, 219, 0.04); border:1px solid var(--border-blue); padding:0.85rem; border-radius:var(--radius-md);">
+          <div class="form-group">
+            <label class="form-label">Sector / Ubicación del lugar *</label>
+            <input type="text" class="form-input" id="rp-location" placeholder="Ej. Av. Universitaria y Calle 15">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Arriendo total del departamento ($/mes) *</label>
+            <input type="number" class="form-input" id="rp-total-rent" placeholder="Ej. 300 (Se calculará el valor por persona)">
+          </div>
+        </div>
+
         <div class="form-group">
           <label class="form-label">Género</label>
           <select class="form-select" id="rp-gender">
@@ -1688,6 +1703,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260807_02"></script>
+<script src="app.js?v=20260807_03"></script>
 </body>
 </html>

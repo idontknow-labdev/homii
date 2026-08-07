@@ -560,6 +560,7 @@ function updateNavUI() {
     uniLink.forEach(el => el.style.display  = isPucemAdmin ? 'block' : 'none');
     adminLink.forEach(el => el.style.display = isHomiiAdmin ? 'block' : 'none');
     profLink.forEach(el => el.style.display = 'block');
+    if (typeof syncRoomieFormUser === 'function') syncRoomieFormUser();
   } else {
     if (guestEl)  guestEl.style.display  = 'flex';
     if (userEl)   userEl.style.display   = 'none';
@@ -1528,6 +1529,17 @@ function closeConversationModal() {
 // ROOMIE
 // ============================================================
 
+function syncRoomieFormUser() {
+  const nameDisplay   = document.getElementById('rp-user-display-name');
+  const careerDisplay = document.getElementById('rp-user-display-career');
+
+  const name   = CURRENT_PROFILE?.name || CURRENT_USER?.email?.split('@')[0] || 'Usuario';
+  const career = CURRENT_PROFILE?.occupation || 'Estudiante / Carrera no especificada';
+
+  if (nameDisplay)   nameDisplay.textContent   = name;
+  if (careerDisplay) careerDisplay.textContent = '— ' + career;
+}
+
 function setupRoomie() {
   ['roomie-type','roomie-schedule','roomie-gender'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', filterRoomies);
@@ -1537,9 +1549,16 @@ function setupRoomie() {
   if (budgetSlider && budgetVal) {
     budgetSlider.addEventListener('input', () => { budgetVal.textContent = '$' + budgetSlider.value; filterRoomies(); });
   }
+  document.getElementById('rp-type')?.addEventListener('change', e => {
+    const isTiene = e.target.value === 'tiene-lugar';
+    const container = document.getElementById('tiene-lugar-fields');
+    if (container) container.style.display = isTiene ? 'flex' : 'none';
+  });
   document.getElementById('roomie-form')?.addEventListener('submit', e => { e.preventDefault(); submitRoomieProfile(); });
   document.getElementById('roomie-modal')?.addEventListener('click', e => { if (e.target.id === 'roomie-modal') closeRoomieModal(); });
   document.getElementById('roomie-modal-close')?.addEventListener('click', closeRoomieModal);
+
+  syncRoomieFormUser();
 }
 
 async function filterRoomies() {
@@ -1873,16 +1892,30 @@ window.switchModalTab = function(modalId, tabName) {
 async function submitRoomieProfile() {
   if (!CURRENT_USER) { openAuth(); return; }
 
-  const name      = document.getElementById('rp-name')?.value.trim();
-  const career    = document.getElementById('rp-career')?.value.trim();
-  const budget    = parseInt(document.getElementById('rp-budget')?.value || '0');
-  const type      = document.getElementById('rp-type')?.value;
+  const name   = CURRENT_PROFILE?.name || CURRENT_USER?.email?.split('@')[0] || 'Usuario';
+  const career = CURRENT_PROFILE?.occupation || 'Estudiante';
+  const budget = parseInt(document.getElementById('rp-budget')?.value || '0');
+  const type   = document.getElementById('rp-type')?.value;
   const schedule  = document.getElementById('rp-schedule')?.value;
   const gender    = document.getElementById('rp-gender')?.value;
   const desc      = document.getElementById('rp-desc')?.value.trim();
   const available = document.getElementById('rp-available')?.value.trim();
 
-  if (!name || !career || !budget || !desc) { alert('Por favor completa todos los campos obligatorios.'); return; }
+  let location  = null;
+  let totalRent = null;
+
+  if (type === 'tiene-lugar') {
+    location  = document.getElementById('rp-location')?.value.trim() || null;
+    const rentVal = document.getElementById('rp-total-rent')?.value;
+    totalRent = rentVal ? parseInt(rentVal) : null;
+
+    if (!location || !totalRent || totalRent <= 0) {
+      alert('Por favor ingrese el sector de la propiedad y el monto del arriendo total.');
+      return;
+    }
+  }
+
+  if (!budget || !desc) { alert('Por favor completa todos los campos obligatorios.'); return; }
 
   const colors = ['#1a56db','#0369a1','#7c3aed','#059669','#d97706','#0f766e'];
   const color  = colors[Math.floor(Math.random() * colors.length)];
@@ -1890,6 +1923,8 @@ async function submitRoomieProfile() {
   const { error } = await db.from('roomies').insert({
     user_id: CURRENT_USER.id,
     name, career, budget, type, gender, schedule,
+    location,
+    total_rent: totalRent,
     available_from: available || 'Próximamente',
     description: desc,
     contact: CURRENT_USER.email,
@@ -1900,6 +1935,10 @@ async function submitRoomieProfile() {
   if (error) { alert('Error al publicar perfil: ' + error.message); return; }
 
   document.getElementById('roomie-form')?.reset();
+  const tieneContainer = document.getElementById('tiene-lugar-fields');
+  if (tieneContainer) tieneContainer.style.display = 'none';
+  syncRoomieFormUser();
+
   filterRoomies();
   updateRoomieStats();
   addNotif('Perfil Publicado', 'Su perfil ya es visible en la sección Buscar Compañero.');

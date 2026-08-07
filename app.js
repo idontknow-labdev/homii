@@ -1892,7 +1892,6 @@ async function submitRoomieProfile() {
     description: desc,
     contact: CURRENT_USER.email,
     avatar_color: color,
-    avatar_url: CURRENT_PROFILE?.avatar_url || null,
     is_demo: false
   });
 
@@ -2237,8 +2236,7 @@ window.uploadProfileAvatar = async function(e) {
     return;
   }
 
-  // Actualizar también la foto en la tabla roomies si el usuario tiene una publicación
-  await db.from('roomies').update({ avatar_url: avatarUrl }).eq('user_id', CURRENT_USER.id);
+  // La foto de perfil se carga dinámicamente desde la tabla profiles mediante user_id, por lo que no es necesario guardar duplicadamente avatar_url en roomies
 
   // 5. Actualizar estado local
   CURRENT_PROFILE.avatar_url = avatarUrl;

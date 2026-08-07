@@ -1670,8 +1670,10 @@ async function openRoomieModal(id) {
       ['Hábitos', (r.habits || []).join(', ')]
     ];
     if (r.type === 'tiene-lugar') {
-      rows.push(['Sector del lugar', r.location || 'Portoviejo, Manabí']);
-      rows.push(['Arriendo total', '$' + (r.total_rent || 0) + ' (entre dos: $' + Math.ceil((r.total_rent || 0) / 2) + ' c/u)']);
+      if (r.location) rows.push(['Sector del lugar', r.location]);
+      if (r.total_rent && r.total_rent > 0) {
+        rows.push(['Arriendo total', '$' + r.total_rent + ' (entre dos: $' + Math.ceil(r.total_rent / 2) + ' c/u)']);
+      }
     }
     infoTable.innerHTML = rows.map(([k, v]) =>
       `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`
@@ -3492,7 +3494,7 @@ window.rejectUserBiometrics = async function(userId, isDemo) {
   // Actualizar metadatos locales
   const metaStr = localStorage.getItem('homii_profile_meta_' + userId);
   if (metaStr) {
-    const meta = JSON.parse(metaStr);
+    const meta = JSON.parse(metaStr); 
     meta.is_verified = 'rejected';
     meta.rejection_reason = reason.trim();
     localStorage.setItem('homii_profile_meta_' + userId, JSON.stringify(meta));

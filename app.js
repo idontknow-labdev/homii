@@ -1552,7 +1552,9 @@ function setupRoomie() {
   document.getElementById('rp-type')?.addEventListener('change', e => {
     const isTiene = e.target.value === 'tiene-lugar';
     const container = document.getElementById('tiene-lugar-fields');
+    const budgetLabel = document.getElementById('rp-budget-label');
     if (container) container.style.display = isTiene ? 'flex' : 'none';
+    if (budgetLabel) budgetLabel.textContent = isTiene ? 'Costo por persona / Aporte ($/mes) *' : 'Presupuesto mensual ($) *';
   });
   document.getElementById('roomie-form')?.addEventListener('submit', e => { e.preventDefault(); submitRoomieProfile(); });
   document.getElementById('roomie-modal')?.addEventListener('click', e => { if (e.target.id === 'roomie-modal') closeRoomieModal(); });
@@ -1682,17 +1684,14 @@ async function openRoomieModal(id) {
   const infoTable = document.getElementById('rmodal-info');
   if (infoTable) {
     let rows = [
-      ['Presupuesto mensual', r.is_demo ? 'Solo demostración' : '$' + r.budget + ' / mes'],
+      [r.type === 'tiene-lugar' ? 'Costo por persona / Aporte' : 'Presupuesto mensual', r.is_demo ? 'Solo demostración' : '$' + r.budget + ' / mes'],
       ['Horario de clases', r.schedule],
       ['Género', r.gender],
       ['Disponibilidad', r.available_from],
       ['Hábitos', (r.habits || []).join(', ')]
     ];
-    if (r.type === 'tiene-lugar') {
-      if (r.location) rows.push(['Sector del lugar', r.location]);
-      if (r.total_rent && r.total_rent > 0) {
-        rows.push(['Arriendo total', '$' + r.total_rent + ' (entre dos: $' + Math.ceil(r.total_rent / 2) + ' c/u)']);
-      }
+    if (r.type === 'tiene-lugar' && r.location) {
+      rows.push(['Sector del lugar', r.location]);
     }
     infoTable.innerHTML = rows.map(([k, v]) =>
       `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v}</span></div>`
@@ -1902,15 +1901,11 @@ async function submitRoomieProfile() {
   const available = document.getElementById('rp-available')?.value.trim();
 
   let location  = null;
-  let totalRent = null;
 
   if (type === 'tiene-lugar') {
-    location  = document.getElementById('rp-location')?.value.trim() || null;
-    const rentVal = document.getElementById('rp-total-rent')?.value;
-    totalRent = rentVal ? parseInt(rentVal) : null;
-
-    if (!location || !totalRent || totalRent <= 0) {
-      alert('Por favor ingrese el sector de la propiedad y el monto del arriendo total.');
+    location = document.getElementById('rp-location')?.value.trim() || null;
+    if (!location) {
+      alert('Por favor ingrese el sector o ubicación de la propiedad.');
       return;
     }
   }
@@ -1924,7 +1919,6 @@ async function submitRoomieProfile() {
     user_id: CURRENT_USER.id,
     name, career, budget, type, gender, schedule,
     location,
-    total_rent: totalRent,
     available_from: available || 'Próximamente',
     description: desc,
     contact: CURRENT_USER.email,

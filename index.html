@@ -428,7 +428,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Presupuesto mensual ($) *</label>
+            <label class="form-label" id="rp-budget-label">Presupuesto mensual ($) *</label>
             <input type="number" class="form-input" id="rp-budget" min="50" max="1000" placeholder="Ej. 140" required>
           </div>
           <div class="form-group">
@@ -454,15 +454,11 @@
           </div>
         </div>
 
-        <!-- Campos condicionales si tiene lugar disponible -->
+        <!-- Campo condicional de ubicación si tiene lugar disponible -->
         <div id="tiene-lugar-fields" style="display:none; flex-direction:column; gap:0.85rem; background:rgba(26, 86, 219, 0.04); border:1px solid var(--border-blue); padding:0.85rem; border-radius:var(--radius-md);">
           <div class="form-group">
             <label class="form-label">Sector / Ubicación del lugar *</label>
             <input type="text" class="form-input" id="rp-location" placeholder="Ej. Av. Universitaria y Calle 15">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Arriendo total del departamento ($/mes) *</label>
-            <input type="number" class="form-input" id="rp-total-rent" placeholder="Ej. 300 (Se calculará el valor por persona)">
           </div>
         </div>
 
@@ -1703,6 +1699,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260807_03"></script>
+<script src="app.js?v=20260807_04"></script>
 </body>
 </html>

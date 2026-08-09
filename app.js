@@ -372,22 +372,28 @@ function validarCedulaEcuatoriana(cedula) {
 
 async function doRegister() {
   clearAuthErrors();
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const pass  = document.getElementById('reg-password').value;
-  let role  = document.getElementById('reg-role')?.value || 'student';
+  const name  = document.getElementById('reg-name')?.value.trim();
+  const email = document.getElementById('reg-email')?.value.trim();
+  const pass  = document.getElementById('reg-password')?.value;
+  let role    = document.getElementById('reg-role')?.value || 'student';
   if (role !== 'landlord' && role !== 'student' && role !== 'university') role = 'student';
-  const phone = document.getElementById('reg-phone').value.trim();
+  const phone = document.getElementById('reg-phone')?.value.trim() || null;
   const terms = document.getElementById('reg-terms')?.checked;
   const btn   = document.querySelector('#register-form button[type=submit]');
 
   // Campos adicionales biométricos
   let cedula = null;
   let isVerified = 'approved'; // Los arrendadores o admin se auto-aprueban para fluidez
+  window.tempBiometricData = window.tempBiometricData || { selfie: '', front: '', back: '' };
+
   if (role === 'student') {
-    cedula = document.getElementById('reg-cedula')?.value.trim();
-    if (!validarCedulaEcuatoriana(cedula)) {
-      showAuthError('register-error', 'El número de cédula ingresado no es válido en Ecuador. Por favor verifique los 10 dígitos.');
+    cedula = (document.getElementById('reg-cedula')?.value || '').trim().replace(/\s+|-/g, '');
+    if (!cedula) {
+      showAuthError('register-error', 'Por favor ingrese su número de cédula.');
+      return;
+    }
+    if (cedula.length !== 10) {
+      showAuthError('register-error', 'La cédula debe contener exactamente 10 dígitos.');
       return;
     }
     isVerified = 'pending'; // Estudiantes inician como pendientes de aprobación biométrica
@@ -395,12 +401,16 @@ async function doRegister() {
 
   if (!name)  { showAuthError('register-error', 'Ingrese su nombre completo.'); return; }
   if (!email) { showAuthError('register-error', 'Ingrese un correo electrónico.'); return; }
-  if (pass.length < 6) { showAuthError('register-error', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+  if (!pass || pass.length < 6) { showAuthError('register-error', 'La contraseña debe tener al menos 6 caracteres.'); return; }
   if (!terms) { showAuthError('register-error', 'Debe aceptar los términos y condiciones para continuar.'); return; }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  // Registrar nuevo usuario con metadata completa
+  const selfieUrl = role === 'student' ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null;
+  const frontUrl  = role === 'student' ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
+  const backUrl   = role === 'student' ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
+
+  // Registrar nuevo usuario con metadata completa para el trigger de Postgres
   let { data, error } = await db.auth.signUp({
     email,
     password: pass,
@@ -408,14 +418,17 @@ async function doRegister() {
       data: {
         name,
         role,
-        phone: phone || null,
-        cedula: cedula || null,
-        is_verified: isVerified
+        phone,
+        cedula,
+        is_verified: isVerified,
+        selfie_url: selfieUrl,
+        id_card_front_url: frontUrl,
+        id_card_back_url: backUrl
       }
     }
   });
 
-  // Si Supabase responde con rate limit o correo ya existente, intentamos iniciar sesión de forma transparente
+  // Si Supabase responde con correo ya existente o límite, intentar iniciar sesión
   if (error) {
     const errStr = (error.message || '').toLowerCase();
     if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('rate limit')) {
@@ -433,9 +446,9 @@ async function doRegister() {
     let msg = 'No se pudo crear la cuenta.';
     const errStr = (error.message || '').toLowerCase();
     if (errStr.includes('already') || errStr.includes('registered')) {
-      msg = 'Este correo ya está registrado. Por favor ingrese a "Iniciar sesión" con su contraseña.';
+      msg = 'Este correo ya está registrado. Por favor intente "Iniciar sesión" con su contraseña.';
     } else if (errStr.includes('rate limit')) {
-      msg = 'Supabase ha alcanzado el límite de envío de correos (Email rate limit exceeded).\n\nPara solucionar esto:\n• Verifique si se creó la cuenta e intente iniciar sesión.\n• Si es administrador, desactive "Confirm email" en Supabase Dashboard → Authentication → Providers → Email.';
+      msg = 'Supabase alcanzó el límite temporal de envío de correos.\n\nSugerencia: Desactive "Confirm email" en Supabase Dashboard → Authentication → Providers → Email para pruebas inmediatas.';
     } else if (error.message) {
       msg = error.message;
     }
@@ -444,6 +457,14 @@ async function doRegister() {
   }
 
   if (data?.user) {
+    // Si signUp no entregó sesión directa, intentar login inmediato
+    if (!data.session) {
+      const { data: autoLogin } = await db.auth.signInWithPassword({ email, password: pass }).catch(() => ({}));
+      if (autoLogin?.session) {
+        data = autoLogin;
+      }
+    }
+
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
@@ -451,35 +472,34 @@ async function doRegister() {
     const profileMeta = {
       cedula,
       is_verified: isVerified,
-      selfie_url: role === 'student' ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null,
-      id_card_front_url: role === 'student' ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null,
-      id_card_back_url: role === 'student' ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null,
+      selfie_url: selfieUrl,
+      id_card_front_url: frontUrl,
+      id_card_back_url: backUrl,
       is_premium: false,
       premium_tier: 'none'
     };
     localStorage.setItem('homii_profile_meta_' + data.user.id, JSON.stringify(profileMeta));
     localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
 
-    // Guardar en la base de datos Supabase (profiles) para el Panel de Administración
-    const { error: upsertErr } = await db.from('profiles').upsert({
+    // Asegurar guardado directo en la tabla profiles de Supabase
+    await db.from('profiles').upsert({
       id: data.user.id,
       name,
       email,
       role,
-      phone: phone || null,
-      cedula: cedula || null,
+      phone,
+      cedula,
       is_verified: isVerified,
       avatar_color: color,
-      selfie_url: profileMeta.selfie_url,
-      id_card_front_url: profileMeta.id_card_front_url,
-      id_card_back_url: profileMeta.id_card_back_url
-    }, { onConflict: 'id' });
-    if (upsertErr) console.warn('Registration profile upsert error:', upsertErr.message);
+      selfie_url: selfieUrl,
+      id_card_front_url: frontUrl,
+      id_card_back_url: backUrl
+    }, { onConflict: 'id' }).catch(err => console.warn('Profiles upsert catch:', err));
 
-    // Si la confirmación de correo está activada en Supabase y no hay sesión inmediata
+    // Si requiere confirmación obligatoria de correo
     if (!data.session) {
-      alert('¡Registro exitoso!\n\nSe ha enviado un correo de confirmación. Por favor, confirme su cuenta desde su correo electrónico antes de iniciar sesión.');
-      showAuthError('register-error', 'Por favor confirme su correo antes de iniciar sesión.');
+      alert('¡Cuenta creada con éxito!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta antes de iniciar sesión.');
+      showAuthError('register-error', 'Por favor confirme su correo electrónico para acceder.');
       switchPanel('login');
       const loginEmailInput = document.getElementById('login-email');
       if (loginEmailInput) loginEmailInput.value = email;
@@ -490,10 +510,11 @@ async function doRegister() {
     closeAuth();
     
     if (role === 'student' && isVerified === 'pending') {
-      alert('¡Registro biométrico recibido!\n\nSu cuenta se ha creado y está pendiente de verificación biométrica por un administrador. Homii validará su identidad en un plazo máximo de 24 horas.');
+      alert('¡Registro y documentos recibidos!\n\nTu cuenta ha sido creada y está pendiente de verificación biométrica por un Administrador de Homii.');
     } else {
       addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
     }
+
     if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
     if (role === 'university') {
       const em = email.toLowerCase();

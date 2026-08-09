@@ -102,11 +102,64 @@ create table if not exists public.chats (
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
 
--- Profiles
+-- Profiles RLS
 alter table public.profiles enable row level security;
+drop policy if exists "Profiles visibles por todos" on public.profiles;
+drop policy if exists "Usuarios insertan su propio perfil" on public.profiles;
+drop policy if exists "Usuarios actualizan su propio perfil" on public.profiles;
+drop policy if exists "Permitir insercion de perfiles" on public.profiles;
+drop policy if exists "Usuarios y Administradores actualizan perfiles" on public.profiles;
+
 create policy "Profiles visibles por todos" on public.profiles for select using (true);
-create policy "Usuarios insertan su propio perfil" on public.profiles for insert with check (auth.uid() = id);
-create policy "Usuarios actualizan su propio perfil" on public.profiles for update using (auth.uid() = id);
+create policy "Permitir insercion de perfiles" on public.profiles for insert with check (true);
+create policy "Usuarios y Administradores actualizan perfiles" on public.profiles 
+for update using (
+  auth.uid() = id 
+  or 
+  exists (
+    select 1 from public.profiles 
+    where profiles.id = auth.uid() and profiles.role = 'university'
+  )
+);
+
+-- Trigger para creación/sincronización automática de perfil desde auth.users
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (
+    id, name, email, role, phone, cedula, is_verified, avatar_color, selfie_url, id_card_front_url, id_card_back_url
+  )
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    new.email,
+    coalesce(new.raw_user_meta_data->>'role', 'student'),
+    new.raw_user_meta_data->>'phone',
+    new.raw_user_meta_data->>'cedula',
+    coalesce(new.raw_user_meta_data->>'is_verified', 'pending'),
+    '#1a56db',
+    new.raw_user_meta_data->>'selfie_url',
+    new.raw_user_meta_data->>'id_card_front_url',
+    new.raw_user_meta_data->>'id_card_back_url'
+  )
+  on conflict (id) do update set
+    name = excluded.name,
+    email = excluded.email,
+    role = excluded.role,
+    phone = coalesce(excluded.phone, public.profiles.phone),
+    cedula = coalesce(excluded.cedula, public.profiles.cedula),
+    is_verified = coalesce(excluded.is_verified, public.profiles.is_verified),
+    selfie_url = coalesce(excluded.selfie_url, public.profiles.selfie_url),
+    id_card_front_url = coalesce(excluded.id_card_front_url, public.profiles.id_card_front_url),
+    id_card_back_url = coalesce(excluded.id_card_back_url, public.profiles.id_card_back_url);
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
 -- Properties
 alter table public.properties enable row level security;

@@ -867,14 +867,26 @@
     </div>
   </div>
 
-  <!-- Verification Requests Section -->
-  <div style="background:var(--bg-white); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow-md); overflow:hidden;">
+  <!-- Verification Requests Section (Estudiantes) -->
+  <div style="background:var(--bg-white); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow-md); overflow:hidden; margin-bottom:2rem;">
     <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); background:var(--bg-section); display:flex; justify-content:space-between; align-items:center;">
-      <h4 style="margin:0; font-size:1rem; color:var(--blue-dark); font-weight:700;">👥 Solicitudes de Verificación Biométrica</h4>
+      <h4 style="margin:0; font-size:1rem; color:var(--blue-dark); font-weight:700;">👥 Solicitudes de Verificación Biométrica (Estudiantes)</h4>
       <span class="badge badge-blue" id="admin-request-count">0 Pendientes</span>
     </div>
     
     <div id="admin-verification-list" style="display:flex; flex-direction:column; divide-y: 1px solid var(--border);">
+      <!-- Cargado dinámicamente -->
+    </div>
+  </div>
+
+  <!-- Property Verification Requests Section (Inmuebles) -->
+  <div style="background:var(--bg-white); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow-md); overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); background:var(--bg-section); display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0; font-size:1rem; color:var(--blue-dark); font-weight:700;">🏢 Inmuebles Pendientes de Verificación y Aprobación</h4>
+      <span class="badge badge-amber" id="admin-prop-request-count">0 Inmuebles Pendientes</span>
+    </div>
+    
+    <div id="admin-property-verification-list" style="display:flex; flex-direction:column;">
       <!-- Cargado dinámicamente -->
     </div>
   </div>
@@ -1800,6 +1812,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_07"></script>
+<script src="app.js?v=20260809_08"></script>
 </body>
 </html>

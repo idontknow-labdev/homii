@@ -44,6 +44,9 @@ alter table public.properties add column if not exists province text default 'Gu
 alter table public.properties add column if not exists rating_avg float default 5.0;
 alter table public.properties add column if not exists rating_count integer default 0;
 alter table public.properties add column if not exists vip_managed boolean default false;
+alter table public.properties add column if not exists is_verified boolean default false;
+alter table public.properties add column if not exists verification_requested boolean default false;
+alter table public.properties add column if not exists status text default 'pending_verification';
 
 alter table public.roomies add column if not exists province text default 'Guayas';
 

@@ -419,7 +419,7 @@ async function doRegister() {
   const frontUrl  = role === 'student' ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
   const backUrl   = role === 'student' ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
 
-  // Registrar nuevo usuario con metadata completa para el trigger de Postgres
+  // Registrar nuevo usuario con metadata liviana (sin cadenas base64 gigantes)
   let { data, error } = await db.auth.signUp({
     email,
     password: pass,
@@ -429,10 +429,7 @@ async function doRegister() {
         role,
         phone,
         cedula,
-        is_verified: isVerified,
-        selfie_url: selfieUrl,
-        id_card_front_url: frontUrl,
-        id_card_back_url: backUrl
+        is_verified: isVerified
       }
     }
   });

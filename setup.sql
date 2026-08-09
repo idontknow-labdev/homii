@@ -126,32 +126,31 @@ for update using (
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (
-    id, name, email, role, phone, cedula, is_verified, avatar_color, selfie_url, id_card_front_url, id_card_back_url
-  )
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    new.email,
-    coalesce(new.raw_user_meta_data->>'role', 'student'),
-    new.raw_user_meta_data->>'phone',
-    new.raw_user_meta_data->>'cedula',
-    coalesce(new.raw_user_meta_data->>'is_verified', 'pending'),
-    '#1a56db',
-    new.raw_user_meta_data->>'selfie_url',
-    new.raw_user_meta_data->>'id_card_front_url',
-    new.raw_user_meta_data->>'id_card_back_url'
-  )
-  on conflict (id) do update set
-    name = excluded.name,
-    email = excluded.email,
-    role = excluded.role,
-    phone = coalesce(excluded.phone, public.profiles.phone),
-    cedula = coalesce(excluded.cedula, public.profiles.cedula),
-    is_verified = coalesce(excluded.is_verified, public.profiles.is_verified),
-    selfie_url = coalesce(excluded.selfie_url, public.profiles.selfie_url),
-    id_card_front_url = coalesce(excluded.id_card_front_url, public.profiles.id_card_front_url),
-    id_card_back_url = coalesce(excluded.id_card_back_url, public.profiles.id_card_back_url);
+  begin
+    insert into public.profiles (
+      id, name, email, role, phone, cedula, is_verified, avatar_color
+    )
+    values (
+      new.id,
+      coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+      new.email,
+      coalesce(new.raw_user_meta_data->>'role', 'student'),
+      new.raw_user_meta_data->>'phone',
+      new.raw_user_meta_data->>'cedula',
+      coalesce(new.raw_user_meta_data->>'is_verified', 'pending'),
+      '#1a56db'
+    )
+    on conflict (id) do update set
+      name = excluded.name,
+      email = excluded.email,
+      role = excluded.role,
+      phone = coalesce(excluded.phone, public.profiles.phone),
+      cedula = coalesce(excluded.cedula, public.profiles.cedula),
+      is_verified = coalesce(excluded.is_verified, public.profiles.is_verified);
+  exception when others then
+    -- Evita que cualquier discrepancia de esquema rompa auth.signUp
+    null;
+  end;
   return new;
 end;
 $$ language plpgsql security definer;

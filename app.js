@@ -582,7 +582,7 @@ async function doRegister() {
 
   // Campos adicionales biométricos
   let cedula = null;
-  let isVerified = 'approved'; // Los arrendadores o admin se auto-aprueban para fluidez
+  let isVerified = 'pending';
   window.tempBiometricData = window.tempBiometricData || { selfie: '', front: '', back: '' };
 
   if (role === 'student' || role === 'landlord') {
@@ -599,7 +599,9 @@ async function doRegister() {
       showAuthError('register-error', 'Por favor presione "Activar Cámara en Vivo" y complete los 3 pasos de verificación biométrica.');
       return;
     }
-    isVerified = 'pending'; // Estudiantes y Propietarios inician como pendientes de aprobación biométrica
+    isVerified = 'pending';
+  } else if (role === 'university') {
+    isVerified = 'approved';
   }
 
   if (!name)  { showAuthError('register-error', 'Ingrese su nombre completo.'); return; }
@@ -609,124 +611,136 @@ async function doRegister() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  const selfieUrl = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null;
-  const frontUrl  = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
-  const backUrl   = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
+  try {
+    const selfieUrl = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null;
+    const frontUrl  = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
+    const backUrl   = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
 
-  // Registrar nuevo usuario con metadata liviana (sin cadenas base64 gigantes)
-  let { data, error } = await db.auth.signUp({
-    email,
-    password: pass,
-    options: {
-      data: {
-        name,
-        role,
-        phone,
-        cedula,
-        is_verified: isVerified
-      }
-    }
-  });
-
-  // Si Supabase responde con correo ya existente o límite, intentar iniciar sesión
-  if (error) {
-    const errStr = (error.message || '').toLowerCase();
-    if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('rate limit')) {
-      const { data: loginData, error: loginError } = await db.auth.signInWithPassword({ email, password: pass });
-      if (!loginError && loginData?.user) {
-        data = loginData;
-        error = null;
-      }
-    }
-  }
-
-  if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
-
-  if (error) {
-    let msg = 'No se pudo crear la cuenta.';
-    const errStr = (error.message || '').toLowerCase();
-    if (errStr.includes('already') || errStr.includes('registered')) {
-      msg = 'Este correo ya está registrado. Por favor intente "Iniciar sesión" con su contraseña.';
-    } else if (errStr.includes('rate limit')) {
-      msg = 'Supabase alcanzó el límite temporal de envío de correos.\n\nSugerencia: Desactive "Confirm email" en Supabase Dashboard → Authentication → Providers → Email para pruebas inmediatas.';
-    } else if (error.message) {
-      msg = error.message;
-    }
-    showAuthError('register-error', msg);
-    return;
-  }
-
-  if (data?.user) {
-    // Si signUp no entregó sesión directa, intentar login inmediato
-    if (!data.session) {
-      const { data: autoLogin } = await db.auth.signInWithPassword({ email, password: pass }).catch(() => ({}));
-      if (autoLogin?.session) {
-        data = autoLogin;
-      }
-    }
-
-    const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
-    const color  = colors[Math.floor(Math.random() * colors.length)];
-
-    // Guardar respaldo local de los datos de la verificación biométrica
-    const profileMeta = {
-      cedula,
-      is_verified: isVerified,
-      selfie_url: selfieUrl,
-      id_card_front_url: frontUrl,
-      id_card_back_url: backUrl,
-      is_premium: false,
-      premium_tier: 'none'
-    };
-    localStorage.setItem('homii_profile_meta_' + data.user.id, JSON.stringify(profileMeta));
-    localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
-
-    // Asegurar guardado directo en la tabla profiles de Supabase
-    await db.from('profiles').upsert({
-      id: data.user.id,
-      name,
+    // 1. Registrar nuevo usuario en Supabase Auth con metadata liviana
+    let { data, error } = await db.auth.signUp({
       email,
-      role,
-      phone,
-      cedula,
-      is_verified: isVerified,
-      avatar_color: color,
-      selfie_url: selfieUrl,
-      id_card_front_url: frontUrl,
-      id_card_back_url: backUrl
-    }, { onConflict: 'id' }).catch(err => console.warn('Profiles upsert catch:', err));
+      password: pass,
+      options: {
+        data: {
+          name,
+          role,
+          phone,
+          cedula,
+          is_verified: isVerified
+        }
+      }
+    });
 
-    // Si requiere confirmación obligatoria de correo
-    if (!data.session) {
-      alert('¡Cuenta creada con éxito!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta antes de iniciar sesión.');
-      showAuthError('register-error', 'Por favor confirme su correo electrónico para acceder.');
-      switchPanel('login');
-      const loginEmailInput = document.getElementById('login-email');
-      if (loginEmailInput) loginEmailInput.value = email;
+    // 2. Si el usuario ya estaba registrado en Auth, intentar login directo
+    if (error) {
+      const errStr = (error.message || '').toLowerCase();
+      if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('rate limit')) {
+        const { data: loginData, error: loginError } = await db.auth.signInWithPassword({ email, password: pass });
+        if (!loginError && loginData?.user) {
+          data = loginData;
+          error = null;
+        }
+      }
+    }
+
+    if (error) {
+      let msg = 'No se pudo crear la cuenta.';
+      const errStr = (error.message || '').toLowerCase();
+      if (errStr.includes('already') || errStr.includes('registered')) {
+        msg = 'Este correo ya está registrado. Por favor intente "Iniciar sesión" con su contraseña.';
+      } else if (errStr.includes('rate limit')) {
+        msg = 'Límite de solicitudes alcanzado. Por favor espere un momento o desactive la confirmación por email en Supabase.';
+      } else if (error.message) {
+        msg = error.message;
+      }
+      showAuthError('register-error', msg);
       return;
     }
 
-    await loadUserProfile(data.user);
-    closeAuth();
-    
-    if (role === 'student' && isVerified === 'pending') {
-      alert('¡Registro y documentos recibidos!\n\nTu cuenta ha sido creada y está pendiente de verificación biométrica por un Administrador de Homii.');
-    } else {
-      addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
-    }
+    if (data?.user) {
+      // Intentar auto-login si no entregó sesión directa
+      if (!data.session) {
+        const { data: autoLogin } = await db.auth.signInWithPassword({ email, password: pass }).catch(() => ({}));
+        if (autoLogin?.session) {
+          data = autoLogin;
+        }
+      }
 
-    if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
-    if (role === 'university') {
-      const em = email.toLowerCase();
-      const isPucem = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
-      if (isPucem) {
-        APP.pendingRoute = 'university';
-        navigate('university');
+      const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
+      const color  = colors[Math.floor(Math.random() * colors.length)];
+
+      // Guardar respaldo local de biometría en localStorage (para evitar sobrecargar el payload REST con megabytes)
+      const profileMeta = {
+        cedula,
+        is_verified: isVerified,
+        selfie_url: selfieUrl,
+        id_card_front_url: frontUrl,
+        id_card_back_url: backUrl,
+        is_premium: false,
+        premium_tier: 'none'
+      };
+      localStorage.setItem('homii_profile_meta_' + data.user.id, JSON.stringify(profileMeta));
+      localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
+
+      // Guardado ultrarrápido y liviano en la tabla public.profiles de Supabase
+      const profileDbPayload = {
+        id: data.user.id,
+        name,
+        email,
+        role,
+        phone,
+        cedula,
+        is_verified: isVerified,
+        avatar_color: color,
+        selfie_url: selfieUrl ? (selfieUrl.length > 500 ? 'selfie_captured' : selfieUrl) : null,
+        id_card_front_url: frontUrl ? (frontUrl.length > 500 ? 'idcard_front_captured' : frontUrl) : null,
+        id_card_back_url: backUrl ? (backUrl.length > 500 ? 'idcard_back_captured' : backUrl) : null
+      };
+
+      const { error: upsertErr } = await db.from('profiles').upsert(profileDbPayload, { onConflict: 'id' });
+      if (upsertErr) {
+        console.warn('Profiles upsert warning, retrying direct insert:', upsertErr.message);
+        await db.from('profiles').insert(profileDbPayload).catch(e => console.warn('Direct insert fallback:', e.message));
+      }
+
+      // Si requiere confirmación obligatoria de correo
+      if (!data.session) {
+        alert('¡Cuenta creada con éxito!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta antes de iniciar sesión.');
+        showAuthError('register-error', 'Por favor confirme su correo electrónico para acceder.');
+        switchPanel('login');
+        const loginEmailInput = document.getElementById('login-email');
+        if (loginEmailInput) loginEmailInput.value = email;
+        return;
+      }
+
+      await loadUserProfile(data.user);
+      closeAuth();
+      
+      if ((role === 'student' || role === 'landlord') && isVerified === 'pending') {
+        alert('¡Registro y documentos recibidos!\n\nSu cuenta ha sido creada exitosamente y está pendiente de verificación biométrica por el Administrador de Homii.');
       } else {
-        APP.pendingRoute = 'admin';
-        navigate('admin');
+        addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
+      }
+
+      if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
+      if (role === 'student')  { APP.pendingRoute = 'search'; navigate('search'); }
+      if (role === 'university') {
+        const em = email.toLowerCase();
+        const isPucem = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
+        if (isPucem) {
+          APP.pendingRoute = 'university';
+          navigate('university');
+        } else {
+          APP.pendingRoute = 'admin';
+          navigate('admin');
+        }
       }
     }
+  } catch (err) {
+    console.error('Registration error:', err);
+    showAuthError('register-error', 'Ocurrió un error inesperado al registrar la cuenta. Intente nuevamente.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
   }
 }
 

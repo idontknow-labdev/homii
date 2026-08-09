@@ -3359,48 +3359,62 @@ window.closeBiometricZoomModal = function() {
 };
 
 window.renderAdminPanel = async function() {
-  const listEl = document.getElementById('admin-verification-list');
-  const countEl = document.getElementById('admin-request-count');
-  const pendingStat = document.getElementById('admin-stat-pending');
+  const listEl        = document.getElementById('admin-verification-list');
+  const countEl       = document.getElementById('admin-request-count');
+  const pendingStat   = document.getElementById('admin-stat-pending');
+  const studentsStat  = document.getElementById('admin-stat-students');
+  const landlordsStat = document.getElementById('admin-stat-landlords');
+  const premiumStat   = document.getElementById('admin-stat-premium');
   if (!listEl) return;
 
   let pendingList = [];
 
-  // 1. Intentar consultar base de datos real (Supabase)
+  // 1. Consultar base de datos real (Supabase)
   try {
-    const { data } = await db.from('profiles').select('*').eq('role', 'student').eq('is_verified', 'pending');
-    if (data && data.length > 0) {
-      pendingList = data.map(u => {
-        // Enlazar metadatos de fotos locales
+    const { data: allProfiles, error: fetchErr } = await db.from('profiles').select('*');
+    if (fetchErr) console.warn('Error al cargar perfiles para admin:', fetchErr.message);
+
+    if (allProfiles && allProfiles.length > 0) {
+      const students  = allProfiles.filter(p => p.role === 'student');
+      const landlords = allProfiles.filter(p => p.role === 'landlord');
+      const premium   = allProfiles.filter(p => p.is_premium || p.premium_tier === 'anual' || p.premium_tier === 'por-vida');
+
+      if (studentsStat)  studentsStat.textContent  = students.length;
+      if (landlordsStat) landlordsStat.textContent = landlords.length;
+      if (premiumStat)   premiumStat.textContent   = premium.length;
+
+      // Filtrar estudiantes con estado 'pending' (o sin verificar)
+      const pendingDb = students.filter(p => p.is_verified === 'pending');
+      pendingList = pendingDb.map(u => {
         const metaStr = localStorage.getItem('homii_profile_meta_' + u.id);
-        const meta = metaStr ? JSON.parse(metaStr) : {};
+        const meta    = metaStr ? JSON.parse(metaStr) : {};
         return {
           id: u.id,
           name: u.name,
           email: u.email || 'Estudiante Homii',
           phone: u.phone || 'No registrado',
-          cedula: u.cedula || '1310000000',
-          selfie_url: meta.selfie_url || 'selfie_placeholder.png',
-          id_card_front_url: meta.id_card_front_url || 'idcard_front_placeholder.png',
-          id_card_back_url: meta.id_card_back_url || 'idcard_back_placeholder.png'
+          cedula: u.cedula || 'No especificada',
+          selfie_url: u.selfie_url || meta.selfie_url || 'selfie_placeholder.png',
+          id_card_front_url: u.id_card_front_url || meta.id_card_front_url || 'idcard_front_placeholder.png',
+          id_card_back_url: u.id_card_back_url || meta.id_card_back_url || 'idcard_back_placeholder.png'
         };
       });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Error en renderAdminPanel:', e);
+  }
 
-  // 2. Escanear local storage por si hay registros locales pendientes
-  const localList = [];
+  // 2. Escanear localStorage por si hay solicitudes locales sin sincronizar
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key.startsWith('homii_profile_meta_')) {
-      const uid = key.replace('homii_profile_meta_', '');
+      const uid  = key.replace('homii_profile_meta_', '');
       const meta = JSON.parse(localStorage.getItem(key));
-      if (meta.is_verified === 'pending') {
+      if (meta && meta.is_verified === 'pending') {
         const extraStr = localStorage.getItem('homii_extra_' + uid);
-        const extra = extraStr ? JSON.parse(extraStr) : {};
-        // Evitar duplicados con Supabase
+        const extra    = extraStr ? JSON.parse(extraStr) : {};
         if (!pendingList.some(u => u.id === uid)) {
-          localList.push({
+          pendingList.push({
             id: uid,
             name: extra.name || 'Estudiante Local',
             email: 'correo_local@ejemplo.com',
@@ -3414,53 +3428,39 @@ window.renderAdminPanel = async function() {
       }
     }
   }
-  pendingList = [...pendingList, ...localList];
 
-  // 3. Fallback de ejemplo/demostración si la lista está vacía
-  if (pendingList.length === 0) {
-    pendingList.push({
-      id: 'demo-stud-1',
-      name: 'Andrés Eduardo Cevallos',
-      email: 'acevallos829@pucem.edu.ec',
-      phone: '0983456712',
-      cedula: '1314569201',
-      selfie_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60',
-      id_card_front_url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60',
-      id_card_back_url: 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60',
-      is_demo: true
-    });
-    pendingList.push({
-      id: 'demo-stud-2',
-      name: 'María Valentina Intriago',
-      email: 'mvalen.intriago@pucem.edu.ec',
-      phone: '0959821345',
-      cedula: '1310984532',
-      selfie_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=60',
-      id_card_front_url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60',
-      id_card_back_url: 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60',
-      is_demo: true
-    });
-  }
-
-  // 4. Renderizar UI
+  // 3. Renderizar métricas de pendientes
   if (countEl) countEl.textContent = pendingList.length + ' Pendientes';
   if (pendingStat) pendingStat.textContent = pendingList.length;
 
+  // 4. Si no hay solicitudes pendientes, mostrar estado limpio sin datos de prueba
+  if (pendingList.length === 0) {
+    listEl.innerHTML = `
+      <div style="padding: 3rem 1.5rem; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎉</div>
+        <h5 style="margin: 0; font-size: 1.1rem; color: var(--blue-dark); font-weight: 700;">No hay solicitudes de verificación pendientes</h5>
+        <p style="margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--text-sec);">Todas las cuentas de estudiantes están verificadas o no hay nuevas solicitudes en este momento.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // 5. Renderizar lista de solicitudes pendientes reales
   listEl.innerHTML = pendingList.map(u => `
     <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; background: var(--bg-white);">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
         <div>
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <h5 style="margin:0; font-size:1rem; color:var(--text); font-weight:600;">${u.name}</h5>
-            ${u.is_demo ? '<span class="badge badge-amber" style="font-size:0.65rem;">Solicitud Demo</span>' : '<span class="badge badge-blue" style="font-size:0.65rem;">Nueva Cuenta</span>'}
+            <span class="badge badge-blue" style="font-size:0.65rem;">Nueva Cuenta</span>
           </div>
           <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--text-muted);">
             Cédula: <strong>${u.cedula}</strong> &middot; Email: ${u.email} &middot; Tel: ${u.phone}
           </p>
         </div>
         <div style="display:flex; gap:0.5rem;">
-          <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveUserBiometrics('${u.id}', ${!!u.is_demo})">✓ Aprobar</button>
-          <button class="btn btn-sm" style="background:#ef4444; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.rejectUserBiometrics('${u.id}', ${!!u.is_demo})">✗ Rechazar</button>
+          <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveUserBiometrics('${u.id}', false)">✓ Aprobar</button>
+          <button class="btn btn-sm" style="background:#ef4444; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.rejectUserBiometrics('${u.id}', false)">✗ Rechazar</button>
         </div>
       </div>
       

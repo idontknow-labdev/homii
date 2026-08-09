@@ -285,7 +285,7 @@ async function loadUserProfile(user) {
   const metaRole          = user.user_metadata?.role || (user.email.endsWith('@pucem.edu.ec') || user.email.endsWith('@pucesm.edu.ec') ? 'university' : 'student');
   const metaPhone         = user.user_metadata?.phone || null;
   const metaCedula        = user.user_metadata?.cedula || localMeta.cedula || null;
-  const metaIsVerified    = user.user_metadata?.is_verified || localMeta.is_verified || (metaRole === 'landlord' || metaRole === 'university' ? 'approved' : 'pending');
+  const metaIsVerified    = user.user_metadata?.is_verified || localMeta.is_verified || (metaRole === 'university' ? 'approved' : 'pending');
   const metaIsPremium     = user.user_metadata?.is_premium || localMeta.is_premium || false;
   const metaPremiumTier   = user.user_metadata?.premium_tier || localMeta.premium_tier || 'none';
   const metaSelfieUrl     = user.user_metadata?.selfie_url || localMeta.selfie_url || null;
@@ -315,7 +315,10 @@ async function loadUserProfile(user) {
 
     // Auto-recuperación: forzar guardado en Supabase public.profiles
     const { error: upsertErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });
-    if (upsertErr) console.warn('Auto-healing profile creation warning:', upsertErr.message);
+    if (upsertErr) {
+      console.warn('Auto-healing profile creation warning:', upsertErr.message);
+      await db.from('profiles').insert(profile).catch(e => console.warn('Direct insert fallback:', e.message));
+    }
   } else {
     // Si la fila existía pero le faltaban datos críticos (email, rol, cédula, estado de verificación, imágenes), actualizar Supabase
     let needsUpdate = false;
@@ -2796,11 +2799,10 @@ function setupPublishForm() {
 
     const fullLocation = city ? `${sector}, ${city}, ${province}` : `${sector}, ${province}`;
 
-    // Subir 1 sola imagen principal a Supabase Storage
+    // Subir hasta 5 imágenes a Supabase Storage
     let imgUrls = [];
     const files = window._pendingFiles || [];
-    if (files.length > 0) {
-      const file = files[0];
+    for (const file of files.slice(0, 5)) {
       const ext  = file.name.split('.').pop().toLowerCase();
       const path = `${CURRENT_USER.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await db.storage.from('homii-images').upload(path, file);
@@ -2851,24 +2853,34 @@ function setupPublishForm() {
 }
 
 function previewImages(e) {
-  const files = Array.from(e.target.files);
-  window._pendingFiles = files;
+  const newFiles = Array.from(e.target.files || []);
+  window._pendingFiles = window._pendingFiles || [];
+  
+  // Acumular nuevas fotos con las existentes hasta un máximo estricto de 5
+  window._pendingFiles = [...window._pendingFiles, ...newFiles].slice(0, 5);
+
   const thumbs = document.getElementById('img-thumbs');
   if (!thumbs) return;
-  thumbs.innerHTML = files.map((f, i) => `
-    <div class="img-thumb">
-      <img src="${URL.createObjectURL(f)}" alt="Foto ${i+1}">
-      <button type="button" class="img-thumb-del" onclick="removeImg(${i})">x</button>
+  thumbs.innerHTML = window._pendingFiles.map((f, i) => `
+    <div class="img-thumb" style="position:relative; width:65px; height:65px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border);">
+      <img src="${URL.createObjectURL(f)}" alt="Foto ${i+1}" style="width:100%; height:100%; object-fit:cover;">
+      <button type="button" class="img-thumb-del" onclick="removeImg(${i})" style="position:absolute; top:2px; right:2px; background:rgba(220,38,38,0.85); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
     </div>`).join('');
+
+  if (e.target) e.target.value = '';
 }
 
 window.removeImg = function(i) {
   window._pendingFiles = window._pendingFiles || [];
   window._pendingFiles.splice(i, 1);
   const thumbs = document.getElementById('img-thumbs');
-  if (thumbs) thumbs.innerHTML = (window._pendingFiles).map((f, idx) => `
-    <div class="img-thumb"><img src="${URL.createObjectURL(f)}" alt="Foto ${idx+1}">
-    <button type="button" class="img-thumb-del" onclick="removeImg(${idx})">x</button></div>`).join('');
+  if (thumbs) {
+    thumbs.innerHTML = window._pendingFiles.map((f, idx) => `
+      <div class="img-thumb" style="position:relative; width:65px; height:65px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border);">
+        <img src="${URL.createObjectURL(f)}" alt="Foto ${idx+1}" style="width:100%; height:100%; object-fit:cover;">
+        <button type="button" class="img-thumb-del" onclick="removeImg(${idx})" style="position:absolute; top:2px; right:2px; background:rgba(220,38,38,0.85); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>`).join('');
+  }
 };
 
 function updateMapsPreview() {

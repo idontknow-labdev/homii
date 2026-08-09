@@ -722,15 +722,15 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Fotografía del inmueble *</label>
+          <label class="form-label">Fotos del inmueble (Hasta 5 imágenes) *</label>
           <div class="upload-area" onclick="document.getElementById('prop-images').click()">
             <svg viewBox="0 0 24 24" width="24" height="24" stroke-width="1.5" fill="none">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
             </svg>
-            <p style="margin:0.25rem 0 0; font-size:0.8rem;"><span>Haga clic para subir la foto principal</span><br>Formatos permitidos: JPG, PNG, WEBP</p>
+            <p style="margin:0.25rem 0 0; font-size:0.8rem;"><span>Haga clic para agregar fotografías (Máximo 5 imágenes)</span><br>Formatos permitidos: JPG, PNG, WEBP</p>
           </div>
-          <input type="file" id="prop-images" accept="image/*" style="display:none;">
-          <div id="img-thumbs" class="img-thumbs" style="margin-top:0.5rem;"></div>
+          <input type="file" id="prop-images" accept="image/*" multiple style="display:none;">
+          <div id="img-thumbs" class="img-thumbs" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:0.4rem; margin-top:0.5rem;"></div>
         </div>
 
         <div class="form-group">
@@ -1808,6 +1808,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_09"></script>
+<script src="app.js?v=20260809_10"></script>
 </body>
 </html>

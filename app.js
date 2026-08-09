@@ -1126,6 +1126,10 @@ async function filterListings() {
   const selectedProvince = document.getElementById('filter-province')?.value || 'all';
 
   let filtered = (props || []).filter(p => {
+    // Solo mostrar inmuebles verificados/aprobados por el Administrador (excluir pendientes de revisión)
+    const isApproved = p.is_demo || p.university_certified === true || p.is_verified === true || p.status === 'available' || p.status === 'approved';
+    if (!isApproved) return false;
+
     const matchKw   = !kw || p.title.toLowerCase().includes(kw) || (p.description || '').toLowerCase().includes(kw) || (p.location || '').toLowerCase().includes(kw);
     const matchPrc  = p.is_demo || p.price <= maxPrice;
     const matchRoom = minRooms === 'any' || p.rooms >= parseInt(minRooms);
@@ -2538,16 +2542,30 @@ async function loadInboxMessages(container) {
     }
   });
 
-  const convs = Object.values(convMap);
+  let convs = Object.values(convMap);
 
-  // Cargar fotos de perfiles desde profiles DB para los participantes
+  // Cargar fotos y estado de suscripción de perfiles desde profiles DB para los participantes
   const otherIds = [...new Set(convs.map(c => c.otherId).filter(id => isValidUUID(id)))];
   if (otherIds.length > 0) {
-    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color').in('id', otherIds);
+    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color, is_premium').in('id', otherIds);
     (profs || []).forEach(p => {
       CHAT_PROFILES_CACHE[p.id] = p;
     });
   }
+
+  // Ordenamiento de prioridad:
+  // 1. Usuarios Premium primero
+  // 2. El primer usuario en enviar mensaje (orden de llegada más antiguo) va primero
+  convs.sort((a, b) => {
+    const profA = CHAT_PROFILES_CACHE[a.otherId];
+    const profB = CHAT_PROFILES_CACHE[b.otherId];
+
+    const premA = (profA?.is_premium || a.is_premium) ? 1 : 0;
+    const premB = (profB?.is_premium || b.is_premium) ? 1 : 0;
+
+    if (premB !== premA) return premB - premA; // Prioridad Premium primero
+    return new Date(a.created_at) - new Date(b.created_at); // Orden de llegada más antiguo primero
+  });
 
   container.innerHTML = `
     <div class="panel-card-title">Mensajes recibidos <span class="badge badge-blue" style="font-size:0.7rem;margin-left:0.5rem;">${convs.length}</span></div>
@@ -2723,9 +2741,11 @@ window.makeFeatured = async function(id) {
   renderLandlordPanel();
 };
 
-window.requestVerif = function(id, title) {
-  addNotif('Solicitud Enviada', `Inspección agendada para "${title}".`);
-  alert('Solicitud enviada. Nuestro equipo coordinará la visita de inspección técnica en los próximos días hábiles.');
+window.requestVerif = async function(id, title) {
+  await db.from('properties').update({ verification_requested: true, status: 'pending_verification' }).eq('id', id);
+  addNotif('Solicitud Enviada', `Solicitud de revisión enviada para "${title}". El administrador la revisará a la brevedad.`);
+  alert('Solicitud enviada al Administrador.\n\nSu propiedad ha sido notificada al equipo de administración para su revisión y posterior publicación en el buscador público de arriendos.');
+  renderLandlordPanel();
 };
 
 window.deleteProp = async function(id) {
@@ -2767,31 +2787,45 @@ function setupPublishForm() {
       }
     }
 
+    const province = document.getElementById('prop-province')?.value || 'Guayas';
+    const bathrooms = parseInt(document.getElementById('prop-bathrooms')?.value || '1');
+
     const { error } = await db.from('properties').insert({
-      title, description: desc || '', price, rooms, bathrooms: 1,
-      location, maps_query: mapsAddr, distance_to_campus: distance || 1.0,
+      title,
+      description: desc || '',
+      price,
+      rooms,
+      bathrooms,
+      province,
+      location,
+      maps_query: location,
+      distance_to_campus: 0.5,
       university_certified: false,
+      is_verified: false,
+      status: 'pending_verification',
       amenities: amenities.length ? amenities : [],
       landlord_id: CURRENT_USER.id,
       landlord_name: CURRENT_PROFILE?.name || 'Propietario',
       landlord_email: CURRENT_USER.email,
-      landlord_rating: 5.0, property_rating: 4.5,
-      featured: false, images: imgUrls, is_demo: false,
+      rating_avg: 5.0,
+      rating_count: 0,
+      featured: false,
+      images: imgUrls,
+      is_demo: false,
       reviews: []
     });
 
     if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
 
-    if (error) { alert('Error al publicar: ' + error.message); return; }
+    if (error) { alert('Error al registrar inmueble: ' + error.message); return; }
 
     document.getElementById('publish-form')?.reset();
     window._pendingFiles = [];
     const thumbsEl = document.getElementById('img-thumbs'); if (thumbsEl) thumbsEl.innerHTML = '';
-    const mp = document.getElementById('maps-preview'); if (mp) mp.style.display = 'none';
-    addNotif('Propiedad Publicada', `"${title}" ya es visible en el buscador.`);
+    
+    addNotif('Inmueble Registrado', `"${title}" ha quedado en revisión por el Administrador.`);
     renderLandlordPanel();
-    filterListings();
-    alert('Propiedad publicada exitosamente. Ya aparece en el buscador de arriendos.');
+    alert('Inmueble registrado correctamente.\n\nPara que la propiedad aparezca publicada en el buscador público de arriendos, presione el botón "Pedir verificación al Administrador" en su panel para que el equipo apruebe su publicación.');
   });
 }
 
@@ -2876,14 +2910,14 @@ window.certifyProp = async function(id) {
 
   // Primer intento: con certification_type (si la columna existe en Supabase)
   let res = await db.from('properties')
-    .update({ university_certified: true, certification_type: isPucemAdmin ? 'pucem' : 'standard', verification_report: report })
+    .update({ university_certified: true, is_verified: true, status: 'available', certification_type: isPucemAdmin ? 'pucem' : 'standard', verification_report: report })
     .eq('id', id)
     .select();
 
   // Fallback: si Supabase no reconoce certification_type en el schema cache, reintentar sin ella
   if (res.error && (res.error.message?.includes('Could not find') || res.error.code === 'PGRST204')) {
     res = await db.from('properties')
-      .update({ university_certified: true, verification_report: report })
+      .update({ university_certified: true, is_verified: true, status: 'available', verification_report: report })
       .eq('id', id)
       .select();
   }
@@ -2895,8 +2929,8 @@ window.certifyProp = async function(id) {
   }
 
   const propTitle = res.data?.[0]?.title || 'El inmueble';
-  addNotif('Inmueble Certificado', `"${propTitle}" recibió la etiqueta "${badgeName}".`);
-  alert(`✅ Propiedad certificada exitosamente como: "${badgeName}"`);
+  addNotif('Inmueble Aprobado', `"${propTitle}" ha sido verificado y publicado en el buscador.`);
+  alert(`✓ Inmueble "${propTitle}" verificado y publicado exitosamente en el buscador público de arriendos.`);
   await renderUniPanel();
   filterListings();
 };

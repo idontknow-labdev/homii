@@ -36,6 +36,16 @@ alter table public.profiles add column if not exists id_card_front_url text;
 alter table public.profiles add column if not exists id_card_back_url text;
 alter table public.profiles add column if not exists verification_report text;
 alter table public.profiles add column if not exists rejection_reason text;
+alter table public.profiles add column if not exists province text default 'Guayas';
+alter table public.profiles add column if not exists rating_avg float default 5.0;
+alter table public.profiles add column if not exists rating_count integer default 0;
+
+alter table public.properties add column if not exists province text default 'Guayas';
+alter table public.properties add column if not exists rating_avg float default 5.0;
+alter table public.properties add column if not exists rating_count integer default 0;
+alter table public.properties add column if not exists vip_managed boolean default false;
+
+alter table public.roomies add column if not exists province text default 'Guayas';
 
 -- Propiedades
 create table if not exists public.properties (

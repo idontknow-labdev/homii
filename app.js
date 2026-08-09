@@ -26,6 +26,196 @@ const APP = {
 };
 
 // ============================================================
+// FUNCIONES GLOBALES: CONTRASEÑA, CÁMARA Y CALIFICACIONES
+// ============================================================
+
+window.togglePasswordVisibility = function(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPass = input.type === 'password';
+  input.type = isPass ? 'text' : 'password';
+  btn.textContent = isPass ? '🙈' : '👁️';
+};
+
+window.forgotPasswordPrompt = async function() {
+  const emailInput = document.getElementById('login-email');
+  const defaultEmail = emailInput ? emailInput.value : '';
+  const email = prompt('Ingrese su correo electrónico para enviarle el enlace de restablecimiento de contraseña:', defaultEmail);
+  if (!email || !email.trim()) return;
+
+  const { error } = await db.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: window.location.origin
+  });
+  if (error) {
+    alert('Error al enviar la solicitud: ' + error.message);
+  } else {
+    alert('¡Enlace enviado!\n\nSe ha enviado un correo a ' + email.trim() + ' con instrucciones para restablecer su contraseña.');
+  }
+};
+
+window.biometricStream = null;
+window.biometricStep = 1;
+
+window.startBiometricCamera = async function() {
+  const video = document.getElementById('bio-video');
+  const startBtn = document.getElementById('bio-start-cam-btn');
+  const snapBtn = document.getElementById('bio-snap-btn');
+  const stepTitle = document.getElementById('bio-step-title');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    window.biometricStream = stream;
+    if (video) {
+      video.srcObject = stream;
+      video.style.display = 'block';
+    }
+    if (startBtn) startBtn.style.display = 'none';
+    if (snapBtn) snapBtn.style.display = 'block';
+    window.biometricStep = 1;
+    if (stepTitle) stepTitle.textContent = 'Paso 1 de 3: Tómese una Selfie de su Rostro';
+  } catch (err) {
+    alert('No se pudo acceder a la cámara del dispositivo: ' + err.message + '\n\nAsegúrese de conceder los permisos de cámara en su navegador.');
+  }
+};
+
+window.captureBiometricStep = function() {
+  const video = document.getElementById('bio-video');
+  const canvas = document.getElementById('bio-canvas');
+  const stepTitle = document.getElementById('bio-step-title');
+  const snapBtn = document.getElementById('bio-snap-btn');
+  if (!video || !canvas) return;
+
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+  window.tempBiometricData = window.tempBiometricData || { selfie: '', front: '', back: '' };
+
+  if (window.biometricStep === 1) {
+    window.tempBiometricData.selfie = dataUrl;
+    const thumb = document.getElementById('bio-thumb-selfie');
+    if (thumb) { thumb.src = dataUrl; thumb.style.display = 'block'; }
+    window.biometricStep = 2;
+    if (stepTitle) stepTitle.textContent = 'Paso 2 de 3: Fotografía del Frente de su Cédula';
+    if (snapBtn) snapBtn.textContent = '📸 Capturar Frente de Cédula';
+  } else if (window.biometricStep === 2) {
+    window.tempBiometricData.front = dataUrl;
+    const thumb = document.getElementById('bio-thumb-front');
+    if (thumb) { thumb.src = dataUrl; thumb.style.display = 'block'; }
+    window.biometricStep = 3;
+    if (stepTitle) stepTitle.textContent = 'Paso 3 de 3: Fotografía del Reverso de su Cédula';
+    if (snapBtn) snapBtn.textContent = '📸 Capturar Reverso de Cédula';
+  } else if (window.biometricStep === 3) {
+    window.tempBiometricData.back = dataUrl;
+    const thumb = document.getElementById('bio-thumb-back');
+    if (thumb) { thumb.src = dataUrl; thumb.style.display = 'block'; }
+    if (stepTitle) stepTitle.textContent = '✓ 3 Fotografías biométricas capturadas con éxito';
+    if (snapBtn) snapBtn.style.display = 'none';
+    window.stopBiometricCamera();
+  }
+};
+
+window.stopBiometricCamera = function() {
+  if (window.biometricStream) {
+    window.biometricStream.getTracks().forEach(track => track.stop());
+    window.biometricStream = null;
+  }
+  const video = document.getElementById('bio-video');
+  if (video) video.style.display = 'none';
+  const startBtn = document.getElementById('bio-start-cam-btn');
+  if (startBtn && window.biometricStep >= 3) {
+    startBtn.textContent = '✓ Verificación Biométrica Completada';
+    startBtn.style.display = 'block';
+    startBtn.disabled = true;
+  }
+};
+
+window.selectedStars = 5;
+window.currentRatingTarget = null;
+
+window.setRatingStars = function(count) {
+  window.selectedStars = count;
+  const container = document.getElementById('star-rating-selector');
+  if (!container) return;
+  const stars = container.querySelectorAll('span');
+  stars.forEach((star, idx) => {
+    star.style.color = idx < count ? '#f59e0b' : '#d1d5db';
+  });
+};
+
+window.openRatingModal = function(type, id, name) {
+  window.currentRatingTarget = { type, id, name };
+  window.setRatingStars(5);
+  const commentEl = document.getElementById('rating-comment');
+  if (commentEl) commentEl.value = '';
+  const modal = document.getElementById('rating-modal');
+  if (modal) modal.classList.add('open');
+};
+
+window.submitRating = async function() {
+  if (!window.currentRatingTarget) return;
+  const { type, id, name } = window.currentRatingTarget;
+  const stars = window.selectedStars || 5;
+  const comment = document.getElementById('rating-comment')?.value.trim() || '';
+
+  const table = type === 'property' ? 'properties' : 'profiles';
+  try {
+    const { data: item } = await db.from(table).select('rating_avg, rating_count, reviews').eq('id', id).maybeSingle();
+    let currentAvg = item?.rating_avg || 5.0;
+    let currentCount = item?.rating_count || 0;
+    let currentReviews = item?.reviews || [];
+
+    if (typeof currentReviews === 'string') {
+      try { currentReviews = JSON.parse(currentReviews); } catch(e) { currentReviews = []; }
+    }
+    if (!Array.isArray(currentReviews)) currentReviews = [];
+
+    const newCount = currentCount + 1;
+    const newAvg = parseFloat(((currentAvg * currentCount + stars) / newCount).toFixed(1));
+
+    const newReviewObj = {
+      author: CURRENT_PROFILE?.name || CURRENT_USER?.email?.split('@')[0] || 'Usuario Homii',
+      rating: stars,
+      text: comment || 'Calificación otorgada al culminar el contrato.',
+      created_at: new Date().toISOString()
+    };
+    currentReviews.push(newReviewObj);
+
+    await db.from(table).update({
+      rating_avg: newAvg,
+      rating_count: newCount,
+      reviews: currentReviews
+    }).eq('id', id);
+
+    alert(`⭐ ¡Calificación de ${stars} estrellas enviada!\n\nMuchas gracias por calificar a ${name || 'esta persona/inmueble'}.`);
+    document.getElementById('rating-modal')?.classList.remove('open');
+
+    if (typeof filterListings === 'function') filterListings();
+    if (typeof filterRoomies === 'function') filterRoomies();
+    if (typeof renderProfileView === 'function') renderProfileView();
+  } catch (e) {
+    alert('Calificación enviada.');
+    document.getElementById('rating-modal')?.classList.remove('open');
+  }
+};
+
+window.renderStarRatingHTML = function(avg, count) {
+  const rating = parseFloat(avg || 5.0).toFixed(1);
+  const totalCount = count || 0;
+  const fullStars = Math.round(rating);
+  let starsHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    starsHTML += i <= fullStars ? '★' : '☆';
+  }
+  return `<span style="color:#f59e0b; font-weight:700; font-size:0.85rem;">${starsHTML} ${rating}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${totalCount})</span>`;
+};
+
+// ============================================================
 // INICIALIZACIÓN
 // ============================================================
 
@@ -403,6 +593,10 @@ async function doRegister() {
     }
     if (cedula.length !== 10) {
       showAuthError('register-error', 'La cédula debe contener exactamente 10 dígitos.');
+      return;
+    }
+    if (!window.tempBiometricData.selfie || !window.tempBiometricData.front || !window.tempBiometricData.back) {
+      showAuthError('register-error', 'Por favor presione "Activar Cámara en Vivo" y complete los 3 pasos de verificación biométrica.');
       return;
     }
     isVerified = 'pending'; // Estudiantes inician como pendientes de aprobación biométrica
@@ -929,12 +1123,15 @@ async function filterListings() {
     return;
   }
 
+  const selectedProvince = document.getElementById('filter-province')?.value || 'all';
+
   let filtered = (props || []).filter(p => {
     const matchKw   = !kw || p.title.toLowerCase().includes(kw) || (p.description || '').toLowerCase().includes(kw) || (p.location || '').toLowerCase().includes(kw);
     const matchPrc  = p.is_demo || p.price <= maxPrice;
     const matchRoom = minRooms === 'any' || p.rooms >= parseInt(minRooms);
     const matchDist = p.is_demo || p.distance_to_campus <= maxDist;
     const matchAmen = amenities.every(a => (p.amenities || []).includes(a));
+    const matchProv = selectedProvince === 'all' || (p.province || p.location || '').toLowerCase().includes(selectedProvince.toLowerCase());
 
     // Filtro estricto de certificación en JS como respaldo
     let matchCert = true;
@@ -950,7 +1147,7 @@ async function filterListings() {
       }
     }
 
-    return matchKw && matchPrc && matchRoom && matchDist && matchAmen && matchCert;
+    return matchKw && matchPrc && matchRoom && matchDist && matchAmen && matchCert && matchProv;
   });
 
   if (sortBy === 'price-asc')  filtered.sort((a, b) => a.price - b.price);
@@ -1571,7 +1768,7 @@ function syncRoomieFormUser() {
 }
 
 function setupRoomie() {
-  ['roomie-type','roomie-schedule','roomie-gender'].forEach(id => {
+  ['roomie-type','roomie-schedule','roomie-gender','roomie-province'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', filterRoomies);
   });
   const budgetSlider = document.getElementById('roomie-budget');
@@ -1602,13 +1799,14 @@ async function filterRoomies() {
   const type      = document.getElementById('roomie-type')?.value     || 'all';
   const schedule  = document.getElementById('roomie-schedule')?.value || 'all';
   const gender    = document.getElementById('roomie-gender')?.value   || 'all';
+  const selectedProvince = document.getElementById('roomie-province')?.value || 'all';
 
   const { data: list } = await db.from('roomies').select('*').order('created_at', { ascending: false });
 
   // Cargar perfiles de usuario desde profiles DB para garantizar que todas las fotos carguen
   const userIds = [...new Set((list || []).map(r => r.user_id).filter(id => isValidUUID(id)))];
   if (userIds.length > 0) {
-    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color').in('id', userIds);
+    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color, rating_avg, rating_count').in('id', userIds);
     (profs || []).forEach(p => {
       CHAT_PROFILES_CACHE[p.id] = p;
     });
@@ -1619,7 +1817,8 @@ async function filterRoomies() {
     const matchType     = type     === 'all' || r.type     === type;
     const matchSchedule = schedule === 'all' || r.schedule === schedule;
     const matchGender   = gender   === 'all' || r.gender   === gender;
-    return matchBudget && matchType && matchSchedule && matchGender;
+    const matchProv     = selectedProvince === 'all' || (r.province || r.location || '').toLowerCase().includes(selectedProvince.toLowerCase());
+    return matchBudget && matchType && matchSchedule && matchGender && matchProv;
   });
 
   const count = document.getElementById('roomie-count');
@@ -3299,6 +3498,10 @@ window.generateAndCompleteRent = async function() {
 
     addNotif('Contrato Formalizado', 'La propiedad ha sido dada de baja y registrada oficialmente como Alquilada.');
     alert('✅ Contrato de Arrendamiento Generado Exitosamente.\n\nEl inmueble ha sido dado de baja de las búsquedas públicas y registrado en el historial de Homii.');
+
+    // Abrir automáticamente la evaluación por estrellas post-contrato
+    const propTitle = document.getElementById('contract-prop-title')?.textContent || 'el inmueble';
+    openRatingModal('property', propId, propTitle);
 
     if (APP.currentView === 'landlord') {
       renderLandlordDashboard();

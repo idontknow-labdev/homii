@@ -447,7 +447,7 @@ async function doRegister() {
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
-    // Guardar respaldo local de los datos de la verificación biométrica simulada
+    // Guardar respaldo local de los datos de la verificación biométrica
     const profileMeta = {
       cedula,
       is_verified: isVerified,
@@ -458,6 +458,23 @@ async function doRegister() {
       premium_tier: 'none'
     };
     localStorage.setItem('homii_profile_meta_' + data.user.id, JSON.stringify(profileMeta));
+    localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
+
+    // Guardar en la base de datos Supabase (profiles) para el Panel de Administración
+    const { error: upsertErr } = await db.from('profiles').upsert({
+      id: data.user.id,
+      name,
+      email,
+      role,
+      phone: phone || null,
+      cedula: cedula || null,
+      is_verified: isVerified,
+      avatar_color: color,
+      selfie_url: profileMeta.selfie_url,
+      id_card_front_url: profileMeta.id_card_front_url,
+      id_card_back_url: profileMeta.id_card_back_url
+    }, { onConflict: 'id' });
+    if (upsertErr) console.warn('Registration profile upsert error:', upsertErr.message);
 
     // Si la confirmación de correo está activada en Supabase y no hay sesión inmediata
     if (!data.session) {
@@ -468,20 +485,6 @@ async function doRegister() {
       if (loginEmailInput) loginEmailInput.value = email;
       return;
     }
-
-    // Si la confirmación está desactivada y la sesión se inició automáticamente, guardar en profiles
-    const { error: upsertErr } = await db.from('profiles').upsert({
-      id: data.user.id,
-      name,
-      role,
-      phone: phone || null,
-      cedula: cedula || null,
-      is_verified: isVerified,
-      avatar_color: color
-    }, { onConflict: 'id' });
-    if (upsertErr) console.warn('Registration profile upsert error:', upsertErr.message);
-
-    localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
 
     await loadUserProfile(data.user);
     closeAuth();
@@ -3320,8 +3323,14 @@ window.reuploadBiometrics = async function() {
 
   localStorage.setItem('homii_profile_meta_' + CURRENT_USER.id, JSON.stringify(localMeta));
 
-  // Intentar actualizar Supabase
-  await db.from('profiles').update({ is_verified: 'pending', rejection_reason: '' }).eq('id', CURRENT_USER.id).catch(() => {});
+  // Actualizar Supabase con las fotos re-subidas
+  await db.from('profiles').update({
+    is_verified: 'pending',
+    rejection_reason: '',
+    selfie_url: localMeta.selfie_url,
+    id_card_front_url: localMeta.id_card_front_url,
+    id_card_back_url: localMeta.id_card_back_url
+  }).eq('id', CURRENT_USER.id).catch(() => {});
   
   CURRENT_PROFILE.is_verified = 'pending';
   CURRENT_PROFILE.rejection_reason = '';

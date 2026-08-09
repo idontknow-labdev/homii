@@ -28,6 +28,14 @@ create table if not exists public.profiles (
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists bio text;
 alter table public.profiles add column if not exists occupation text;
+alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists cedula text;
+alter table public.profiles add column if not exists is_verified text default 'pending';
+alter table public.profiles add column if not exists selfie_url text;
+alter table public.profiles add column if not exists id_card_front_url text;
+alter table public.profiles add column if not exists id_card_back_url text;
+alter table public.profiles add column if not exists verification_report text;
+alter table public.profiles add column if not exists rejection_reason text;
 
 -- Propiedades
 create table if not exists public.properties (

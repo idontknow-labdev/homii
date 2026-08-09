@@ -679,33 +679,32 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Provincia / Ubicación *</label>
+            <label class="form-label">Provincia *</label>
             <select class="form-select" id="prop-province" required>
-              <option value="Guayas">Guayas (Guayaquil, Samborondón...)</option>
-              <option value="Pichincha">Pichincha (Quito, Cumbayá...)</option>
-              <option value="Manabí">Manabí (Manta, Portoviejo...)</option>
-              <option value="Azuay">Azuay (Cuenca...)</option>
-              <option value="Los Ríos">Los Ríos (Babahoyo, Quevedo...)</option>
-              <option value="El Oro">El Oro (Machala...)</option>
+              <option value="Guayas">Guayas</option>
+              <option value="Pichincha">Pichincha</option>
+              <option value="Manabí">Manabí</option>
+              <option value="Azuay">Azuay</option>
+              <option value="Los Ríos">Los Ríos</option>
+              <option value="El Oro">El Oro</option>
               <option value="Santo Domingo">Santo Domingo</option>
-              <option value="Tungurahua">Tungurahua (Ambato...)</option>
+              <option value="Tungurahua">Tungurahua</option>
               <option value="Loja">Loja</option>
-              <option value="Imbabura">Imbabura (Ibarra...)</option>
-              <option value="Santa Elena">Santa Elena (Salinas...)</option>
+              <option value="Imbabura">Imbabura</option>
+              <option value="Santa Elena">Santa Elena</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Ciudad *</label>
+            <input type="text" class="form-input" id="prop-city" placeholder="Ej. Guayaquil, Quito, Manta..." required>
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label class="form-label">Precio mensual ($) *</label>
             <input type="number" class="form-input" id="prop-price" min="50" placeholder="Ej. 200" required>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Dirección o Sector exacto *</label>
-          <input type="text" class="form-input" id="prop-location" placeholder="Ej. Urdesa Central, Calle 3era y Déniz" required>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
             <label class="form-label">Habitaciones</label>
             <select class="form-select" id="prop-rooms">
@@ -715,26 +714,23 @@
               <option value="4">4+ habitaciones</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Baños</label>
-            <select class="form-select" id="prop-bathrooms">
-              <option value="1">1 baño</option>
-              <option value="2">2 baños</option>
-              <option value="3">3+ baños</option>
-            </select>
-          </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Fotos del inmueble (Hasta 5 imágenes) *</label>
+          <label class="form-label">Dirección o Sector exacto *</label>
+          <input type="text" class="form-input" id="prop-location" placeholder="Ej. Urdesa Central, Av. Las Monjas y Calle 3era" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fotografía del inmueble *</label>
           <div class="upload-area" onclick="document.getElementById('prop-images').click()">
             <svg viewBox="0 0 24 24" width="24" height="24" stroke-width="1.5" fill="none">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
             </svg>
-            <p style="margin:0.25rem 0 0; font-size:0.8rem;"><span>Haga clic para seleccionar hasta 5 fotos</span><br>Formatos permitidos: JPG, PNG, WEBP</p>
+            <p style="margin:0.25rem 0 0; font-size:0.8rem;"><span>Haga clic para subir la foto principal</span><br>Formatos permitidos: JPG, PNG, WEBP</p>
           </div>
-          <input type="file" id="prop-images" accept="image/*" multiple style="display:none;">
-          <div id="img-thumbs" class="img-thumbs" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:0.4rem; margin-top:0.5rem;"></div>
+          <input type="file" id="prop-images" accept="image/*" style="display:none;">
+          <div id="img-thumbs" class="img-thumbs" style="margin-top:0.5rem;"></div>
         </div>
 
         <div class="form-group">
@@ -1812,6 +1808,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_08"></script>
+<script src="app.js?v=20260809_09"></script>
 </body>
 </html>

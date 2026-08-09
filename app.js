@@ -416,15 +416,12 @@ function setupAuth() {
 
   if (regRole && biometricFields) {
     const toggleBiometrics = () => {
-      const isStudent = regRole.value === 'student';
-      biometricFields.style.display = isStudent ? 'flex' : 'none';
+      const isUser = regRole.value === 'student' || regRole.value === 'landlord';
+      biometricFields.style.display = isUser ? 'flex' : 'none';
       if (regCedula) {
-        regCedula.required = isStudent;
-        if (!isStudent) regCedula.setCustomValidity('');
+        regCedula.required = isUser;
+        if (!isUser) regCedula.setCustomValidity('');
       }
-      if (regSelfie) regSelfie.required = isStudent;
-      if (regIdcardFront) regIdcardFront.required = isStudent;
-      if (regIdcardBack) regIdcardBack.required = isStudent;
     };
     regRole.addEventListener('change', toggleBiometrics);
     toggleBiometrics();
@@ -585,7 +582,7 @@ async function doRegister() {
   let isVerified = 'approved'; // Los arrendadores o admin se auto-aprueban para fluidez
   window.tempBiometricData = window.tempBiometricData || { selfie: '', front: '', back: '' };
 
-  if (role === 'student') {
+  if (role === 'student' || role === 'landlord') {
     cedula = (document.getElementById('reg-cedula')?.value || '').trim().replace(/\s+|-/g, '');
     if (!cedula) {
       showAuthError('register-error', 'Por favor ingrese su número de cédula.');
@@ -599,7 +596,7 @@ async function doRegister() {
       showAuthError('register-error', 'Por favor presione "Activar Cámara en Vivo" y complete los 3 pasos de verificación biométrica.');
       return;
     }
-    isVerified = 'pending'; // Estudiantes inician como pendientes de aprobación biométrica
+    isVerified = 'pending'; // Estudiantes y Propietarios inician como pendientes de aprobación biométrica
   }
 
   if (!name)  { showAuthError('register-error', 'Ingrese su nombre completo.'); return; }
@@ -609,9 +606,9 @@ async function doRegister() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
-  const selfieUrl = role === 'student' ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null;
-  const frontUrl  = role === 'student' ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
-  const backUrl   = role === 'student' ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
+  const selfieUrl = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null;
+  const frontUrl  = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
+  const backUrl   = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
 
   // Registrar nuevo usuario con metadata liviana (sin cadenas base64 gigantes)
   let { data, error } = await db.auth.signUp({
@@ -1639,6 +1636,13 @@ async function setupDirectChat(p) {
       return;
     }
 
+    // Bloqueo de chat para usuarios o propietarios sin verificación biométrica aprobada
+    const vStatus = CURRENT_PROFILE?.is_verified;
+    if (CURRENT_PROFILE?.role !== 'university' && (vStatus === 'pending' || vStatus === 'rejected' || vStatus === false || !vStatus)) {
+      alert('⚠️ Verificación Biométrica Requerida\n\nSu cuenta aún no ha sido aprobada por el Administrador. Debe completar y tener aprobada su verificación biométrica de identidad (selfie y cédula) para poder enviar mensajes.');
+      return;
+    }
+
     if (input) input.value = '';
 
     // Añadir mensaje local inmediatamente (optimistic)
@@ -1723,6 +1727,14 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const doSend = async (text) => {
     text = (text || '').trim();
     if (!text) return;
+
+    // Bloqueo para usuarios no verificados
+    const vStatus = CURRENT_PROFILE?.is_verified;
+    if (CURRENT_PROFILE?.role !== 'university' && (vStatus === 'pending' || vStatus === 'rejected' || vStatus === false || !vStatus)) {
+      alert('⚠️ Verificación Biométrica Requerida\n\nSu cuenta aún no ha sido aprobada por el Administrador. Debe completar y tener aprobada su verificación biométrica de identidad (selfie y cédula) para poder responder o enviar mensajes.');
+      return;
+    }
+
     if (input) input.value = '';
     const localMsgObj = {
       sender_id: CURRENT_USER.id,
@@ -2757,27 +2769,38 @@ window.deleteProp = async function(id) {
 
 function setupPublishForm() {
   document.getElementById('prop-images')?.addEventListener('change', previewImages);
-  document.getElementById('prop-maps-address')?.addEventListener('input', updateMapsPreview);
   document.getElementById('publish-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!CURRENT_USER) { openAuth(); return; }
 
     const btn = e.target.querySelector('[type=submit]');
+
+    // Bloqueo estricto si el propietario no ha sido verificado por el administrador
+    const currentStatus = CURRENT_PROFILE?.is_verified;
+    if (CURRENT_PROFILE?.role !== 'university' && (currentStatus === 'pending' || currentStatus === 'rejected' || currentStatus === false || !currentStatus)) {
+      alert('⚠️ Verificación Biométrica Requerida para Propietarios\n\nSu cuenta aún no ha sido verificada por el Administrador. Debe completar su verificación biométrica de identidad (selfie y cédula) y ser aprobado para poder publicar sus inmuebles.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
+      return;
+    }
+
     if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
 
     const title    = document.getElementById('prop-title')?.value.trim();
+    const province = document.getElementById('prop-province')?.value || 'Guayas';
+    const city     = document.getElementById('prop-city')?.value.trim() || '';
     const price    = parseInt(document.getElementById('prop-price')?.value);
     const rooms    = parseInt(document.getElementById('prop-rooms')?.value);
-    const location = document.getElementById('prop-location')?.value.trim();
-    const mapsAddr = document.getElementById('prop-maps-address')?.value.trim() || location;
-    const distance = parseFloat(document.getElementById('prop-distance')?.value);
+    const sector   = document.getElementById('prop-location')?.value.trim();
     const desc     = document.getElementById('prop-desc')?.value.trim();
     const amenities = [...document.querySelectorAll('.form-amenity:checked')].map(cb => cb.value);
 
-    // Subir imágenes a Supabase Storage
+    const fullLocation = city ? `${sector}, ${city}, ${province}` : `${sector}, ${province}`;
+
+    // Subir 1 sola imagen principal a Supabase Storage
     let imgUrls = [];
     const files = window._pendingFiles || [];
-    for (const file of files) {
+    if (files.length > 0) {
+      const file = files[0];
       const ext  = file.name.split('.').pop().toLowerCase();
       const path = `${CURRENT_USER.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await db.storage.from('homii-images').upload(path, file);
@@ -2787,18 +2810,16 @@ function setupPublishForm() {
       }
     }
 
-    const province = document.getElementById('prop-province')?.value || 'Guayas';
-    const bathrooms = parseInt(document.getElementById('prop-bathrooms')?.value || '1');
-
     const { error } = await db.from('properties').insert({
       title,
       description: desc || '',
       price,
       rooms,
-      bathrooms,
+      bathrooms: 1,
       province,
-      location,
-      maps_query: location,
+      city,
+      location: fullLocation,
+      maps_query: fullLocation,
       distance_to_campus: 0.5,
       university_certified: false,
       is_verified: false,

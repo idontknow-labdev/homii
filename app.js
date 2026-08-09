@@ -91,44 +91,53 @@ async function loadUserProfile(user) {
   // 1. Consultar perfil de la tabla profiles en Supabase
   let { data: profile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
   
-  const metaName       = user.user_metadata?.name || user.email.split('@')[0];
-  const metaRole       = user.user_metadata?.role || 'student';
-  const metaPhone      = user.user_metadata?.phone || null;
-  const metaCedula     = user.user_metadata?.cedula || localMeta.cedula || null;
-  const metaIsVerified = user.user_metadata?.is_verified || localMeta.is_verified || (metaRole === 'landlord' ? 'approved' : 'pending');
-  const metaIsPremium  = user.user_metadata?.is_premium || localMeta.is_premium || false;
-  const metaPremiumTier= user.user_metadata?.premium_tier || localMeta.premium_tier || 'none';
+  const metaName          = user.user_metadata?.name || user.email.split('@')[0];
+  const metaRole          = user.user_metadata?.role || (user.email.endsWith('@pucem.edu.ec') || user.email.endsWith('@pucesm.edu.ec') ? 'university' : 'student');
+  const metaPhone         = user.user_metadata?.phone || null;
+  const metaCedula        = user.user_metadata?.cedula || localMeta.cedula || null;
+  const metaIsVerified    = user.user_metadata?.is_verified || localMeta.is_verified || (metaRole === 'landlord' || metaRole === 'university' ? 'approved' : 'pending');
+  const metaIsPremium     = user.user_metadata?.is_premium || localMeta.is_premium || false;
+  const metaPremiumTier   = user.user_metadata?.premium_tier || localMeta.premium_tier || 'none';
+  const metaSelfieUrl     = user.user_metadata?.selfie_url || localMeta.selfie_url || null;
+  const metaIdCardFront   = user.user_metadata?.id_card_front_url || localMeta.id_card_front_url || null;
+  const metaIdCardBack    = user.user_metadata?.id_card_back_url || localMeta.id_card_back_url || null;
 
   if (!profile) {
-    // Si la tabla no devolvió fila, crear perfil con metadata de Supabase Auth
+    // Si la cuenta activa en Supabase Auth NO tiene fila en public.profiles, CREARLA Y SINCRONIZARLA automáticamente
     const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
     const color  = colors[Math.floor(Math.random() * colors.length)];
 
     profile = {
       id: user.id,
       name: metaName,
+      email: user.email,
       role: metaRole,
       phone: metaPhone,
       cedula: metaCedula,
       is_verified: metaIsVerified,
       is_premium: metaIsPremium,
       premium_tier: metaPremiumTier,
-      avatar_color: color
+      avatar_color: color,
+      selfie_url: metaSelfieUrl,
+      id_card_front_url: metaIdCardFront,
+      id_card_back_url: metaIdCardBack
     };
 
-    // Upsert para guardar la fila en Supabase public.profiles
+    // Auto-recuperación: forzar guardado en Supabase public.profiles
     const { error: upsertErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });
-    if (upsertErr) console.warn('Profile init upsert warning:', upsertErr.message);
+    if (upsertErr) console.warn('Auto-healing profile creation warning:', upsertErr.message);
   } else {
-    // Si la fila existía pero le faltaban campos, sincronizar con metadata si es necesario
+    // Si la fila existía pero le faltaban datos críticos (email, rol, cédula, estado de verificación, imágenes), actualizar Supabase
     let needsUpdate = false;
+    if (!profile.email && user.email) { profile.email = user.email; needsUpdate = true; }
     if (!profile.role && metaRole) { profile.role = metaRole; needsUpdate = true; }
     if ((!profile.name || profile.name === user.email.split('@')[0]) && metaName) { profile.name = metaName; needsUpdate = true; }
     if (!profile.phone && metaPhone) { profile.phone = metaPhone; needsUpdate = true; }
-    if (profile.cedula === undefined || profile.cedula === null) profile.cedula = metaCedula;
-    if (profile.is_verified === undefined || profile.is_verified === null) profile.is_verified = metaIsVerified;
-    if (profile.is_premium === undefined || profile.is_premium === null) profile.is_premium = metaIsPremium;
-    if (profile.premium_tier === undefined || profile.premium_tier === null) profile.premium_tier = metaPremiumTier;
+    if (!profile.cedula && metaCedula) { profile.cedula = metaCedula; needsUpdate = true; }
+    if (!profile.is_verified && metaIsVerified) { profile.is_verified = metaIsVerified; needsUpdate = true; }
+    if (!profile.selfie_url && metaSelfieUrl) { profile.selfie_url = metaSelfieUrl; needsUpdate = true; }
+    if (!profile.id_card_front_url && metaIdCardFront) { profile.id_card_front_url = metaIdCardFront; needsUpdate = true; }
+    if (!profile.id_card_back_url && metaIdCardBack) { profile.id_card_back_url = metaIdCardBack; needsUpdate = true; }
 
     if (needsUpdate) {
       const { error: syncErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });

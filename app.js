@@ -591,7 +591,7 @@ async function doRegister() {
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
   try {
-    // 1. Registrar usuario en Supabase Auth al instante
+    // 1. Registrar usuario en Supabase Auth
     let { data, error } = await db.auth.signUp({
       email,
       password: pass,
@@ -600,22 +600,24 @@ async function doRegister() {
       }
     });
 
+    // 2. Si el correo ya existe en Supabase Auth, comprobar si la contraseña coincide (propietario legítimo de la cuenta)
     if (error) {
       const errStr = (error.message || '').toLowerCase();
-      if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('rate limit')) {
-        const { data: loginData, error: loginError } = await db.auth.signInWithPassword({ email, password: pass });
-        if (!loginError && loginData?.user) {
+      if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('exists')) {
+        const { data: loginData, error: loginErr } = await db.auth.signInWithPassword({ email, password: pass });
+        if (!loginErr && loginData?.user) {
           data = loginData;
-          error = null;
+          error = null; // ¡Credenciales válidas! Restaurar / Configurar sesión
         }
       }
     }
 
     if (error) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Crear mi cuenta'; }
       let msg = 'No se pudo crear la cuenta.';
       const errStr = (error.message || '').toLowerCase();
-      if (errStr.includes('already') || errStr.includes('registered')) {
-        msg = 'Este correo ya está registrado. Por favor intente "Iniciar sesión" con su contraseña.';
+      if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('exists')) {
+        msg = 'Este correo electrónico ya pertenece a una cuenta registrada. Por favor inicie sesión o utilice un correo diferente.';
       } else if (errStr.includes('rate limit')) {
         msg = 'Límite de peticiones alcanzado. Espere un momento e intente de nuevo.';
       } else if (error.message) {
@@ -644,33 +646,34 @@ async function doRegister() {
         avatar_color: color
       };
 
-      // Guardar inmediatamente en tabla public.profiles de Supabase
+      // Actualizar o insertar perfil en tabla public.profiles de Supabase
       await db.from('profiles').upsert(profileDbPayload, { onConflict: 'id' }).catch(async () => {
         await db.from('profiles').insert(profileDbPayload).catch(() => {});
       });
 
       if (!data.session) {
-        alert('¡Cuenta creada con éxito!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta antes de iniciar sesión.');
+        alert('¡Cuenta registrada!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta e inicie sesión.');
         showAuthError('register-error', 'Por favor confirme su correo electrónico para acceder.');
-        switchPanel('login');
+        if (btn) { btn.disabled = false; btn.textContent = 'Crear mi cuenta'; }
+        switchAuthTab('login');
         return;
       }
 
       await loadUserProfile(data.user);
       closeAuth();
-      addNotif('Cuenta Creada', 'Bienvenido a Homii, ' + name + '.');
+      addNotif('Cuenta Configurada', 'Bienvenido a Homii, ' + name + '.');
 
       if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
-      if (role === 'student')  { APP.pendingRoute = 'search'; navigate('search'); }
-      if (role === 'university') {
+      else if (role === 'student')  { APP.pendingRoute = 'search'; navigate('search'); }
+      else if (role === 'university') {
         const em = email.toLowerCase();
         const isPucem = em.endsWith('@pucem.edu.ec') || em.endsWith('@pucesm.edu.ec');
         if (isPucem) {
           APP.pendingRoute = 'university';
           navigate('university');
         } else {
-          APP.pendingRoute = 'admin';
-          navigate('admin');
+          APP.pendingRoute = 'landlord';
+          navigate('landlord');
         }
       }
     }

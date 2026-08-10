@@ -766,6 +766,16 @@ window.submitBiometricVerification = async function() {
   if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
 };
 
+window.openLandlordTermsModal = function() {
+  const modal = document.getElementById('landlord-terms-modal');
+  if (modal) modal.classList.add('open');
+};
+
+window.closeLandlordTermsModal = function() {
+  const modal = document.getElementById('landlord-terms-modal');
+  if (modal) modal.classList.remove('open');
+};
+
 async function logout() {
   if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
   await db.auth.signOut();

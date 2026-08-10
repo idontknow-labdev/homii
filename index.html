@@ -753,6 +753,19 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-full">Publicar Inmueble</button>
+
+        <!-- Términos y Condiciones para Propietarios (Aviso Oficial) -->
+        <div style="margin-top:1rem; padding:0.85rem; background:var(--bg-section); border-radius:var(--radius-md); border:1px solid var(--border); font-size:0.75rem; color:var(--text-sec); line-height:1.5;">
+          <p style="margin:0 0 0.4rem; font-weight:700; color:var(--blue-dark); font-size:0.78rem; display:flex; align-items:center; gap:0.35rem;">
+            📜 Términos y Condiciones para Propietarios Homii
+          </p>
+          <p style="margin:0 0 0.4rem;">
+            Al registrar y publicar un inmueble en Homii, usted declara que ha leído y acepta los Términos y Condiciones Oficiales (incluyendo el sistema de prioridad Premium y la permanencia de 3 meses).
+          </p>
+          <button type="button" class="btn btn-outline btn-sm btn-full" onclick="window.openLandlordTermsModal()" style="font-size:0.75rem; padding:0.35rem 0.5rem; font-weight:600; color:var(--blue-dark); border-color:var(--blue-light);">
+            📄 Leer Términos Completos para Propietarios (12 Puntos)
+          </button>
+        </div>
       </form>
     </aside>
 
@@ -895,29 +908,140 @@
      TERMINOS Y CONDICIONES
      =========================================================== -->
 <section class="view" id="terms-view">
-<div class="view-inner" style="max-width:800px; margin: 0 auto;">
-  <div class="page-title">Términos y Condiciones de Uso</div>
-  <div class="page-subtitle non-pucem-element">Homii — Plataforma de Arriendos</div>
+<div class="view-inner" style="max-width:850px; margin: 0 auto;">
+  <div class="page-title">Términos y Condiciones Oficiales</div>
+  <div class="page-subtitle non-pucem-element">Homii — Plataforma de Arriendos e Intermediación Tecnológica</div>
   <div class="page-subtitle pucem-element">Homii x PUCEM</div>
   
-  <div style="font-size:0.875rem; color:var(--text-sec); line-height:1.7; display:flex; flex-direction:column; gap:1.25rem;">
-    <p><strong>1. Aceptación de los Términos</strong><br>
-    Al acceder y utilizar la plataforma Homii, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de los términos, no podrá utilizar nuestros servicios.</p>
-    
-    <p><strong>2. Uso de la Plataforma</strong><br>
-    Homii actúa como intermediario para conectar a propietarios de inmuebles, arrendatarios y estudiantes en Portoviejo. No somos propietarios ni administradores de los inmuebles listados.</p>
-    
-    <p><strong>3. Veracidad de la Información</strong><br>
-    Los usuarios (propietarios y arrendatarios) son responsables de la exactitud de la información proporcionada. La verificación es una revisión inicial visual y técnica, pero no exime al arrendatario de verificar el inmueble antes de firmar un contrato legal.</p>
+  <div style="display:flex; flex-direction:column; gap:1.5rem; margin-top:1.5rem;">
 
-    <p><strong>4. Responsabilidad Civil y Legal</strong><br>
-    Homii no asume ninguna responsabilidad civil, penal o administrativa por conflictos, daños, perjuicios o incumplimientos contractuales que surjan entre las partes (propietarios, arrendatarios y compañeros de vivienda). Todos los acuerdos financieros y legales se realizan directamente entre los usuarios involucrados.</p>
+    <!-- TÉRMINOS PARA PROPIETARIOS -->
+    <div class="panel-card" style="border: 2px solid var(--border-blue); background: var(--bg-white);">
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+        <span class="badge badge-amber" style="font-size:0.75rem; font-weight:700; margin-bottom:0.4rem; display:inline-block;">Normativa Oficial de Publicación</span>
+        <h3 style="margin:0; color:var(--blue-dark); font-size:1.25rem; font-weight:700;">TÉRMINOS Y CONDICIONES PARA PROPIETARIOS HOMII</h3>
+        <p style="margin:0.35rem 0 0; font-size:0.83rem; color:var(--text-sec);">Al registrar y publicar un inmueble en Homii, el propietario declara que ha leído y acepta los siguientes términos y condiciones.</p>
+      </div>
 
-    <p><strong>5. Privacidad y Datos Personales</strong><br>
-    El tratamiento de datos personales se rige por nuestra Política de Privacidad, en cumplimiento con las leyes aplicables en la República del Ecuador. Su información será utilizada exclusivamente para el funcionamiento de la plataforma.</p>
+      <div style="font-size:0.85rem; color:var(--text-sec); line-height:1.75; display:flex; flex-direction:column; gap:1.15rem;">
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">1. Objeto de Homii</strong><br>
+          Homii es una plataforma digital que facilita el contacto entre propietarios de inmuebles y personas interesadas en arrendarlos. Homii actúa como intermediario tecnológico y no forma parte del contrato de arrendamiento celebrado entre propietario y arrendatario.
+        </div>
 
-    <p><strong>6. Modificaciones</strong><br>
-    Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigor inmediatamente después de su publicación en la plataforma.</p>
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">2. Información del inmueble</strong><br>
+          El propietario se compromete a proporcionar información veraz, completa y actualizada sobre el inmueble, incluyendo ubicación, precio, fotografías, características, disponibilidad y condiciones de arrendamiento.<br>
+          El propietario declara que cuenta con los derechos o autorizaciones necesarios para ofrecer el inmueble.<br>
+          Homii podrá verificar la identidad del propietario y la información proporcionada antes o durante la publicación. Si se detecta información falsa, engañosa o irregular, Homii podrá retirar la publicación y suspender la cuenta.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">3. Orden de atención de interesados</strong><br>
+          El propietario deberá respetar el sistema de prioridad establecido por Homii:
+          <ul style="margin:0.35rem 0 0.35rem 1.25rem; padding:0;">
+            <li><strong>Usuarios Premium:</strong> tendrán prioridad sobre los usuarios que no cuenten con este beneficio.</li>
+            <li><strong>Usuarios sin Premium:</strong> serán atendidos conforme al orden cronológico en que hayan manifestado su interés.</li>
+          </ul>
+          Cuando existan varios usuarios Premium interesados, se respetará igualmente el orden de llegada entre ellos.<br>
+          La prioridad únicamente determina el orden de atención y no obliga al propietario a celebrar un contrato cuando el interesado no cumpla con las condiciones previamente establecidas para el inmueble.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">4. Permanencia de la publicación</strong><br>
+          Una vez publicada una propiedad, esta permanecerá en Homii durante un período de tres (3) meses. Durante este período, el propietario se compromete a gestionar mediante Homii los interesados generados por la publicación y no podrá retirar el inmueble para concretar deliberadamente el arrendamiento por fuera de la plataforma con el propósito de evitar las condiciones económicas del servicio.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">5. Proceso de adjudicación</strong><br>
+          Cuando el propietario y un interesado decidan avanzar con el arrendamiento, el propietario deberá activar en Homii la opción “En proceso de adjudicación”. Esta opción indica que existe una negociación o proceso en curso, pero no significa que el inmueble ya haya sido arrendado.<br>
+          Una vez firmado el contrato de arrendamiento, el propietario deberá cargar una copia del documento en Homii. Después de la revisión correspondiente, Homii cambiará el estado del inmueble a “Adjudicado” y retirará la publicación de las búsquedas activas.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">6. Arrendamiento mediante otros medios</strong><br>
+          Si transcurren los tres (3) meses desde la publicación y el inmueble no ha sido adjudicado mediante Homii, el propietario podrá arrendarlo mediante otros medios, como WhatsApp, redes sociales, contactos personales u otras plataformas. En ese caso, deberá informar a Homii mediante el mecanismo habilitado para ello.<br>
+          Si el propietario ya se encuentra gestionando un arrendamiento por fuera de Homii, deberá notificarlo para que la propiedad pueda ser marcada como “En proceso de adjudicación externa” y evitar nuevas solicitudes.<br>
+          Cuando el arrendamiento externo se concrete, el propietario deberá informar a Homii y, cuando corresponda, proporcionar el documento que acredite la adjudicación.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">7. Comisión por arrendamiento</strong><br>
+          Cuando un inmueble sea arrendado como resultado de una gestión realizada mediante Homii, el propietario deberá pagar la tarifa correspondiente al servicio contratado. Las tarifas serán informadas antes de confirmar la publicación y podrán variar de acuerdo con el valor del canon de arrendamiento y el servicio seleccionado. La obligación de pago se genera cuando el arrendamiento se concreta mediante Homii.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">8. Plan Premium para propietarios</strong><br>
+          Los propietarios podrán contratar servicios Premium que podrán incluir:
+          <ul style="margin:0.35rem 0 0.35rem 1.25rem; padding:0;">
+            <li>Filtrado de potenciales arrendatarios.</li>
+            <li>Contacto con personas interesadas.</li>
+            <li>Gestión de solicitudes.</li>
+            <li>Búsqueda de candidatos según las características solicitadas por el propietario.</li>
+            <li>Apoyo durante el proceso de adjudicación.</li>
+          </ul>
+          El precio y las condiciones del servicio Premium serán informados antes de su contratación.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">9. Responsabilidad del propietario</strong><br>
+          El propietario será responsable de:
+          <ul style="margin:0.35rem 0 0.35rem 1.25rem; padding:0;">
+            <li>La veracidad de la información publicada.</li>
+            <li>La legalidad de la oferta del inmueble.</li>
+            <li>Las condiciones reales de la propiedad.</li>
+            <li>El cumplimiento de las obligaciones derivadas del contrato de arrendamiento.</li>
+            <li>La información y documentación proporcionada a Homii.</li>
+          </ul>
+          Homii realizará procesos de verificación para reducir riesgos, pero estos no constituyen una garantía absoluta sobre la propiedad, el propietario o el futuro arrendatario.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">10. Uso de los datos de los interesados</strong><br>
+          Los datos personales obtenidos mediante Homii deberán utilizarse exclusivamente para gestionar el proceso de arrendamiento. El propietario no podrá vender, compartir ni utilizar dichos datos para fines distintos sin la autorización o base legal correspondiente. El tratamiento de datos realizado por Homii se regirá por su correspondiente Política de Privacidad y la legislación ecuatoriana aplicable.
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:0.9rem;">11. Incumplimiento</strong><br>
+          Homii podrá suspender o cancelar una publicación o cuenta cuando el propietario:
+          <ul style="margin:0.35rem 0 0.35rem 1.25rem; padding:0;">
+            <li>Proporcione información falsa.</li>
+            <li>Manipule el orden de prioridad.</li>
+            <li>Intente evadir deliberadamente las condiciones económicas de Homii.</li>
+            <li>Utilice indebidamente los datos de los usuarios.</li>
+            <li>Realice actividades fraudulentas o contrarias a la ley.</li>
+            <li>Incumpla estos Términos y Condiciones.</li>
+          </ul>
+        </div>
+
+        <div style="background:var(--bg-section); padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border);">
+          <strong style="color:var(--blue-dark); font-size:0.9rem;">12. Aceptación</strong><br>
+          Al seleccionar “Acepto”, publicar un inmueble o utilizar los servicios destinados a propietarios, el usuario declara que:<br>
+          <em style="color:var(--text); font-weight:600; display:block; margin-top:0.4rem;">"He leído y acepto los Términos y Condiciones para Propietarios de Homii y me comprometo a cumplirlos."</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- TÉRMINOS GENERALES -->
+    <div class="panel-card">
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <h4 style="margin:0; color:var(--text); font-size:1.1rem; font-weight:700;">Términos Generales de Uso de la Plataforma</h4>
+      </div>
+      <div style="font-size:0.85rem; color:var(--text-sec); line-height:1.75; display:flex; flex-direction:column; gap:1rem;">
+        <p><strong>1. Aceptación de los Términos</strong><br>
+        Al acceder y utilizar la plataforma Homii, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de los términos, no podrá utilizar nuestros servicios.</p>
+        
+        <p><strong>2. Uso de la Plataforma</strong><br>
+        Homii actúa como intermediario para conectar a propietarios de inmuebles, arrendatarios y estudiantes. No somos propietarios ni administradores de los inmuebles listados.</p>
+        
+        <p><strong>3. Veracidad de la Información</strong><br>
+        Los usuarios son responsables de la exactitud de la información proporcionada. La verificación es una revisión inicial visual y técnica, pero no exime al arrendatario de verificar el inmueble antes de firmar un contrato legal.</p>
+
+        <p><strong>4. Responsabilidad Civil y Legal</strong><br>
+        Homii no asume responsabilidad civil, penal o administrativa por conflictos o incumplimientos contractuales entre las partes. Todos los acuerdos se realizan directamente entre los usuarios.</p>
+      </div>
+    </div>
+
   </div>
 </div>
 </section>
@@ -1538,6 +1662,62 @@
 </div>
 
 <!-- ===========================================================
+     MODAL TERMINOS Y CONDICIONES PARA PROPIETARIOS
+     =========================================================== -->
+<div class="modal-overlay" id="landlord-terms-modal">
+  <div class="modal-box" style="max-width:640px; max-height:85vh; display:flex; flex-direction:column; padding:1.75rem; border-radius:var(--radius-xl); background:var(--bg-white); box-shadow:var(--shadow-xl);">
+    <div class="modal-head" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+      <div>
+        <h3 class="modal-title" style="font-size:1.15rem; font-weight:700; color:var(--blue-dark); margin:0;">Términos y Condiciones para Propietarios Homii</h3>
+        <p style="font-size:0.78rem; color:var(--text-sec); margin:0.2rem 0 0;">Normativa oficial de publicación e intermediación tecnológica</p>
+      </div>
+      <button class="modal-close-btn" onclick="window.closeLandlordTermsModal()">&times;</button>
+    </div>
+
+    <div style="overflow-y:auto; padding-right:0.5rem; font-size:0.83rem; color:var(--text-sec); line-height:1.7; display:flex; flex-direction:column; gap:1rem;">
+      <p style="margin:0; font-weight:600; color:var(--text);">Al registrar y publicar un inmueble en Homii, el propietario declara que ha leído y acepta los siguientes términos y condiciones:</p>
+
+      <div><strong>1. Objeto de Homii:</strong> Homii es una plataforma digital que facilita el contacto entre propietarios de inmuebles y personas interesadas en arrendarlos. Homii actúa como intermediario tecnológico y no forma parte del contrato de arrendamiento celebrado entre propietario y arrendatario.</div>
+      
+      <div><strong>2. Información del inmueble:</strong> El propietario se compromete a proporcionar información veraz, completa y actualizada sobre el inmueble, incluyendo ubicación, precio, fotografías, características, disponibilidad y condiciones de arrendamiento. El propietario declara que cuenta con los derechos o autorizaciones necesarios para ofrecer el inmueble. Homii podrá verificar la identidad del propietario y la información proporcionada antes o durante la publicación. Si se detecta información falsa, engañosa o irregular, Homii podrá retirar la publicación y suspender la cuenta.</div>
+      
+      <div><strong>3. Orden de atención de interesados:</strong> El propietario deberá respetar el sistema de prioridad establecido por Homii:
+        <ul style="margin:0.25rem 0 0.25rem 1.2rem;">
+          <li><strong>Usuarios Premium:</strong> tendrán prioridad sobre los usuarios que no cuenten con este beneficio.</li>
+          <li><strong>Usuarios sin Premium:</strong> serán atendidos conforme al orden cronológico en que hayan manifestado su interés.</li>
+        </ul>
+        Cuando existan varios usuarios Premium interesados, se respetará igualmente el orden de llegada entre ellos. La prioridad únicamente determina el orden de atención y no obliga al propietario a celebrar un contrato cuando el interesado no cumpla con las condiciones previamente establecidas para el inmueble.
+      </div>
+      
+      <div><strong>4. Permanencia de la publicación:</strong> Una vez publicada una propiedad, esta permanecerá en Homii durante un período de tres (3) meses. Durante este período, el propietario se compromete a gestionar mediante Homii los interesados generados por la publicación y no podrá retirar el inmueble para concretar deliberadamente el arrendamiento por fuera de la plataforma con el propósito de evitar las condiciones económicas del servicio.</div>
+      
+      <div><strong>5. Proceso de adjudicación:</strong> Cuando el propietario y un interesado decidan avanzar con el arrendamiento, el propietario deberá activar en Homii la opción “En proceso de adjudicación”. Esta opción indica que existe una negociación o proceso en curso, pero no significa que el inmueble ya haya sido arrendado. Una vez firmado el contrato de arrendamiento, el propietario deberá cargar una copia del documento en Homii. Después de la revisión correspondiente, Homii cambiará el estado del inmueble a “Adjudicado” y retirará la publicación de las búsquedas activas.</div>
+      
+      <div><strong>6. Arrendamiento mediante otros medios:</strong> Si transcurren los tres (3) meses desde la publicación y el inmueble no ha sido adjudicado mediante Homii, el propietario podrá arrendarlo mediante otros medios, como WhatsApp, redes sociales, contactos personales u otras plataformas. En ese caso, deberá informar a Homii mediante el mecanismo habilitado para ello. Si el propietario ya se encuentra gestionando un arrendamiento por fuera de Homii, deberá notificarlo para que la propiedad pueda ser marcada como “En proceso de adjudicación externa” y evitar nuevas solicitudes. Cuando el arrendamiento externo se concrete, el propietario deberá informar a Homii y, cuando corresponda, proporcionar el documento que acredite la adjudicación.</div>
+      
+      <div><strong>7. Comisión por arrendamiento:</strong> Cuando un inmueble sea arrendado como resultado de una gestión realizada mediante Homii, el propietario deberá pagar la tarifa correspondiente al servicio contratado. Las tarifas serán informadas antes de confirmar la publicación y podrán variar de acuerdo con el valor del canon de arrendamiento y el servicio seleccionado. La obligación de pago se genera cuando el arrendamiento se concreta mediante Homii.</div>
+      
+      <div><strong>8. Plan Premium para propietarios:</strong> Los propietarios podrán contratar servicios Premium que podrán incluir: filtrado de potenciales arrendatarios, contacto con personas interesadas, gestión de solicitudes, búsqueda de candidatos según las características solicitadas por el propietario, y apoyo durante el proceso de adjudicación. El precio y las condiciones del servicio Premium serán informados antes de su contratación.</div>
+      
+      <div><strong>9. Responsabilidad del propietario:</strong> El propietario será responsable de la veracidad de la información publicada, la legalidad de la oferta del inmueble, las condiciones reales de la propiedad, el cumplimiento de las obligaciones derivadas del contrato de arrendamiento, y la información y documentación proporcionada a Homii. Homii realizará procesos de verificación para reducir riesgos, pero estos no constituyen una garantía absoluta sobre la propiedad, el propietario o el futuro arrendatario.</div>
+      
+      <div><strong>10. Uso de los datos de los interesados:</strong> Los datos personales obtenidos mediante Homii deberán utilizarse exclusivamente para gestionar el proceso de arrendamiento. El propietario no podrá vender, compartir ni utilizar dichos datos para fines distintos sin la autorización o base legal correspondiente. El tratamiento de datos realizado por Homii se regirá por su correspondiente Política de Privacidad y la legislación ecuatoriana aplicable.</div>
+      
+      <div><strong>11. Incumplimiento:</strong> Homii podrá suspender o cancelar una publicación o cuenta cuando el propietario proporcione información falsa, manipule el orden de prioridad, intente evadir deliberadamente las condiciones económicas de Homii, utilice indebidamente los datos de los usuarios, realice actividades fraudulentas o contrarias a la ley, o incumpla estos Términos y Condiciones.</div>
+      
+      <div style="background:var(--bg-section); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border);">
+        <strong>12. Aceptación:</strong> Al seleccionar “Acepto”, publicar un inmueble o utilizar los servicios destinados a propietarios, el usuario declara que:<br>
+        <em style="color:var(--text); font-weight:600; display:block; margin-top:0.3rem;">"He leído y acepto los Términos y Condiciones para Propietarios de Homii y me comprometo a cumplirlos."</em>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+      <button type="button" class="btn btn-primary" onclick="window.closeLandlordTermsModal()" style="font-size:0.85rem;">Comprendido y Acepto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
      POPUP ACTIVACION ESTUDIANTIL
      =========================================================== -->
 <div class="activation-overlay" id="activation-popup">
@@ -1824,6 +2004,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_19"></script>
+<script src="app.js?v=20260809_20"></script>
 </body>
 </html>

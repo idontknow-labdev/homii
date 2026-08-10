@@ -602,8 +602,11 @@
       <div class="stat-l">Consultas activas</div>
       <div class="stat-n" id="stat-inquiries">0</div>
       <div class="stat-t">Tasa de respuesta 92%</div>
+    </div>
+  </div>
+
   <!-- Banner de Advertencia de Verificación -->
-  <div id="landlord-unverified-banner" style="display:none; grid-column: 1 / -1;"></div>
+  <div id="landlord-unverified-banner" style="display:none; margin-bottom:1.5rem;"></div>
 
   <div class="landlord-grid">
 
@@ -1479,9 +1482,9 @@
 <!-- ===========================================================
      MODAL DEDICADO DE VERIFICACION BIOMETRICA Y CEDULA
      =========================================================== -->
-<div class="modal" id="biometric-modal">
-  <div class="modal-content" style="max-width:480px; padding:1.75rem; border-radius:var(--radius-xl);">
-    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+<div class="modal-overlay" id="biometric-modal">
+  <div class="modal-box" style="max-width:500px; padding:1.75rem; border-radius:var(--radius-xl); background:var(--bg-white); box-shadow:var(--shadow-xl);">
+    <div class="modal-head" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
       <div>
         <h3 class="modal-title" style="font-size:1.15rem; font-weight:700; color:var(--blue-dark); margin:0;">Verificación de Identidad — Homii</h3>
         <p style="font-size:0.8rem; color:var(--text-sec); margin:0.25rem 0 0;">Complete su cédula y fotos con la cámara en vivo para ser verificado por el Administrador.</p>
@@ -1822,6 +1825,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_12"></script>
+<script src="app.js?v=20260809_13"></script>
 </body>
 </html>

@@ -2879,17 +2879,20 @@ function setupPublishForm() {
       }
     }
 
-    const basePayload = {
+    let payload = {
       title,
       description: desc || '',
       price,
       rooms,
       bathrooms: 1,
+      province,
+      city,
       location: fullLocation,
       maps_query: fullLocation,
       distance_to_campus: 0.5,
       university_certified: false,
       is_verified: false,
+      verification_requested: true,
       status: 'pending_verification',
       amenities: amenities.length ? amenities : [],
       landlord_id: CURRENT_USER.id,
@@ -2903,20 +2906,53 @@ function setupPublishForm() {
       reviews: []
     };
 
-    // 1. Intentar insertar incluyendo city y province
-    let insertPayload = { ...basePayload, province, city };
-    let { error } = await db.from('properties').insert(insertPayload);
+    let error = null;
+    let attempts = 0;
 
-    // 2. Si la tabla properties en Supabase no tiene aún las columnas city o province en el esquema, reintentar con el payload base
-    if (error && (error.message.includes('city') || error.message.includes('province') || error.message.includes('schema cache'))) {
-      console.warn('Columnas city/province ausentes en el esquema de Supabase, reintentando con payload base:', error.message);
-      const res = await db.from('properties').insert(basePayload);
+    // Bucle infalible: si Supabase rechaza alguna columna ausente en la tabla física, la remueve y reintenta
+    while (attempts < 20) {
+      attempts++;
+      const res = await db.from('properties').insert(payload);
       error = res.error;
+
+      if (!error) break; // ¡Publicación exitosa!
+
+      const rawMsg = error.message || '';
+      const rawMatch = rawMsg.match(/Could not find the '([^']+)' column/i) ||
+                       rawMsg.match(/column "([^"]+)" of relation/i) ||
+                       rawMsg.match(/column '([^']+)' does not exist/i);
+
+      let stripped = false;
+      if (rawMatch && rawMatch[1]) {
+        const colName = rawMatch[1].trim();
+        const foundKey = Object.keys(payload).find(k => k.toLowerCase() === colName.toLowerCase());
+        if (foundKey) {
+          console.warn(`Omitiendo columna '${foundKey}' ausente en el esquema de Supabase...`);
+          delete payload[foundKey];
+          stripped = true;
+        }
+      }
+
+      // Si no se identificó por regex, remover campos opcionales progresivamente
+      if (!stripped) {
+        const optionals = ['rating_avg', 'rating_count', 'reviews', 'featured', 'is_demo', 'amenities', 'province', 'city', 'maps_query', 'distance_to_campus', 'university_certified', 'is_verified', 'verification_requested', 'status'];
+        const keyToRemove = optionals.find(k => payload.hasOwnProperty(k));
+        if (keyToRemove) {
+          console.warn(`Omitiendo campo opcional '${keyToRemove}' por compatibilidad con Supabase...`);
+          delete payload[keyToRemove];
+        } else {
+          break; // No hay más campos opcionales para remover
+        }
+      }
     }
 
     if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
 
-    if (error) { alert('Error al registrar inmueble: ' + error.message); return; }
+    if (error) {
+      console.error('Error al registrar inmueble:', error);
+      alert('Error al registrar inmueble: ' + error.message);
+      return;
+    }
 
     document.getElementById('publish-form')?.reset();
     window._pendingFiles = [];

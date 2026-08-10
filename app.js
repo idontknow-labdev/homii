@@ -1464,12 +1464,13 @@ async function openPropertyModal(id) {
     if (currentStatus === 'assigned') {
       reserveContainer.innerHTML = `
         <button class="btn btn-full" disabled style="background:#fee2e2;color:#dc2626;border:none;font-weight:700;padding:0.85rem;">
-          Inmueble Alquilado
+          🔒 Reserva Confirmada (Fechas Bloqueadas)
         </button>`;
     } else {
       const myIndex = CURRENT_USER ? sortedList.findIndex(u => u.user_id === CURRENT_USER.id) : -1;
+      let btnReserveHtml = '';
       if (myIndex !== -1) {
-        reserveContainer.innerHTML = `
+        btnReserveHtml = `
           <button class="btn btn-primary btn-full" style="background:#059669;font-weight:700;padding:0.85rem;" disabled>
             ✓ Solicitud de Reserva Enviada
           </button>
@@ -1477,11 +1478,17 @@ async function openPropertyModal(id) {
             Cancelar solicitud de reserva
           </button>`;
       } else {
-        reserveContainer.innerHTML = `
+        btnReserveHtml = `
           <button class="btn btn-primary btn-full" onclick="joinWaitingList('${p.id}')" style="font-weight:700;padding:0.85rem;">
             Solicitar Reserva
           </button>`;
       }
+
+      reserveContainer.innerHTML = `
+        ${btnReserveHtml}
+        <button class="btn btn-outline btn-full btn-sm" onclick="window.startDemoCheckoutFlow('${p.id}')" style="margin-top:0.4rem; font-weight:600; color:var(--blue-dark); border-color:var(--blue-light); padding:0.6rem;">
+          📄 Probar Firma de Contrato y Checkout (MVP)
+        </button>`;
     }
   }
 
@@ -1866,6 +1873,279 @@ async function setupDirectChat(p) {
     nc.addEventListener('click', () => doSend(nc.textContent.trim()));
   });
 }
+
+// ============================================================
+// SISTEMA DE RESERVAS Y MOCKUP FUNCIONAL DE PAGO Y CONTRATO
+// ============================================================
+
+window._HOMII_RESERVATIONS = JSON.parse(localStorage.getItem('homii_reservations_db') || '{}');
+
+function saveReservationState(resObj) {
+  window._HOMII_RESERVATIONS[resObj.id] = resObj;
+  localStorage.setItem('homii_reservations_db', JSON.stringify(window._HOMII_RESERVATIONS));
+  db.from('reservations').upsert([resObj]).catch(() => {});
+}
+
+function getReservationById(id) {
+  return window._HOMII_RESERVATIONS[id] || null;
+}
+window.getReservationById = getReservationById;
+
+window.startDemoCheckoutFlow = function(propId) {
+  const p = (APP.allProperties || []).find(x => String(x.id) === String(propId)) || openPropertyData || { id: propId, title: 'Inmueble Homii', price: 200 };
+  
+  const today = new Date();
+  const nextDay = new Date(today); nextDay.setDate(today.getDate() + 1);
+  const sixMonths = new Date(today); sixMonths.setMonth(today.getMonth() + 6);
+  
+  const startDate = nextDay.toISOString().split('T')[0];
+  const endDate   = sixMonths.toISOString().split('T')[0];
+  
+  const resId = 'res_demo_' + p.id;
+  const resObj = {
+    id: resId,
+    property_id: p.id,
+    property_title: p.title,
+    property_location: p.location || 'Portoviejo, Ecuador',
+    landlord_id: p.landlord_id || 'landlord_demo',
+    landlord_name: p.landlord_name || 'Propietario Homii',
+    tenant_id: CURRENT_USER?.id || 'tenant_demo',
+    tenant_name: CURRENT_PROFILE?.name || 'Estudiante / Arrendatario',
+    start_date: startDate,
+    end_date: endDate,
+    monthly_price: p.price || 200,
+    deposit: Math.round((p.price || 200) * 0.5),
+    status: 'PENDIENTE_ACEPTACION',
+    created_at: new Date().toISOString()
+  };
+
+  saveReservationState(resObj);
+  window.openCheckoutModal(resId);
+};
+
+window.openGenerateOfferModal = function(propId, tenantId, chatId) {
+  const modal = document.getElementById('generate-offer-modal');
+  if (!modal) return;
+
+  document.getElementById('offer-prop-id').value = propId || '';
+  document.getElementById('offer-tenant-id').value = tenantId || '';
+  document.getElementById('offer-chat-id').value = chatId || '';
+
+  const today = new Date();
+  const nextDay = new Date(today); nextDay.setDate(today.getDate() + 1);
+  const sixMonths = new Date(today); sixMonths.setMonth(today.getMonth() + 6);
+
+  document.getElementById('offer-start-date').value = nextDay.toISOString().split('T')[0];
+  document.getElementById('offer-end-date').value = sixMonths.toISOString().split('T')[0];
+  
+  if (openPropertyData) {
+    document.getElementById('offer-price').value = openPropertyData.price || 200;
+  } else {
+    document.getElementById('offer-price').value = 200;
+  }
+
+  modal.classList.add('open');
+};
+
+window.closeGenerateOfferModal = function() {
+  document.getElementById('generate-offer-modal')?.classList.remove('open');
+};
+
+window.submitGeneratedOffer = async function(e) {
+  e.preventDefault();
+  
+  const propId   = document.getElementById('offer-prop-id').value;
+  const tenantId = document.getElementById('offer-tenant-id').value;
+  const chatId   = document.getElementById('offer-chat-id').value;
+
+  const startDate = document.getElementById('offer-start-date').value;
+  const endDate   = document.getElementById('offer-end-date').value;
+  const price     = parseInt(document.getElementById('offer-price').value);
+  const deposit   = parseInt(document.getElementById('offer-deposit').value) || 0;
+  const notes     = document.getElementById('offer-notes').value.trim();
+
+  let prop = openPropertyData;
+  if (!prop || prop.id !== propId) {
+    const { data } = await db.from('properties').select('*').eq('id', propId).single();
+    prop = data || { title: 'Inmueble de Arriendo', location: 'Portoviejo, Ecuador', price };
+  }
+
+  const resId = 'res_' + Date.now();
+  const resObj = {
+    id: resId,
+    property_id: prop.id,
+    property_title: prop.title,
+    property_location: prop.location || 'Portoviejo, Manabí',
+    landlord_id: CURRENT_USER?.id || 'landlord_demo',
+    landlord_name: CURRENT_PROFILE?.name || 'Propietario Homii',
+    tenant_id: tenantId || 'tenant_user',
+    tenant_name: 'Estudiante / Arrendatario',
+    start_date: startDate,
+    end_date: endDate,
+    monthly_price: price,
+    deposit: deposit,
+    notes: notes,
+    status: 'PENDIENTE_ACEPTACION',
+    created_at: new Date().toISOString()
+  };
+
+  saveReservationState(resObj);
+  window.closeGenerateOfferModal();
+
+  const offerMsgText = `[HOMII_OFERTA_ID:${resId}] Propuesta Formal de Arrendamiento: $${price}/mes del ${startDate} al ${endDate}.`;
+  const targetReceiver = tenantId || (CURRENT_USER?.id === prop.landlord_id ? 'tenant_user' : prop.landlord_id);
+
+  if (CURRENT_USER) {
+    await db.from('chats').insert({
+      chat_id: chatId || `prop_${prop.id}_usr_${CURRENT_USER.id}`,
+      property_id: prop.id,
+      property_title: prop.title,
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      receiver_id: targetReceiver,
+      message: offerMsgText
+    });
+  }
+
+  addNotif('Oferta Enviada', `Se envió la propuesta formal de arriendo para "${prop.title}".`);
+  alert('¡Oferta formal y contrato generados con éxito!\n\nEl inquilino ha recibido el enlace de checkout en el chat para revisar el contrato y confirmar su reserva.');
+  
+  const msgs = document.getElementById('conv-msgs');
+  if (msgs && CURRENT_USER) {
+    const localMsg = {
+      sender_id: CURRENT_USER.id,
+      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      message: offerMsgText,
+      created_at: new Date().toISOString()
+    };
+    msgs.appendChild(renderChatMessageElement(localMsg, CURRENT_USER.id));
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+};
+
+window._CURRENT_ACTIVE_CHECKOUT_ID = null;
+
+window.openCheckoutModal = async function(resId) {
+  const res = getReservationById(resId);
+  if (!res) {
+    alert('No se encontró la información de esta propuesta.');
+    return;
+  }
+
+  window._CURRENT_ACTIVE_CHECKOUT_ID = resId;
+
+  const modal = document.getElementById('checkout-modal');
+  if (!modal) return;
+
+  document.getElementById('checkout-prop-title').textContent = res.property_title || 'Propiedad de Arriendo';
+  document.getElementById('checkout-dates-info').textContent = `Fechas: ${res.start_date} al ${res.end_date}`;
+  document.getElementById('checkout-price-val').textContent  = `$${res.monthly_price}/mes`;
+
+  const chk = document.getElementById('chk-accept-lease-contract');
+  if (chk) chk.checked = false;
+  
+  const btnPay = document.getElementById('btn-simulate-payment');
+  if (btnPay) {
+    btnPay.disabled = true;
+    btnPay.innerHTML = '💳 Simular Pago y Confirmar Reserva';
+  }
+
+  const tenantName = CURRENT_PROFILE?.name || res.tenant_name || 'ARRENDATARIO';
+  const tenantCedula = CURRENT_PROFILE?.cedula || '1312345678';
+  const landlordName = res.landlord_name || 'PROPIETARIO HOMII';
+
+  const contractText = `
+CONTRATO DE ARRENDAMIENTO DE BIEN INMUEBLE (HOMII ECUADOR)
+
+En la ciudad de Portoviejo, provincia de Manabí, al día de hoy, comparecen libre y voluntariamente a la celebración del presente Contrato de Arrendamiento:
+
+1. ARRENDADOR: ${landlordName.toUpperCase()}, con domicilio legal en Ecuador.
+2. ARRENDATARIO: ${tenantName.toUpperCase()}, portador del documento de identidad / Cédula N° ${tenantCedula}.
+
+CLÁUSULA PRIMERA: OBJETO DEL CONTRATO
+El Arrendador da en arriendo al Arrendatario el inmueble ubicado en "${res.property_location || res.property_title}", destinado exclusivamente para uso habitacional.
+
+CLÁUSULA SEGUNDA: CANON Y PLAZO
+Las partes acuerdan fijar un canon de arrendamiento de USD $${res.monthly_price}.00 (DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA) mensuales.
+El plazo de vigencia del presente contrato inicia el ${res.start_date} y concluye el ${res.end_date}.
+Garantía / Depósito estipulado: USD $${res.deposit || 0}.00.
+
+CLÁUSULA TERCERA: USO Y MANTENIMIENTO
+El Arrendatario se compromete a mantener el inmueble en perfectas condiciones de higiene, conservación y buen uso, respetando las normas de convivencia del sector.
+
+CLÁUSULA CUARTA: FIRMA Y ACEPTACIÓN DIGITAL
+Ambas partes declaran conocer y aceptar la validez jurídica del presente instrumento de acuerdo con la legislación ecuatoriana y las condiciones de la plataforma digital Homii.
+  `.trim();
+
+  document.getElementById('checkout-contract-text').textContent = contractText;
+  modal.classList.add('open');
+};
+
+window.closeCheckoutModal = function() {
+  document.getElementById('checkout-modal')?.classList.remove('open');
+};
+
+window.togglePaymentButtonState = function() {
+  const chk = document.getElementById('chk-accept-lease-contract');
+  const btn = document.getElementById('btn-simulate-payment');
+  if (btn) {
+    btn.disabled = !(chk && chk.checked);
+  }
+};
+
+window.processSimulatedPayment = async function() {
+  const resId = window._CURRENT_ACTIVE_CHECKOUT_ID;
+  const res = getReservationById(resId);
+  if (!res) return;
+
+  const btn = document.getElementById('btn-simulate-payment');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span style="font-size:0.9rem;">⏳ Contactando con el Banco / Procesando Pago...</span>`;
+  }
+
+  setTimeout(async () => {
+    res.status = 'PAGADA_CONFIRMADA';
+    res.confirmed_at = new Date().toISOString();
+    saveReservationState(res);
+
+    if (res.property_id) {
+      await db.from('properties').update({
+        status: 'assigned',
+        is_verified: true
+      }).eq('id', res.property_id).catch(() => {});
+
+      const propMetaKey = 'homii_prop_meta_' + res.property_id;
+      const existingMeta = JSON.parse(localStorage.getItem(propMetaKey) || '{}');
+      existingMeta.status = 'assigned';
+      existingMeta.booked_dates = `${res.start_date} al ${res.end_date}`;
+      localStorage.setItem(propMetaKey, JSON.stringify(existingMeta));
+    }
+
+    window.closeCheckoutModal();
+
+    const bookingRef = '#HOM-' + Math.floor(10000 + Math.random() * 90000);
+    const refEl = document.getElementById('success-booking-ref');
+    if (refEl) refEl.textContent = bookingRef;
+
+    const successModal = document.getElementById('payment-success-modal');
+    if (successModal) successModal.classList.add('open');
+
+    if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
+    if (typeof renderProperties === 'function') renderProperties();
+    if (openPropertyData && openPropertyData.id === res.property_id) {
+      openPropertyData.status = 'assigned';
+      const badgesRow = document.getElementById('detail-badges');
+      if (badgesRow) {
+        badgesRow.innerHTML = `<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔒 Reserva Confirmada (Fechas Bloqueadas)</span>`;
+      }
+    }
+  }, 2000);
+};
+
+window.closePaymentSuccessModal = function() {
+  document.getElementById('payment-success-modal')?.classList.remove('open');
+};
 
 // ============================================================
 // MODAL CONVERSACIÓN (para propietarios respondiendo)

@@ -88,11 +88,12 @@ window.captureBiometricStep = function() {
   const snapBtn = document.getElementById('bio-snap-btn');
   if (!video || !canvas) return;
 
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
+  // Escalar la imagen a un tamaño optimizado (360x270) para guardarla en Supabase
+  canvas.width = 360;
+  canvas.height = 270;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
 
   window.tempBiometricData = window.tempBiometricData || { selfie: '', front: '', back: '' };
 
@@ -728,17 +729,25 @@ window.submitBiometricVerification = async function() {
   };
   localStorage.setItem('homii_profile_meta_' + CURRENT_USER.id, JSON.stringify(profileMeta));
 
-  // Actualizar tabla profiles en Supabase
+  // Actualizar tabla profiles en Supabase con las fotos reales capturadas
   const { error } = await db.from('profiles').update({
     cedula,
     is_verified: 'pending',
-    selfie_url: selfieUrl.length > 500 ? 'selfie_captured' : selfieUrl,
-    id_card_front_url: frontUrl.length > 500 ? 'idcard_front_captured' : frontUrl,
-    id_card_back_url: backUrl.length > 500 ? 'idcard_back_captured' : backUrl
+    selfie_url: selfieUrl,
+    id_card_front_url: frontUrl,
+    id_card_back_url: backUrl
   }).eq('id', CURRENT_USER.id);
 
   if (error) {
-    console.warn('Error al enviar verificación a Supabase:', error.message);
+    console.warn('Advertencia al actualizar verificación en Supabase:', error.message);
+    // Reintentar si el campo is_verified requiere booleano
+    await db.from('profiles').update({
+      cedula,
+      is_verified: false,
+      selfie_url: selfieUrl,
+      id_card_front_url: frontUrl,
+      id_card_back_url: backUrl
+    }).eq('id', CURRENT_USER.id).catch(() => {});
   }
 
   if (CURRENT_PROFILE) {
@@ -3950,14 +3959,25 @@ window.approveProperty = async function(id, title) {
 window.approveUserBiometrics = async function(userId, isDemo) {
   if (isDemo) {
     alert('✓ Demo Aprobada\n\nHas simulado la aprobación de esta cuenta de ejemplo.');
-    // Remover de la vista de ejemplo
     document.getElementById('admin-verification-list').innerHTML = '<p style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;">Todas las solicitudes han sido gestionadas.</p>';
     if (document.getElementById('admin-stat-pending')) document.getElementById('admin-stat-pending').textContent = '0';
     if (document.getElementById('admin-request-count')) document.getElementById('admin-request-count').textContent = '0 Pendientes';
     return;
   }
 
-  // Actualizar metadatos locales
+  if (!confirm('¿Confirma que desea aprobar la verificación de identidad de este usuario?')) return;
+
+  // 1. Intentar actualizar con cadena 'approved'
+  let { error: strErr } = await db.from('profiles').update({ is_verified: 'approved', rejection_reason: '' }).eq('id', userId);
+
+  // 2. Si falla por tipo de columna boolean, reintentar con boolean true
+  if (strErr) {
+    console.warn('String is_verified update warning, retrying with boolean true:', strErr.message);
+    const { error: boolErr } = await db.from('profiles').update({ is_verified: true, rejection_reason: '' }).eq('id', userId);
+    if (boolErr) console.error('Boolean is_verified update error:', boolErr.message);
+  }
+
+  // 3. Actualizar metadatos locales de respaldo
   const metaStr = localStorage.getItem('homii_profile_meta_' + userId);
   if (metaStr) {
     const meta = JSON.parse(metaStr);
@@ -3966,18 +3986,19 @@ window.approveUserBiometrics = async function(userId, isDemo) {
     localStorage.setItem('homii_profile_meta_' + userId, JSON.stringify(meta));
   }
 
-  // Actualizar en base de datos Supabase si es posible
-  await db.from('profiles').update({ is_verified: 'approved', rejection_reason: '' }).eq('id', userId).catch(() => {});
+  if (CURRENT_USER && CURRENT_USER.id === userId && CURRENT_PROFILE) {
+    CURRENT_PROFILE.is_verified = 'approved';
+  }
 
-  alert('🚀 Cuenta Aprobada Exitosamente.\n\nEl estudiante ha sido verificado y ahora tiene acceso completo para postular a arriendos.');
+  addNotif('Cuenta Aprobada', 'La cuenta ha sido verificada exitosamente.');
+  alert('🚀 Cuenta Aprobada Exitosamente.\n\nEl usuario ha sido verificado y ahora tiene acceso completo a la plataforma para publicar e interactuar.');
   
-  // Recargar panel
   renderAdminPanel();
 };
 
 window.rejectUserBiometrics = async function(userId, isDemo) {
   const reason = prompt('Ingrese el motivo de rechazo de la verificación:', 'Fotos de la cédula borrosas o no legibles.');
-  if (reason === null) return; // canceló el prompt
+  if (reason === null) return;
   if (reason.trim() === '') {
     alert('Debes ingresar un motivo de rechazo.');
     return;
@@ -3991,7 +4012,11 @@ window.rejectUserBiometrics = async function(userId, isDemo) {
     return;
   }
 
-  // Actualizar metadatos locales
+  let { error: strErr } = await db.from('profiles').update({ is_verified: 'rejected', rejection_reason: reason.trim() }).eq('id', userId);
+  if (strErr) {
+    await db.from('profiles').update({ is_verified: false, rejection_reason: reason.trim() }).eq('id', userId).catch(() => {});
+  }
+
   const metaStr = localStorage.getItem('homii_profile_meta_' + userId);
   if (metaStr) {
     const meta = JSON.parse(metaStr); 
@@ -4000,10 +4025,7 @@ window.rejectUserBiometrics = async function(userId, isDemo) {
     localStorage.setItem('homii_profile_meta_' + userId, JSON.stringify(meta));
   }
 
-  // Actualizar base de datos Supabase
-  await db.from('profiles').update({ is_verified: 'rejected', rejection_reason: reason.trim() }).eq('id', userId).catch(() => {});
-
-  alert('❌ Cuenta Rechazada.\n\nSe ha guardado el motivo. El estudiante será notificado al iniciar sesión y podrá volver a enviar sus fotos.');
+  alert('❌ Cuenta Rechazada.\n\nSe ha guardado el motivo. El usuario será notificado al iniciar sesión.');
   
   renderAdminPanel();
 };

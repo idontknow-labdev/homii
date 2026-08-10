@@ -1468,9 +1468,8 @@ async function openPropertyModal(id) {
         </button>`;
     } else {
       const myIndex = CURRENT_USER ? sortedList.findIndex(u => u.user_id === CURRENT_USER.id) : -1;
-      let btnReserveHtml = '';
       if (myIndex !== -1) {
-        btnReserveHtml = `
+        reserveContainer.innerHTML = `
           <button class="btn btn-primary btn-full" style="background:#059669;font-weight:700;padding:0.85rem;" disabled>
             ✓ Solicitud de Reserva Enviada
           </button>
@@ -1478,17 +1477,11 @@ async function openPropertyModal(id) {
             Cancelar solicitud de reserva
           </button>`;
       } else {
-        btnReserveHtml = `
+        reserveContainer.innerHTML = `
           <button class="btn btn-primary btn-full" onclick="joinWaitingList('${p.id}')" style="font-weight:700;padding:0.85rem;">
             Solicitar Reserva
           </button>`;
       }
-
-      reserveContainer.innerHTML = `
-        ${btnReserveHtml}
-        <button class="btn btn-outline btn-full btn-sm" onclick="window.startDemoCheckoutFlow('${p.id}')" style="margin-top:0.4rem; font-weight:600; color:var(--blue-dark); border-color:var(--blue-light); padding:0.6rem;">
-          📄 Probar Firma de Contrato y Checkout (MVP)
-        </button>`;
     }
   }
 
@@ -1691,6 +1684,40 @@ function renderChatMessageElement(m, currentUserId, defaultAuthorName = '', defa
 
   const timeStr = formatChatTime(m.created_at);
 
+  let rawText = m.message || m.text || '';
+  let offerCardHtml = '';
+
+  const offerMatch = rawText.match(/\[HOMII_OFERTA_ID:([^\]]+)\]/);
+  if (offerMatch && offerMatch[1]) {
+    const resId = offerMatch[1].trim();
+    const res = typeof getReservationById === 'function' ? getReservationById(resId) : null;
+    if (res) {
+      const isConfirmed = res.status === 'PAGADA_CONFIRMADA';
+      offerCardHtml = `
+        <div class="homii-offer-card" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--r-lg); padding:0.9rem 1rem; margin-top:0.4rem; min-width:260px; box-shadow:0 2px 6px rgba(0,0,0,0.04); text-align:left;">
+          <div style="font-size:0.75rem; color:#166534; font-weight:700; text-transform:uppercase; letter-spacing:0.02em; margin-bottom:0.25rem;">
+            ${isConfirmed ? '✅ Contrato Confirmado' : 'El propietario te ha enviado una propuesta de arrendamiento'}
+          </div>
+          <div style="font-size:0.85rem; color:#0f172a; font-weight:700; margin-bottom:0.35rem;">
+            ${res.property_title || 'Propiedad de Arriendo'} — $${res.monthly_price}/mes
+          </div>
+          <div style="font-size:0.76rem; color:#475569; margin-bottom:0.75rem; line-height:1.4;">
+            Fechas: <strong>${res.start_date} a ${res.end_date}</strong> ${res.deposit ? `| Garantía: <strong>$${res.deposit}</strong>` : ''}
+          </div>
+          ${isConfirmed ? `
+            <div style="font-size:0.75rem; color:#15803d; font-weight:700; background:#dcfce7; padding:0.45rem 0.65rem; border-radius:var(--r-md); text-align:center; border:1px solid #86efac;">
+              🔒 Pago Simulado Completado — Calendario Bloqueado
+            </div>
+          ` : `
+            <button type="button" class="btn btn-primary btn-sm btn-full" onclick="window.openCheckoutModal('${res.id}')" style="font-size:0.8rem; font-weight:600; padding:0.5rem 0.85rem; background:#059669; border:none; color:#ffffff; border-radius:var(--r-md); box-shadow:0 2px 4px rgba(5,150,105,0.2);">
+              Revisar y Firmar Contrato 📄
+            </button>
+          `}
+        </div>`;
+      rawText = rawText.replace(/\[HOMII_OFERTA_ID:[^\]]+\]/, '').trim();
+    }
+  }
+
   const row = document.createElement('div');
   row.className = `chat-msg-row ${isOut ? 'chat-msg-out' : 'chat-msg-in'}`;
   row.innerHTML = `
@@ -1698,7 +1725,7 @@ function renderChatMessageElement(m, currentUserId, defaultAuthorName = '', defa
     <div class="chat-msg-body">
       ${!isOut ? `<div class="chat-msg-author" onclick="openPublicProfile('${senderId}', '${escAttr(authorName)}')" title="Ver perfil público de ${escAttr(authorName)}">${authorName}</div>` : ''}
       <div class="chat-bubble ${isOut ? 'chat-out' : 'chat-in'}">
-        <div class="chat-msg-text">${m.message || m.text || ''}</div>
+        <div class="chat-msg-text">${rawText}${offerCardHtml}</div>
         <div class="chat-msg-footer">
           <span>${timeStr}</span>
         </div>
@@ -2157,6 +2184,33 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
 
   const titleEl = document.getElementById('conv-title');
   if (titleEl) titleEl.textContent = senderName + ' — ' + propTitle;
+
+  // Barra de acción exclusiva del propietario para Generar Contrato
+  let offerBar = modal.querySelector('.landlord-offer-action-bar');
+  if (!offerBar) {
+    offerBar = document.createElement('div');
+    offerBar.className = 'landlord-offer-action-bar';
+    offerBar.style.cssText = 'padding:0.6rem 1rem; background:#eff6ff; border-bottom:1px solid #bfdbfe; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;';
+    modal.querySelector('.conv-modal-body')?.prepend(offerBar);
+  }
+
+  const matchProp = (chatId || '').match(/^prop_([^_]+)_usr_(.+)$/);
+  const targetPropId = matchProp ? matchProp[1] : null;
+  const targetTenantId = matchProp ? matchProp[2] : senderId;
+  const isLandlordRole = CURRENT_PROFILE?.role === 'landlord' || CURRENT_PROFILE?.role === 'university';
+
+  if (isLandlordRole && targetPropId) {
+    offerBar.style.display = 'flex';
+    offerBar.innerHTML = `
+      <div style="font-size:0.8rem; color:#1e40af; font-weight:600; display:flex; align-items:center; gap:0.35rem;">
+        <span>📜</span> Herramienta del Propietario
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" onclick="window.openGenerateOfferModal('${targetPropId}', '${targetTenantId}', '${chatId}')" style="font-size:0.78rem; padding:0.4rem 0.85rem; font-weight:600; background:#1a56db; color:#fff; border:none; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        Generar Contrato 📜
+      </button>`;
+  } else {
+    offerBar.style.display = 'none';
+  }
 
   const msgs  = document.getElementById('conv-msgs');
   const input = document.getElementById('conv-input');

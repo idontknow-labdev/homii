@@ -1298,6 +1298,98 @@ function renderListingsGrid(list) {
 // ============================================================
 // MODAL DE PROPIEDAD
 // ============================================================
+// SISTEMA DE MAPAS INTERACTIVOS LEAFLET.JS & OPENSTREETMAP
+// ============================================================
+
+let currentLeafletMapInstance = null;
+
+const CITY_COORDS = {
+  'portoviejo': [-1.0546, -80.4544],
+  'pucem': [-1.0475, -80.4520],
+  'guayaquil': [-2.1894, -79.8891],
+  'quito': [-0.1807, -78.4678],
+  'manta': [-0.9677, -80.7089],
+  'cuenca': [-2.9001, -79.0059],
+  'ambato': [-1.2491, -78.6168],
+  'loja': [-3.9931, -79.2042],
+  'santo domingo': [-0.2530, -79.1754],
+  'los ríos': [-1.8000, -79.5000],
+  'babahoyo': [-1.8022, -79.5344],
+  'quevedo': [-1.0286, -79.4635],
+  'machala': [-3.2581, -79.9554],
+  'puyo': [-1.4883, -78.0026],
+  'ibarra': [0.3517, -78.1223],
+  'santa elena': [-2.2267, -80.8583],
+  'salinas': [-2.2206, -80.9575]
+};
+
+function getPropertyCoordinates(p) {
+  if (p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng)) {
+    return [parseFloat(p.lat), parseFloat(p.lng)];
+  }
+
+  const locStr = (p.city || p.location || p.province || '').toLowerCase();
+  
+  for (const [key, coords] of Object.entries(CITY_COORDS)) {
+    if (locStr.includes(key)) {
+      const hash = (p.id || p.title || 'prop').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const latOffset = ((hash % 37) - 18) * 0.0008;
+      const lngOffset = (((hash * 13) % 37) - 18) * 0.0008;
+      return [coords[0] + latOffset, coords[1] + lngOffset];
+    }
+  }
+
+  return [-1.0546, -80.4544];
+}
+
+function renderLeafletMap(containerId, property) {
+  const container = document.getElementById(containerId);
+  if (!container || typeof L === 'undefined') return;
+
+  if (currentLeafletMapInstance) {
+    currentLeafletMapInstance.remove();
+    currentLeafletMapInstance = null;
+  }
+
+  const coords = getPropertyCoordinates(property);
+  const zoomLevel = 15;
+
+  const map = L.map(containerId, {
+    center: coords,
+    zoom: zoomLevel,
+    zoomControl: true
+  });
+  currentLeafletMapInstance = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+
+  const imgUrl = (property.images && property.images.length > 0) ? property.images[0] : 'logo.png';
+  const popupContent = `
+    <div style="font-family:var(--font-body); font-size:0.8rem; text-align:center; padding:0.2rem; min-width:140px;">
+      <div style="width:100%; height:75px; overflow:hidden; border-radius:6px; margin-bottom:0.35rem; background:#cbd5e1;">
+        <img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;">
+      </div>
+      <strong style="color:#0f172a; font-size:0.83rem; display:block; line-height:1.2;">${property.title || 'Propiedad'}</strong>
+      <span style="color:#1a56db; font-weight:700; font-size:0.9rem; margin-top:0.2rem; display:block;">$${property.price}/mes</span>
+      <span style="color:#64748b; font-size:0.72rem;">${property.location || ''}</span>
+    </div>
+  `;
+
+  const marker = L.marker(coords).addTo(map);
+  marker.bindPopup(popupContent).openPopup();
+
+  const mapLink = document.getElementById('detail-map-link');
+  if (mapLink) {
+    mapLink.href = `https://www.openstreetmap.org/?mlat=${coords[0]}&mlon=${coords[1]}#map=16/${coords[0]}/${coords[1]}`;
+  }
+
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 250);
+}
 
 async function openPropertyModal(id) {
   const { data: p, error } = await db.from('properties').select('*').eq('id', id).single();
@@ -1384,13 +1476,8 @@ async function openPropertyModal(id) {
 
   renderGallery(p);
 
-  const q       = encodeURIComponent(p.maps_query || p.location);
-  const frame   = document.getElementById('detail-map');
-  const mapLink = document.getElementById('detail-map-link');
-  const mapCta  = document.getElementById('detail-map-cta');
-  if (frame)   frame.src    = `https://maps.google.com/maps?q=${q}&output=embed&hl=es&z=16`;
-  if (mapLink) mapLink.href = `https://www.google.com/maps/search/?api=1&query=${q}`;
-  if (mapCta)  mapCta.href  = `https://www.google.com/maps/search/?api=1&query=${q}`;
+  // Renderizar mapa interactivo con Leaflet.js y OpenStreetMap
+  renderLeafletMap('detail-leaflet-map', p);
 
   const verifBox = document.getElementById('detail-verif');
   if (verifBox) {

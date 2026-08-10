@@ -9,6 +9,10 @@
   <link rel="shortcut icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
   
+  <!-- Leaflet.js — Mapa Interactivo Open-Source de Alta Velocidad sin claves API -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <!-- Verificación Oficial de Google Search Console -->
   <meta name="google-site-verification" content="google994b02ae93a6fcab" />
   
@@ -1274,12 +1278,11 @@
         </div>
 
         <div>
-          <div class="detail-section-label">Ubicacion en Google Maps</div>
-          <div class="maps-wrap">
-            <iframe id="detail-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Ubicación del inmueble"></iframe>
-            <div class="maps-link-row">
-              <a id="detail-map-link" href="#" target="_blank" rel="noopener noreferrer">Abrir en Google Maps y ver ruta</a>
-            </div>
+          <div class="detail-section-label">Ubicación e Inspección Geográfica (Mapa Interactivo Leaflet)</div>
+          <div id="detail-leaflet-map" style="width:100%; height:270px; border-radius:var(--r-md); border:1px solid var(--border); overflow:hidden; z-index:1; margin-top:0.5rem; background:#e2e8f0;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.4rem; font-size:0.75rem;">
+            <span style="color:var(--text-sec); font-weight:500;">🗺️ OpenStreetMap & Leaflet Interactive Engine</span>
+            <a id="detail-map-link" href="#" target="_blank" rel="noopener noreferrer" style="color:var(--blue); font-weight:600;">Abrir Ruta en Navegador ↗</a>
           </div>
         </div>
 
@@ -2031,6 +2034,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_25"></script>
+<script src="app.js?v=20260809_26"></script>
 </body>
 </html>

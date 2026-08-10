@@ -580,29 +580,7 @@ async function doRegister() {
   const terms = document.getElementById('reg-terms')?.checked;
   const btn   = document.querySelector('#register-form button[type=submit]');
 
-  // Campos adicionales biométricos
-  let cedula = null;
-  let isVerified = 'pending';
-  window.tempBiometricData = window.tempBiometricData || { selfie: '', front: '', back: '' };
-
-  if (role === 'student' || role === 'landlord') {
-    cedula = (document.getElementById('reg-cedula')?.value || '').trim().replace(/\s+|-/g, '');
-    if (!cedula) {
-      showAuthError('register-error', 'Por favor ingrese su número de cédula.');
-      return;
-    }
-    if (cedula.length !== 10) {
-      showAuthError('register-error', 'La cédula debe contener exactamente 10 dígitos.');
-      return;
-    }
-    if (!window.tempBiometricData.selfie || !window.tempBiometricData.front || !window.tempBiometricData.back) {
-      showAuthError('register-error', 'Por favor presione "Activar Cámara en Vivo" y complete los 3 pasos de verificación biométrica.');
-      return;
-    }
-    isVerified = 'pending';
-  } else if (role === 'university') {
-    isVerified = 'approved';
-  }
+  const isVerified = (role === 'university' || email.endsWith('@pucem.edu.ec') || email.endsWith('@pucesm.edu.ec')) ? 'approved' : 'pending';
 
   if (!name)  { showAuthError('register-error', 'Ingrese su nombre completo.'); return; }
   if (!email) { showAuthError('register-error', 'Ingrese un correo electrónico.'); return; }
@@ -612,26 +590,15 @@ async function doRegister() {
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
   try {
-    const selfieUrl = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.selfie || 'selfie_placeholder.png') : null;
-    const frontUrl  = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.front || 'idcard_front_placeholder.png') : null;
-    const backUrl   = (role === 'student' || role === 'landlord') ? (window.tempBiometricData.back || 'idcard_back_placeholder.png') : null;
-
-    // 1. Registrar nuevo usuario en Supabase Auth con metadata liviana
+    // 1. Registrar usuario en Supabase Auth al instante
     let { data, error } = await db.auth.signUp({
       email,
       password: pass,
       options: {
-        data: {
-          name,
-          role,
-          phone,
-          cedula,
-          is_verified: isVerified
-        }
+        data: { name, role, phone, is_verified: isVerified }
       }
     });
 
-    // 2. Si el usuario ya estaba registrado en Auth, intentar login directo
     if (error) {
       const errStr = (error.message || '').toLowerCase();
       if (errStr.includes('already') || errStr.includes('registered') || errStr.includes('rate limit')) {
@@ -649,7 +616,7 @@ async function doRegister() {
       if (errStr.includes('already') || errStr.includes('registered')) {
         msg = 'Este correo ya está registrado. Por favor intente "Iniciar sesión" con su contraseña.';
       } else if (errStr.includes('rate limit')) {
-        msg = 'Límite de solicitudes alcanzado. Por favor espere un momento o desactive la confirmación por email en Supabase.';
+        msg = 'Límite de peticiones alcanzado. Espere un momento e intente de nuevo.';
       } else if (error.message) {
         msg = error.message;
       }
@@ -658,69 +625,39 @@ async function doRegister() {
     }
 
     if (data?.user) {
-      // Intentar auto-login si no entregó sesión directa
       if (!data.session) {
         const { data: autoLogin } = await db.auth.signInWithPassword({ email, password: pass }).catch(() => ({}));
-        if (autoLogin?.session) {
-          data = autoLogin;
-        }
+        if (autoLogin?.session) data = autoLogin;
       }
 
       const colors = ['#0f172a','#1a56db','#0369a1','#7c3aed','#059669','#d97706'];
       const color  = colors[Math.floor(Math.random() * colors.length)];
 
-      // Guardar respaldo local de biometría en localStorage (para evitar sobrecargar el payload REST con megabytes)
-      const profileMeta = {
-        cedula,
-        is_verified: isVerified,
-        selfie_url: selfieUrl,
-        id_card_front_url: frontUrl,
-        id_card_back_url: backUrl,
-        is_premium: false,
-        premium_tier: 'none'
-      };
-      localStorage.setItem('homii_profile_meta_' + data.user.id, JSON.stringify(profileMeta));
-      localStorage.setItem('homii_extra_' + data.user.id, JSON.stringify({ name, phone, role }));
-
-      // Guardado ultrarrápido y liviano en la tabla public.profiles de Supabase
       const profileDbPayload = {
         id: data.user.id,
         name,
         email,
         role,
         phone,
-        cedula,
         is_verified: isVerified,
-        avatar_color: color,
-        selfie_url: selfieUrl ? (selfieUrl.length > 500 ? 'selfie_captured' : selfieUrl) : null,
-        id_card_front_url: frontUrl ? (frontUrl.length > 500 ? 'idcard_front_captured' : frontUrl) : null,
-        id_card_back_url: backUrl ? (backUrl.length > 500 ? 'idcard_back_captured' : backUrl) : null
+        avatar_color: color
       };
 
-      const { error: upsertErr } = await db.from('profiles').upsert(profileDbPayload, { onConflict: 'id' });
-      if (upsertErr) {
-        console.warn('Profiles upsert warning, retrying direct insert:', upsertErr.message);
-        await db.from('profiles').insert(profileDbPayload).catch(e => console.warn('Direct insert fallback:', e.message));
-      }
+      // Guardar inmediatamente en tabla public.profiles de Supabase
+      await db.from('profiles').upsert(profileDbPayload, { onConflict: 'id' }).catch(async () => {
+        await db.from('profiles').insert(profileDbPayload).catch(() => {});
+      });
 
-      // Si requiere confirmación obligatoria de correo
       if (!data.session) {
         alert('¡Cuenta creada con éxito!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta antes de iniciar sesión.');
         showAuthError('register-error', 'Por favor confirme su correo electrónico para acceder.');
         switchPanel('login');
-        const loginEmailInput = document.getElementById('login-email');
-        if (loginEmailInput) loginEmailInput.value = email;
         return;
       }
 
       await loadUserProfile(data.user);
       closeAuth();
-      
-      if ((role === 'student' || role === 'landlord') && isVerified === 'pending') {
-        alert('¡Registro y documentos recibidos!\n\nSu cuenta ha sido creada exitosamente y está pendiente de verificación biométrica por el Administrador de Homii.');
-      } else {
-        addNotif('Cuenta creada', 'Bienvenido a Homii, ' + name + '.');
-      }
+      addNotif('Cuenta Creada', 'Bienvenido a Homii, ' + name + '.');
 
       if (role === 'landlord') { APP.pendingRoute = 'landlord'; navigate('landlord'); }
       if (role === 'student')  { APP.pendingRoute = 'search'; navigate('search'); }
@@ -738,11 +675,87 @@ async function doRegister() {
     }
   } catch (err) {
     console.error('Registration error:', err);
-    showAuthError('register-error', 'Ocurrió un error inesperado al registrar la cuenta. Intente nuevamente.');
+    showAuthError('register-error', 'Ocurrió un error inesperado al registrar la cuenta.');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
   }
 }
+
+// ============================================================
+// MODAL Y FUNCIONALIDAD DE VERIFICACIÓN BIOMÉTRICA DEDICADA
+// ============================================================
+
+window.openBiometricModal = function() {
+  if (!CURRENT_USER) { openAuth(); return; }
+  const modal = document.getElementById('biometric-modal');
+  if (!modal) return;
+  modal.classList.add('open');
+  const cedulaInput = document.getElementById('modal-bio-cedula');
+  if (cedulaInput && CURRENT_PROFILE?.cedula) {
+    cedulaInput.value = CURRENT_PROFILE.cedula;
+  }
+};
+
+window.closeBiometricModal = function() {
+  const modal = document.getElementById('biometric-modal');
+  modal?.classList.remove('open');
+  if (typeof stopBiometricCamera === 'function') stopBiometricCamera();
+};
+
+window.submitBiometricVerification = async function() {
+  if (!CURRENT_USER) { openAuth(); return; }
+
+  const cedula = (document.getElementById('modal-bio-cedula')?.value || '').trim().replace(/\s+|-/g, '');
+  if (!cedula) { alert('Por favor ingrese su número de cédula de identidad.'); return; }
+  if (cedula.length !== 10) { alert('La cédula debe contener exactamente 10 dígitos.'); return; }
+
+  if (!window.tempBiometricData?.selfie || !window.tempBiometricData?.front || !window.tempBiometricData?.back) {
+    alert('Por favor presione "Activar Cámara en Vivo" y complete los 3 pasos de verificación biométrica (Selfie, Cédula Frente, Cédula Reverso).');
+    return;
+  }
+
+  const selfieUrl = window.tempBiometricData.selfie;
+  const frontUrl  = window.tempBiometricData.front;
+  const backUrl   = window.tempBiometricData.back;
+
+  // Guardar copia local de respaldo
+  const profileMeta = {
+    cedula,
+    is_verified: 'pending',
+    selfie_url: selfieUrl,
+    id_card_front_url: frontUrl,
+    id_card_back_url: backUrl
+  };
+  localStorage.setItem('homii_profile_meta_' + CURRENT_USER.id, JSON.stringify(profileMeta));
+
+  // Actualizar tabla profiles en Supabase
+  const { error } = await db.from('profiles').update({
+    cedula,
+    is_verified: 'pending',
+    selfie_url: selfieUrl.length > 500 ? 'selfie_captured' : selfieUrl,
+    id_card_front_url: frontUrl.length > 500 ? 'idcard_front_captured' : frontUrl,
+    id_card_back_url: backUrl.length > 500 ? 'idcard_back_captured' : backUrl
+  }).eq('id', CURRENT_USER.id);
+
+  if (error) {
+    console.warn('Error al enviar verificación a Supabase:', error.message);
+  }
+
+  if (CURRENT_PROFILE) {
+    CURRENT_PROFILE.cedula = cedula;
+    CURRENT_PROFILE.is_verified = 'pending';
+    CURRENT_PROFILE.selfie_url = selfieUrl;
+    CURRENT_PROFILE.id_card_front_url = frontUrl;
+    CURRENT_PROFILE.id_card_back_url = backUrl;
+  }
+
+  window.closeBiometricModal();
+  addNotif('Verificación Enviada', 'Su solicitud de verificación ha sido enviada al Administrador.');
+  alert('✓ Solicitud de verificación enviada al Administrador.\n\nSu información y fotografías han sido recibidas. El Administrador revisará su solicitud a la brevedad para verificar su cuenta.');
+
+  if (typeof renderAdminPanel === 'function') renderAdminPanel();
+  if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
+};
 
 async function logout() {
   if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
@@ -1596,6 +1609,19 @@ async function setupDirectChat(p) {
         Esta es su propia publicación.<br>
         Para revisar y responder los mensajes privados de los interesados, consulte la sección 
         <strong>"Mensajes de inquilinos"</strong> en su <a class="auth-link" style="cursor:pointer;" onclick="closePropertyModal();navigate('landlord');">Panel de Propietario</a> o en <a class="auth-link" style="cursor:pointer;" onclick="closePropertyModal();navigate('profile');">Mi Perfil</a>.
+      </div>`;
+    return;
+  }
+
+  // Usuario no verificado por el administrador
+  const isVerifiedUser = CURRENT_PROFILE?.is_verified === 'approved' || CURRENT_PROFILE?.role === 'university';
+  if (!isVerifiedUser) {
+    if (chatBox) chatBox.innerHTML = `
+      <div style="padding:1.5rem 1rem; text-align:center; background:var(--bg-section); border-radius:var(--radius-lg); border:1px solid var(--border); margin:0.5rem 0;">
+        <div style="font-size:1.5rem; margin-bottom:0.3rem;">🔒</div>
+        <div style="font-weight:700; color:var(--text); font-size:0.92rem;">Usted no está verificado</div>
+        <p style="font-size:0.8rem; color:var(--text-sec); margin:0.3rem 0 0.8rem; line-height:1.5;">Debe verificar su cuenta con su cédula y foto en vivo para poder enviar mensajes a los propietarios.</p>
+        <button class="btn btn-primary btn-sm btn-full" onclick="closePropertyModal(); window.openBiometricModal();" style="background:#f59e0b; border:none; color:#0f172a; font-weight:700; font-size:0.8rem;">Verificar mi cuenta ahora</button>
       </div>`;
     return;
   }
@@ -2686,6 +2712,24 @@ function roleLabel(role, email) {
 
 async function renderLandlordPanel() {
   if (!CURRENT_USER || !CURRENT_PROFILE) return;
+
+  const isVerifiedLandlord = CURRENT_PROFILE?.is_verified === 'approved' || CURRENT_PROFILE?.role === 'university';
+  const unverifiedBanner = document.getElementById('landlord-unverified-banner');
+  if (unverifiedBanner) {
+    if (!isVerifiedLandlord) {
+      unverifiedBanner.style.display = 'block';
+      unverifiedBanner.innerHTML = `
+        <div style="padding:1.25rem 1.5rem; background:#fffbe6; border-radius:var(--radius-xl); border:1px solid #ffe58f; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <div style="font-weight:700; color:#b45309; font-size:0.95rem;">Usted no está verificado como Propietario</div>
+            <p style="font-size:0.82rem; color:#78350f; margin:0.25rem 0 0;">Debe verificar su cuenta con su cédula y foto en vivo para poder publicar sus propiedades.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.openBiometricModal()" style="background:#f59e0b; border:none; color:#0f172a; font-weight:700; white-space:nowrap;">Verificar mi cuenta de propietario ahora</button>
+        </div>`;
+    } else {
+      unverifiedBanner.style.display = 'none';
+    }
+  }
 
   const { data: myProps } = await db.from('properties').select('*').eq('landlord_id', CURRENT_USER.id);
   const count = (myProps || []).length;

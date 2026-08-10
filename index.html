@@ -1476,6 +1476,142 @@
 </div>
 
 <!-- ===========================================================
+     MODAL 1: GENERAR OFERTA DE ARRENDAMIENTO (PROPIETARIO)
+     =========================================================== -->
+<div class="modal-overlay" id="generate-offer-modal">
+  <div class="modal-box" style="max-width:540px; padding:1.75rem; border-radius:var(--radius-xl); background:var(--bg-white); box-shadow:var(--shadow-xl);">
+    <div class="modal-head" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+      <div>
+        <h3 class="modal-title" style="font-size:1.15rem; font-weight:600; color:var(--blue-dark); margin:0;">📜 Generar Oferta Formal de Arrendamiento</h3>
+        <p style="font-size:0.78rem; color:var(--text-sec); margin:0.2rem 0 0;">Defina las fechas y condiciones para enviarle el contrato al inquilino.</p>
+      </div>
+      <button class="modal-close-btn" onclick="window.closeGenerateOfferModal()">&times;</button>
+    </div>
+
+    <form id="generate-offer-form" onsubmit="window.submitGeneratedOffer(event)" style="display:flex; flex-direction:column; gap:1rem;">
+      <input type="hidden" id="offer-prop-id">
+      <input type="hidden" id="offer-tenant-id">
+      <input type="hidden" id="offer-chat-id">
+
+      <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+        <div class="form-group">
+          <label class="form-label">Fecha de Entrada (Check-in) *</label>
+          <input type="date" class="form-input" id="offer-start-date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de Salida (Check-out) *</label>
+          <input type="date" class="form-input" id="offer-end-date" required>
+        </div>
+      </div>
+
+      <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+        <div class="form-group">
+          <label class="form-label">Canon Mensual Acordado ($) *</label>
+          <input type="number" class="form-input" id="offer-price" min="10" placeholder="Ej. 200" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Garantía / Depósito ($)</label>
+          <input type="number" class="form-input" id="offer-deposit" min="0" placeholder="Ej. 100">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notas Adicionales o Condiciones Especiales</label>
+        <textarea class="form-input" id="offer-notes" rows="2" placeholder="Ej. Incluye alícuota de condominio e internet de fibra óptica..."></textarea>
+      </div>
+
+      <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+        <button type="button" class="btn btn-outline btn-full" onclick="window.closeGenerateOfferModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-full" style="font-weight:600;">Enviarle Contrato al Inquilino 🚀</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===========================================================
+     MODAL 2: CHECKOUT Y CONTRATO DE ARRENDAMIENTO (INQUILINO)
+     =========================================================== -->
+<div class="modal-overlay" id="checkout-modal">
+  <div class="modal-box" style="max-width:680px; max-height:90vh; display:flex; flex-direction:column; padding:1.75rem; border-radius:var(--radius-xl); background:var(--bg-white); box-shadow:var(--shadow-xl);">
+    <div class="modal-head" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+      <div>
+        <h3 class="modal-title" style="font-size:1.2rem; font-weight:600; color:var(--blue-dark); margin:0;">📄 Checkout y Firma de Contrato de Arrendamiento</h3>
+        <p style="font-size:0.78rem; color:var(--text-sec); margin:0.2rem 0 0;">Revise la propuesta, lea el contrato y confirme su reserva.</p>
+      </div>
+      <button class="modal-close-btn" onclick="window.closeCheckoutModal()">&times;</button>
+    </div>
+
+    <div style="overflow-y:auto; padding-right:0.4rem; display:flex; flex-direction:column; gap:1.25rem;">
+      
+      <!-- Resumen de la reserva -->
+      <div style="background:var(--bg-section); padding:1rem; border-radius:var(--r-md); border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+          <span class="badge badge-blue" id="checkout-prop-badge">Reserva de Inmueble</span>
+          <h4 id="checkout-prop-title" style="margin:0.3rem 0 0.2rem; font-size:1.05rem; color:var(--blue-dark); font-weight:600;">Propiedad</h4>
+          <p id="checkout-dates-info" style="margin:0; font-size:0.8rem; color:var(--text-sec);">Fechas: ---</p>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.75rem; color:var(--text-sec);">Canon de Arriendo</div>
+          <div id="checkout-price-val" style="font-size:1.35rem; font-weight:700; color:var(--blue-dark);">$0/mes</div>
+        </div>
+      </div>
+
+      <!-- Cuadro de Contrato con Scrollbar -->
+      <div>
+        <div style="font-size:0.82rem; font-weight:600; color:var(--blue-dark); margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+          <span>📋 Plantilla Oficial de Contrato de Arrendamiento</span>
+          <span style="font-size:0.72rem; color:var(--text-muted);">Deslice para leer completo</span>
+        </div>
+        <div id="checkout-contract-text" style="height:200px; overflow-y:auto; padding:1rem; background:#ffffff; border:1px solid var(--border); border-radius:var(--r-md); font-size:0.8rem; color:var(--text-sec); line-height:1.65; white-space:pre-line; font-family:monospace;">
+          Cargando contrato redactado...
+        </div>
+      </div>
+
+      <!-- Checkbox obligatorio -->
+      <div style="background:#ecfdf5; padding:0.85rem; border-radius:var(--r-md); border:1px solid #a7f3d0;">
+        <label class="checkbox-label" style="font-size:0.83rem; font-weight:600; color:#065f46; cursor:pointer; display:flex; align-items:flex-start; gap:0.6rem;">
+          <input type="checkbox" id="chk-accept-lease-contract" onchange="window.togglePaymentButtonState()" style="margin-top:0.2rem;">
+          <span>He leído y acepto los términos del contrato de arrendamiento y autorizo la reserva.</span>
+        </label>
+      </div>
+
+    </div>
+
+    <!-- Botón de Simulación de Pago -->
+    <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+      <button type="button" class="btn btn-primary btn-full" id="btn-simulate-payment" disabled onclick="window.processSimulatedPayment()" style="font-weight:600; padding:0.85rem; font-size:0.95rem;">
+        💳 Simular Pago y Confirmar Reserva
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================================================
+     MODAL 3: ALERTA VISUAL DE ÉXITO DE RESERVA Y PAGO
+     =========================================================== -->
+<div class="modal-overlay" id="payment-success-modal">
+  <div class="modal-box" style="max-width:460px; text-align:center; padding:2rem; border-radius:var(--radius-xl); background:var(--bg-white); box-shadow:var(--shadow-xl);">
+    <div style="width:72px; height:72px; background:#d1fae5; color:#059669; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; margin:0 auto 1.25rem; box-shadow:0 0 0 8px #ecfdf5;">
+      ✓
+    </div>
+    <h3 style="margin:0 0 0.5rem; font-size:1.35rem; color:var(--blue-dark); font-weight:700;">¡Reserva y Contrato Confirmados!</h3>
+    <p style="font-size:0.85rem; color:var(--text-sec); margin-bottom:1.25rem; line-height:1.6;">
+      El pago simulado se ha procesado con éxito. El contrato ha sido firmado digitalmente y las fechas seleccionadas han quedado <strong style="color:#059669;">bloqueadas en el calendario</strong> de la propiedad.
+    </p>
+
+    <div style="background:var(--bg-section); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--border); font-size:0.8rem; color:var(--text-sec); margin-bottom:1.5rem; text-align:left;">
+      <div style="margin-bottom:0.25rem;"><strong>Estado:</strong> <span class="badge badge-green">PAGADA_CONFIRMADA</span></div>
+      <div style="margin-bottom:0.25rem;"><strong>Código de Reserva:</strong> <span id="success-booking-ref" style="font-family:monospace; color:var(--blue-dark); font-weight:600;">#HOM-88492</span></div>
+      <div><strong>Disponibilidad:</strong> Calendario Bloqueado en Vivo</div>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-full" onclick="window.closePaymentSuccessModal()" style="font-weight:600; padding:0.8rem;">
+      Entendido — Ver Reserva en el Chat 🚀
+    </button>
+  </div>
+</div>
+
+<!-- ===========================================================
      MODAL PERFIL PÚBLICO DE USUARIO / PROPIETARIO
      =========================================================== -->
 <div class="modal-overlay" id="public-profile-modal">
@@ -2034,6 +2170,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_27"></script>
+<script src="app.js?v=20260809_28"></script>
 </body>
 </html>

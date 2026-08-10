@@ -2194,6 +2194,10 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
     modal.querySelector('.conv-modal-body')?.prepend(offerBar);
   }
 
+  const matchProp = (chatId || '').match(/^prop_([^_]+)_usr_(.+)$/);
+  const targetPropId = matchProp ? matchProp[1] : null;
+  const targetTenantId = matchProp ? matchProp[2] : senderId;
+
   // Verificar estrictamente si el usuario logueado es el PROPIETARIO del inmueble
   let isPropOwner = false;
   if (CURRENT_USER && targetPropId) {

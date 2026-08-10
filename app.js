@@ -2194,16 +2194,22 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
     modal.querySelector('.conv-modal-body')?.prepend(offerBar);
   }
 
-  const matchProp = (chatId || '').match(/^prop_([^_]+)_usr_(.+)$/);
-  const targetPropId = matchProp ? matchProp[1] : null;
-  const targetTenantId = matchProp ? matchProp[2] : senderId;
-  const isLandlordRole = CURRENT_PROFILE?.role === 'landlord' || CURRENT_PROFILE?.role === 'university';
+  // Verificar estrictamente si el usuario logueado es el PROPIETARIO del inmueble
+  let isPropOwner = false;
+  if (CURRENT_USER && targetPropId) {
+    const propInMem = (APP.allProperties || []).find(x => String(x.id) === String(targetPropId));
+    if (propInMem) {
+      isPropOwner = propInMem.landlord_id === CURRENT_USER.id;
+    } else {
+      isPropOwner = (CURRENT_PROFILE?.role === 'landlord' || CURRENT_PROFILE?.role === 'university');
+    }
+  }
 
-  if (isLandlordRole && targetPropId) {
+  if (isPropOwner && targetPropId) {
     offerBar.style.display = 'flex';
     offerBar.innerHTML = `
       <div style="font-size:0.8rem; color:#1e40af; font-weight:600; display:flex; align-items:center; gap:0.35rem;">
-        <span>📜</span> Herramienta del Propietario
+        <span>📜</span> Herramienta Exclusiva del Propietario
       </div>
       <button type="button" class="btn btn-primary btn-sm" onclick="window.openGenerateOfferModal('${targetPropId}', '${targetTenantId}', '${chatId}')" style="font-size:0.78rem; padding:0.4rem 0.85rem; font-weight:600; background:#1a56db; color:#fff; border:none; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
         Generar Contrato 📜

@@ -2879,14 +2879,12 @@ function setupPublishForm() {
       }
     }
 
-    const { error } = await db.from('properties').insert({
+    const basePayload = {
       title,
       description: desc || '',
       price,
       rooms,
       bathrooms: 1,
-      province,
-      city,
       location: fullLocation,
       maps_query: fullLocation,
       distance_to_campus: 0.5,
@@ -2903,7 +2901,18 @@ function setupPublishForm() {
       images: imgUrls,
       is_demo: false,
       reviews: []
-    });
+    };
+
+    // 1. Intentar insertar incluyendo city y province
+    let insertPayload = { ...basePayload, province, city };
+    let { error } = await db.from('properties').insert(insertPayload);
+
+    // 2. Si la tabla properties en Supabase no tiene aún las columnas city o province en el esquema, reintentar con el payload base
+    if (error && (error.message.includes('city') || error.message.includes('province') || error.message.includes('schema cache'))) {
+      console.warn('Columnas city/province ausentes en el esquema de Supabase, reintentando con payload base:', error.message);
+      const res = await db.from('properties').insert(basePayload);
+      error = res.error;
+    }
 
     if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
 

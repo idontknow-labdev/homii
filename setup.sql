@@ -41,6 +41,7 @@ alter table public.profiles add column if not exists rating_avg float default 5.
 alter table public.profiles add column if not exists rating_count integer default 0;
 
 alter table public.properties add column if not exists province text default 'Guayas';
+alter table public.properties add column if not exists city text default '';
 alter table public.properties add column if not exists rating_avg float default 5.0;
 alter table public.properties add column if not exists rating_count integer default 0;
 alter table public.properties add column if not exists vip_managed boolean default false;

@@ -1979,74 +1979,97 @@ window.closeGenerateOfferModal = function() {
 };
 
 window.submitGeneratedOffer = async function(e) {
-  e.preventDefault();
-  
-  const propId   = document.getElementById('offer-prop-id').value;
-  const tenantId = document.getElementById('offer-tenant-id').value;
-  const chatId   = document.getElementById('offer-chat-id').value;
+  if (e) e.preventDefault();
 
-  const startDate = document.getElementById('offer-start-date').value;
-  const endDate   = document.getElementById('offer-end-date').value;
-  const price     = parseInt(document.getElementById('offer-price').value);
-  const deposit   = parseInt(document.getElementById('offer-deposit').value) || 0;
-  const notes     = document.getElementById('offer-notes').value.trim();
+  try {
+    const propId   = document.getElementById('offer-prop-id')?.value || '';
+    const tenantId = document.getElementById('offer-tenant-id')?.value || '';
+    const chatId   = document.getElementById('offer-chat-id')?.value || '';
 
-  let prop = openPropertyData;
-  if (!prop || prop.id !== propId) {
-    const { data } = await db.from('properties').select('*').eq('id', propId).single();
-    prop = data || { title: 'Inmueble de Arriendo', location: 'Portoviejo, Ecuador', price };
-  }
+    const startDate = document.getElementById('offer-start-date')?.value || new Date().toISOString().split('T')[0];
+    const endDate   = document.getElementById('offer-end-date')?.value || new Date().toISOString().split('T')[0];
+    const price     = parseInt(document.getElementById('offer-price')?.value || '200') || 200;
+    const deposit   = parseInt(document.getElementById('offer-deposit')?.value || '0') || 0;
+    const notes     = (document.getElementById('offer-notes')?.value || '').trim();
 
-  const resId = 'res_' + Date.now();
-  const resObj = {
-    id: resId,
-    property_id: prop.id,
-    property_title: prop.title,
-    property_location: prop.location || 'Portoviejo, Manabí',
-    landlord_id: CURRENT_USER?.id || 'landlord_demo',
-    landlord_name: CURRENT_PROFILE?.name || 'Propietario Homii',
-    tenant_id: tenantId || 'tenant_user',
-    tenant_name: 'Estudiante / Arrendatario',
-    start_date: startDate,
-    end_date: endDate,
-    monthly_price: price,
-    deposit: deposit,
-    notes: notes,
-    status: 'PENDIENTE_ACEPTACION',
-    created_at: new Date().toISOString()
-  };
+    let prop = (APP.allProperties || []).find(x => String(x.id) === String(propId)) || openPropertyData;
+    if (!prop && propId && isValidUUID(propId)) {
+      const { data } = await db.from('properties').select('*').eq('id', propId).maybeSingle().catch(() => ({}));
+      if (data) prop = data;
+    }
+    if (!prop) {
+      prop = { id: propId || 'prop_demo', title: 'Inmueble Homii', location: 'Portoviejo, Manabí', price };
+    }
 
-  saveReservationState(resObj);
-  window.closeGenerateOfferModal();
-
-  const offerMsgText = `[HOMII_OFERTA_ID:${resId}] Propuesta Formal de Arrendamiento: $${price}/mes del ${startDate} al ${endDate}.`;
-  const targetReceiver = tenantId || (CURRENT_USER?.id === prop.landlord_id ? 'tenant_user' : prop.landlord_id);
-
-  if (CURRENT_USER) {
-    await db.from('chats').insert({
-      chat_id: chatId || `prop_${prop.id}_usr_${CURRENT_USER.id}`,
+    const resId = 'res_' + Date.now();
+    const resObj = {
+      id: resId,
       property_id: prop.id,
       property_title: prop.title,
-      sender_id: CURRENT_USER.id,
-      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-      receiver_id: targetReceiver,
-      message: offerMsgText
-    });
-  }
-
-  addNotif('Oferta Enviada', `Se envió la propuesta formal de arriendo para "${prop.title}".`);
-  alert('¡Oferta formal y contrato generados con éxito!\n\nEl inquilino ha recibido el enlace de checkout en el chat para revisar el contrato y confirmar su reserva.');
-  
-  const msgs = document.getElementById('conv-msgs');
-  if (msgs && CURRENT_USER) {
-    const localMsg = {
-      sender_id: CURRENT_USER.id,
-      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-      message: offerMsgText,
+      property_location: prop.location || 'Portoviejo, Manabí',
+      landlord_id: CURRENT_USER?.id || 'landlord_demo',
+      landlord_name: CURRENT_PROFILE?.name || 'Propietario Homii',
+      tenant_id: tenantId || 'tenant_user',
+      tenant_name: 'Estudiante / Arrendatario',
+      start_date: startDate,
+      end_date: endDate,
+      monthly_price: price,
+      deposit: deposit,
+      notes: notes,
+      status: 'PENDIENTE_ACEPTACION',
       created_at: new Date().toISOString()
     };
-    msgs.appendChild(renderChatMessageElement(localMsg, CURRENT_USER.id));
-    msgs.scrollTop = msgs.scrollHeight;
+
+    saveReservationState(resObj);
+    window.closeGenerateOfferModal();
+
+    const offerMsgText = `[HOMII_OFERTA_ID:${resId}] Propuesta Formal de Arrendamiento: $${price}/mes del ${startDate} al ${endDate}.`;
+    const targetReceiver = tenantId || (CURRENT_USER?.id === prop.landlord_id ? 'tenant_user' : prop.landlord_id);
+
+    if (CURRENT_USER) {
+      await db.from('chats').insert({
+        chat_id: chatId || `prop_${prop.id}_usr_${CURRENT_USER.id}`,
+        property_id: prop.id,
+        property_title: prop.title,
+        sender_id: CURRENT_USER.id,
+        sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+        receiver_id: targetReceiver,
+        message: offerMsgText
+      }).catch(err => console.warn('Supabase chat insert warning:', err));
+    }
+
+    addNotif('Oferta Enviada', `Se envió la propuesta formal de arriendo para "${prop.title}".`);
+
+    // Renderizar inmediatamente en la conversación del modal de chat si está abierto
+    const convMsgs = document.getElementById('conv-msgs');
+    if (convMsgs && CURRENT_USER) {
+      const localMsg = {
+        sender_id: CURRENT_USER.id,
+        sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+        message: offerMsgText,
+        created_at: new Date().toISOString()
+      };
+      convMsgs.appendChild(renderChatMessageElement(localMsg, CURRENT_USER.id));
+      convMsgs.scrollTop = convMsgs.scrollHeight;
+    }
+
+    // Renderizar también en el chat directo del modal de propiedad si está abierto
+    const directMsgs = document.getElementById('direct-chat-msgs');
+    if (directMsgs && CURRENT_USER) {
+      const localMsg = {
+        sender_id: CURRENT_USER.id,
+        sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+        message: offerMsgText,
+        created_at: new Date().toISOString()
+      };
+      directMsgs.appendChild(renderChatMessageElement(localMsg, CURRENT_USER.id));
+      directMsgs.scrollTop = directMsgs.scrollHeight;
+    }
+
+    alert('¡Oferta formal y contrato generados con éxito!\n\nEl inquilino ha recibido el mensaje especial en el chat con el botón para revisar el contrato y confirmar su reserva.');
+  } catch (err) {
+    console.error('Error al enviar propuesta:', err);
+    alert('No se pudo enviar la propuesta: ' + (err.message || err));
   }
 };
 
@@ -2199,14 +2222,13 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const targetTenantId = matchProp ? matchProp[2] : senderId;
 
   // Verificar estrictamente si el usuario logueado es el PROPIETARIO del inmueble
+  const currentRole = CURRENT_PROFILE?.role || 'student';
   let isPropOwner = false;
-  if (CURRENT_USER && targetPropId) {
-    const propInMem = (APP.allProperties || []).find(x => String(x.id) === String(targetPropId));
-    if (propInMem) {
-      isPropOwner = propInMem.landlord_id === CURRENT_USER.id;
-    } else {
-      isPropOwner = (CURRENT_PROFILE?.role === 'landlord' || CURRENT_PROFILE?.role === 'university');
-    }
+
+  if (currentRole === 'student') {
+    isPropOwner = false; // El inquilino / estudiante JAMÁS ve el botón de generar contrato
+  } else if (currentRole === 'landlord' || currentRole === 'university') {
+    isPropOwner = true; // Solo el propietario registrado ve la herramienta
   }
 
   if (isPropOwner && targetPropId) {

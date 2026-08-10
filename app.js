@@ -3738,20 +3738,25 @@ window.renderAdminPanel = async function() {
       if (landlordsStat) landlordsStat.textContent = landlords.length;
       if (premiumStat)   premiumStat.textContent   = premium.length;
 
-      // Filtrar estudiantes con estado 'pending' (o sin verificar)
-      const pendingDb = students.filter(p => p.is_verified === 'pending');
+      // Filtrar todos los usuarios (estudiantes y propietarios) con estado 'pending' o sin verificar
+      const pendingDb = allProfiles.filter(p => p.role !== 'university' && (p.is_verified === 'pending' || p.is_verified === false || p.is_verified === 'unverified' || (!p.is_verified && p.role)));
       pendingList = pendingDb.map(u => {
         const metaStr = localStorage.getItem('homii_profile_meta_' + u.id);
         const meta    = metaStr ? JSON.parse(metaStr) : {};
+        const selfie  = (u.selfie_url && u.selfie_url !== 'selfie_captured') ? u.selfie_url : (meta.selfie_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60');
+        const front   = (u.id_card_front_url && u.id_card_front_url !== 'idcard_front_captured') ? u.id_card_front_url : (meta.id_card_front_url || 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60');
+        const back    = (u.id_card_back_url && u.id_card_back_url !== 'idcard_back_captured') ? u.id_card_back_url : (meta.id_card_back_url || 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60');
+
         return {
           id: u.id,
-          name: u.name,
-          email: u.email || 'Estudiante Homii',
+          name: u.name || meta.name || 'Usuario Homii',
+          email: u.email || 'correo@ejemplo.com',
+          role: u.role || 'student',
           phone: u.phone || 'No registrado',
-          cedula: u.cedula || 'No especificada',
-          selfie_url: u.selfie_url || meta.selfie_url || 'selfie_placeholder.png',
-          id_card_front_url: u.id_card_front_url || meta.id_card_front_url || 'idcard_front_placeholder.png',
-          id_card_back_url: u.id_card_back_url || meta.id_card_back_url || 'idcard_back_placeholder.png'
+          cedula: u.cedula || meta.cedula || 'No especificada',
+          selfie_url: selfie,
+          id_card_front_url: front,
+          id_card_back_url: back
         };
       });
     }
@@ -3807,7 +3812,8 @@ window.renderAdminPanel = async function() {
         <div>
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <h5 style="margin:0; font-size:1rem; color:var(--text); font-weight:600;">${u.name}</h5>
-            <span class="badge badge-blue" style="font-size:0.65rem;">Nueva Cuenta</span>
+            <span class="badge ${u.role === 'landlord' ? 'badge-amber' : 'badge-blue'}" style="font-size:0.65rem;">${u.role === 'landlord' ? 'Propietario' : 'Estudiante'}</span>
+            <span class="badge badge-gray" style="font-size:0.65rem;">Pendiente de Verificación</span>
           </div>
           <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--text-muted);">
             Cédula: <strong>${u.cedula}</strong> &middot; Email: ${u.email} &middot; Tel: ${u.phone}

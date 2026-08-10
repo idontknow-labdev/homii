@@ -814,13 +814,10 @@ window.confirmAndAcceptLandlordTerms = async function() {
 
   if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
 
-  // Si había una publicación pendiente, la ejecutamos ahora
-  window._bypassingTermsCheck = true;
-  const form = document.getElementById('publish-form');
-  if (form) {
-    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  // Ejecutar de inmediato la publicación de la propiedad ingresada
+  if (typeof window.executePublishProperty === 'function') {
+    await window.executePublishProperty();
   }
-  window._bypassingTermsCheck = false;
 };
 
 async function logout() {
@@ -2901,6 +2898,121 @@ window.deleteProp = async function(id) {
   addNotif('Anuncio Eliminado', 'La propiedad fue removida del buscador.');
 };
 
+window.executePublishProperty = async function() {
+  const form = document.getElementById('publish-form');
+  if (!form) return;
+
+  const btn = form.querySelector('[type=submit]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
+
+  const title    = document.getElementById('prop-title')?.value.trim();
+  const province = document.getElementById('prop-province')?.value || 'Guayas';
+  const city     = document.getElementById('prop-city')?.value.trim() || '';
+  const price    = parseInt(document.getElementById('prop-price')?.value);
+  const rooms    = parseInt(document.getElementById('prop-rooms')?.value);
+  const sector   = document.getElementById('prop-location')?.value.trim();
+  const desc     = document.getElementById('prop-desc')?.value.trim();
+  const amenities = [...document.querySelectorAll('.form-amenity:checked')].map(cb => cb.value);
+
+  const fullLocation = city ? `${sector}, ${city}, ${province}` : `${sector}, ${province}`;
+
+  // Subir hasta 5 imágenes a Supabase Storage
+  let imgUrls = [];
+  const files = window._pendingFiles || [];
+  for (const file of files.slice(0, 5)) {
+    const ext  = file.name.split('.').pop().toLowerCase();
+    const path = `${CURRENT_USER.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await db.storage.from('homii-images').upload(path, file);
+    if (!upErr) {
+      const { data: { publicUrl } } = db.storage.from('homii-images').getPublicUrl(path);
+      imgUrls.push(publicUrl);
+    }
+  }
+
+  let payload = {
+    title,
+    description: desc || '',
+    price,
+    rooms,
+    bathrooms: 1,
+    province,
+    city,
+    location: fullLocation,
+    maps_query: fullLocation,
+    distance_to_campus: 0.5,
+    university_certified: false,
+    is_verified: false,
+    verification_requested: true,
+    status: 'pending_verification',
+    amenities: amenities.length ? amenities : [],
+    landlord_id: CURRENT_USER.id,
+    landlord_name: CURRENT_PROFILE?.name || 'Propietario',
+    landlord_email: CURRENT_USER.email,
+    rating_avg: 5.0,
+    rating_count: 0,
+    featured: false,
+    images: imgUrls,
+    is_demo: false,
+    reviews: []
+  };
+
+  let error = null;
+  let attempts = 0;
+
+  // Bucle infalible: si Supabase rechaza alguna columna ausente en la tabla física, la remueve y reintenta
+  while (attempts < 20) {
+    attempts++;
+    const res = await db.from('properties').insert(payload);
+    error = res.error;
+
+    if (!error) break; // ¡Publicación exitosa!
+
+    const rawMsg = error.message || '';
+    const rawMatch = rawMsg.match(/Could not find the '([^']+)' column/i) ||
+                     rawMsg.match(/column "([^"]+)" of relation/i) ||
+                     rawMsg.match(/column '([^']+)' does not exist/i);
+
+    let stripped = false;
+    if (rawMatch && rawMatch[1]) {
+      const colName = rawMatch[1].trim();
+      const foundKey = Object.keys(payload).find(k => k.toLowerCase() === colName.toLowerCase());
+      if (foundKey) {
+        console.warn(`Omitiendo columna '${foundKey}' ausente en el esquema de Supabase...`);
+        delete payload[foundKey];
+        stripped = true;
+      }
+    }
+
+    // Si no se identificó por regex, remover campos opcionales progresivamente
+    if (!stripped) {
+      const optionals = ['rating_avg', 'rating_count', 'reviews', 'featured', 'is_demo', 'amenities', 'province', 'city', 'maps_query', 'distance_to_campus', 'university_certified', 'is_verified', 'verification_requested', 'status'];
+      const keyToRemove = optionals.find(k => payload.hasOwnProperty(k));
+      if (keyToRemove) {
+        console.warn(`Omitiendo campo opcional '${keyToRemove}' por compatibilidad con Supabase...`);
+        delete payload[keyToRemove];
+      } else {
+        break; // No hay más campos opcionales para remover
+      }
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
+
+  if (error) {
+    console.error('Error al registrar inmueble:', error);
+    alert('Error al registrar inmueble: ' + error.message);
+    return;
+  }
+
+  document.getElementById('publish-form')?.reset();
+  window._pendingFiles = [];
+  const thumbsEl = document.getElementById('img-thumbs'); if (thumbsEl) thumbsEl.innerHTML = '';
+  
+  addNotif('Inmueble Registrado', `"${title}" ha quedado en revisión por el Administrador.`);
+  renderLandlordPanel();
+  alert('Inmueble registrado correctamente.\n\nPara que la propiedad aparezca publicada en el buscador público de arriendos, presione el botón "Pedir verificación al Administrador" en su panel para que el equipo apruebe su publicación.');
+};
+
 function setupPublishForm() {
   document.getElementById('prop-images')?.addEventListener('change', previewImages);
   document.getElementById('publish-form')?.addEventListener('submit', async e => {
@@ -2919,120 +3031,13 @@ function setupPublishForm() {
 
     // Comprobación de Aceptación de Términos y Condiciones para Propietarios
     const hasAcceptedTerms = CURRENT_PROFILE?.accepted_landlord_terms === true || (CURRENT_USER && localStorage.getItem('homii_landlord_terms_' + CURRENT_USER.id) === 'true');
-    if (!hasAcceptedTerms && !window._bypassingTermsCheck) {
+    if (!hasAcceptedTerms) {
       if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
       window.openLandlordTermsModal(true);
       return;
     }
 
-    if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
-
-    const title    = document.getElementById('prop-title')?.value.trim();
-    const province = document.getElementById('prop-province')?.value || 'Guayas';
-    const city     = document.getElementById('prop-city')?.value.trim() || '';
-    const price    = parseInt(document.getElementById('prop-price')?.value);
-    const rooms    = parseInt(document.getElementById('prop-rooms')?.value);
-    const sector   = document.getElementById('prop-location')?.value.trim();
-    const desc     = document.getElementById('prop-desc')?.value.trim();
-    const amenities = [...document.querySelectorAll('.form-amenity:checked')].map(cb => cb.value);
-
-    const fullLocation = city ? `${sector}, ${city}, ${province}` : `${sector}, ${province}`;
-
-    // Subir hasta 5 imágenes a Supabase Storage
-    let imgUrls = [];
-    const files = window._pendingFiles || [];
-    for (const file of files.slice(0, 5)) {
-      const ext  = file.name.split('.').pop().toLowerCase();
-      const path = `${CURRENT_USER.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: upErr } = await db.storage.from('homii-images').upload(path, file);
-      if (!upErr) {
-        const { data: { publicUrl } } = db.storage.from('homii-images').getPublicUrl(path);
-        imgUrls.push(publicUrl);
-      }
-    }
-
-    let payload = {
-      title,
-      description: desc || '',
-      price,
-      rooms,
-      bathrooms: 1,
-      province,
-      city,
-      location: fullLocation,
-      maps_query: fullLocation,
-      distance_to_campus: 0.5,
-      university_certified: false,
-      is_verified: false,
-      verification_requested: true,
-      status: 'pending_verification',
-      amenities: amenities.length ? amenities : [],
-      landlord_id: CURRENT_USER.id,
-      landlord_name: CURRENT_PROFILE?.name || 'Propietario',
-      landlord_email: CURRENT_USER.email,
-      rating_avg: 5.0,
-      rating_count: 0,
-      featured: false,
-      images: imgUrls,
-      is_demo: false,
-      reviews: []
-    };
-
-    let error = null;
-    let attempts = 0;
-
-    // Bucle infalible: si Supabase rechaza alguna columna ausente en la tabla física, la remueve y reintenta
-    while (attempts < 20) {
-      attempts++;
-      const res = await db.from('properties').insert(payload);
-      error = res.error;
-
-      if (!error) break; // ¡Publicación exitosa!
-
-      const rawMsg = error.message || '';
-      const rawMatch = rawMsg.match(/Could not find the '([^']+)' column/i) ||
-                       rawMsg.match(/column "([^"]+)" of relation/i) ||
-                       rawMsg.match(/column '([^']+)' does not exist/i);
-
-      let stripped = false;
-      if (rawMatch && rawMatch[1]) {
-        const colName = rawMatch[1].trim();
-        const foundKey = Object.keys(payload).find(k => k.toLowerCase() === colName.toLowerCase());
-        if (foundKey) {
-          console.warn(`Omitiendo columna '${foundKey}' ausente en el esquema de Supabase...`);
-          delete payload[foundKey];
-          stripped = true;
-        }
-      }
-
-      // Si no se identificó por regex, remover campos opcionales progresivamente
-      if (!stripped) {
-        const optionals = ['rating_avg', 'rating_count', 'reviews', 'featured', 'is_demo', 'amenities', 'province', 'city', 'maps_query', 'distance_to_campus', 'university_certified', 'is_verified', 'verification_requested', 'status'];
-        const keyToRemove = optionals.find(k => payload.hasOwnProperty(k));
-        if (keyToRemove) {
-          console.warn(`Omitiendo campo opcional '${keyToRemove}' por compatibilidad con Supabase...`);
-          delete payload[keyToRemove];
-        } else {
-          break; // No hay más campos opcionales para remover
-        }
-      }
-    }
-
-    if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
-
-    if (error) {
-      console.error('Error al registrar inmueble:', error);
-      alert('Error al registrar inmueble: ' + error.message);
-      return;
-    }
-
-    document.getElementById('publish-form')?.reset();
-    window._pendingFiles = [];
-    const thumbsEl = document.getElementById('img-thumbs'); if (thumbsEl) thumbsEl.innerHTML = '';
-    
-    addNotif('Inmueble Registrado', `"${title}" ha quedado en revisión por el Administrador.`);
-    renderLandlordPanel();
-    alert('Inmueble registrado correctamente.\n\nPara que la propiedad aparezca publicada en el buscador público de arriendos, presione el botón "Pedir verificación al Administrador" en su panel para que el equipo apruebe su publicación.');
+    await window.executePublishProperty();
   });
 }
 

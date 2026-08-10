@@ -778,9 +778,6 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-full">Publicar Inmueble</button>
-
-        <!-- Contenedor dinámico del estado de Términos y Condiciones para Propietarios -->
-        <div id="landlord-terms-status-container"></div>
       </form>
     </aside>
 
@@ -1730,13 +1727,10 @@
 
     <!-- Área de Aceptación (Si no los ha aceptado aún) -->
     <div id="landlord-terms-acceptance-footer" style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:0.75rem;">
-      <label class="checkbox-label" style="font-size:0.8rem; font-weight:600; color:var(--blue-dark); cursor:pointer;">
-        <input type="checkbox" id="chk-accept-landlord-terms"> Declaro que he leído y acepto los Términos y Condiciones para Propietarios de Homii.
+      <label class="checkbox-label" style="font-size:0.82rem; font-weight:600; color:var(--blue-dark); cursor:pointer; display:flex; align-items:flex-start; gap:0.5rem;">
+        <input type="checkbox" id="chk-accept-landlord-terms" style="margin-top:0.2rem;"> <span>Declaro que he leído y acepto los Términos y Condiciones para Propietarios de Homii.</span>
       </label>
-      <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
-        <button type="button" class="btn btn-outline" onclick="window.closeLandlordTermsModal()">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="window.confirmAndAcceptLandlordTerms()" id="btn-confirm-terms">Aceptar y Publicar Inmueble</button>
-      </div>
+      <button type="button" class="btn btn-primary btn-full" onclick="window.confirmAndAcceptLandlordTerms()" id="btn-confirm-terms" style="font-weight:600; padding:0.75rem;">Aceptar y Publicar Inmueble</button>
     </div>
 
     <!-- Área de Lectura (Si YA los aceptó previamente) -->
@@ -2037,6 +2031,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_24"></script>
+<script src="app.js?v=20260809_25"></script>
 </body>
 </html>

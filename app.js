@@ -1994,8 +1994,12 @@ window.submitGeneratedOffer = async function(e) {
 
     let prop = (APP.allProperties || []).find(x => String(x.id) === String(propId)) || openPropertyData;
     if (!prop && propId && isValidUUID(propId)) {
-      const { data } = await db.from('properties').select('*').eq('id', propId).maybeSingle().catch(() => ({}));
-      if (data) prop = data;
+      try {
+        const { data } = await db.from('properties').select('*').eq('id', propId).maybeSingle();
+        if (data) prop = data;
+      } catch (eProp) {
+        console.warn('Property fetch warning:', eProp);
+      }
     }
     if (!prop) {
       prop = { id: propId || 'prop_demo', title: 'Inmueble Homii', location: 'Portoviejo, Manabí', price };
@@ -2208,12 +2212,12 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const titleEl = document.getElementById('conv-title');
   if (titleEl) titleEl.textContent = senderName + ' — ' + propTitle;
 
-  // Barra de acción exclusiva del propietario para Generar Contrato
+  // Barra de acción exclusiva del propietario para Generar Contrato (Oculta por defecto)
   let offerBar = modal.querySelector('.landlord-offer-action-bar');
   if (!offerBar) {
     offerBar = document.createElement('div');
     offerBar.className = 'landlord-offer-action-bar';
-    offerBar.style.cssText = 'padding:0.6rem 1rem; background:#eff6ff; border-bottom:1px solid #bfdbfe; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;';
+    offerBar.style.cssText = 'padding:0.6rem 1rem; background:#eff6ff; border-bottom:1px solid #bfdbfe; display:none; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;';
     modal.querySelector('.conv-modal-body')?.prepend(offerBar);
   }
 
@@ -2222,16 +2226,10 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const targetTenantId = matchProp ? matchProp[2] : senderId;
 
   // Verificar estrictamente si el usuario logueado es el PROPIETARIO del inmueble
-  const currentRole = CURRENT_PROFILE?.role || 'student';
-  let isPropOwner = false;
+  const currentRole = (CURRENT_PROFILE?.role || 'student').toLowerCase();
+  const isLandlord = (currentRole === 'landlord' || currentRole === 'university');
 
-  if (currentRole === 'student') {
-    isPropOwner = false; // El inquilino / estudiante JAMÁS ve el botón de generar contrato
-  } else if (currentRole === 'landlord' || currentRole === 'university') {
-    isPropOwner = true; // Solo el propietario registrado ve la herramienta
-  }
-
-  if (isPropOwner && targetPropId) {
+  if (isLandlord && targetPropId) {
     offerBar.style.display = 'flex';
     offerBar.innerHTML = `
       <div style="font-size:0.8rem; color:#1e40af; font-weight:600; display:flex; align-items:center; gap:0.35rem;">

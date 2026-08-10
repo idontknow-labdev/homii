@@ -1303,8 +1303,17 @@ function renderListingsGrid(list) {
 // ============================================================
 
 async function openPropertyModal(id) {
-  const { data: p, error } = await db.from('properties').select('*').eq('id', id).single();
-  if (!p || error) return;
+  let p = (APP.allProperties || []).find(item => String(item.id) === String(id));
+  
+  if (!p) {
+    const { data, error } = await db.from('properties').select('*').eq('id', id).maybeSingle();
+    if (data) p = data;
+  }
+
+  if (!p) {
+    console.warn('No se encontró la propiedad especificada con ID:', id);
+    return;
+  }
 
   openPropertyData = p;
   APP.galleryIndex[id] = 0;

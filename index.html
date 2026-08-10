@@ -779,18 +779,8 @@
 
         <button type="submit" class="btn btn-primary btn-full">Publicar Inmueble</button>
 
-        <!-- Términos y Condiciones para Propietarios (Aviso Oficial) -->
-        <div style="margin-top:1rem; padding:0.85rem; background:var(--bg-section); border-radius:var(--radius-md); border:1px solid var(--border); font-size:0.75rem; color:var(--text-sec); line-height:1.5;">
-          <p style="margin:0 0 0.4rem; font-weight:700; color:var(--blue-dark); font-size:0.78rem; display:flex; align-items:center; gap:0.35rem;">
-            📜 Términos y Condiciones para Propietarios Homii
-          </p>
-          <p style="margin:0 0 0.4rem;">
-            Al registrar y publicar un inmueble en Homii, usted declara que ha leído y acepta los Términos y Condiciones Oficiales (incluyendo el sistema de prioridad Premium y la permanencia de 3 meses).
-          </p>
-          <button type="button" class="btn btn-outline btn-sm btn-full" onclick="window.openLandlordTermsModal()" style="font-size:0.75rem; padding:0.35rem 0.5rem; font-weight:600; color:var(--blue-dark); border-color:var(--blue-light);">
-            📄 Leer Términos Completos para Propietarios (12 Puntos)
-          </button>
-        </div>
+        <!-- Contenedor dinámico del estado de Términos y Condiciones para Propietarios -->
+        <div id="landlord-terms-status-container"></div>
       </form>
     </aside>
 
@@ -1693,8 +1683,10 @@
   <div class="modal-box" style="max-width:640px; max-height:85vh; display:flex; flex-direction:column; padding:1.75rem; border-radius:var(--radius-xl); background:var(--bg-white); box-shadow:var(--shadow-xl);">
     <div class="modal-head" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
       <div>
-        <h3 class="modal-title" style="font-size:1.15rem; font-weight:700; color:var(--blue-dark); margin:0;">Términos y Condiciones para Propietarios Homii</h3>
-        <p style="font-size:0.78rem; color:var(--text-sec); margin:0.2rem 0 0;">Normativa oficial de publicación e intermediación tecnológica</p>
+        <h3 class="modal-title" style="font-size:1.15rem; font-weight:600; color:var(--blue-dark); margin:0;">Términos y Condiciones para Propietarios Homii</h3>
+        <div id="landlord-terms-badge-container" style="margin-top:0.3rem;">
+          <span class="badge badge-amber" id="landlord-terms-header-badge" style="font-size:0.72rem;">⚠️ Aceptación requerida para publicar</span>
+        </div>
       </div>
       <button class="modal-close-btn" onclick="window.closeLandlordTermsModal()">&times;</button>
     </div>
@@ -1736,9 +1728,25 @@
       </div>
     </div>
 
-    <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
-      <button type="button" class="btn btn-primary" onclick="window.closeLandlordTermsModal()" style="font-size:0.85rem;">Comprendido y Acepto</button>
+    <!-- Área de Aceptación (Si no los ha aceptado aún) -->
+    <div id="landlord-terms-acceptance-footer" style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:0.75rem;">
+      <label class="checkbox-label" style="font-size:0.8rem; font-weight:600; color:var(--blue-dark); cursor:pointer;">
+        <input type="checkbox" id="chk-accept-landlord-terms"> Declaro que he leído y acepto los Términos y Condiciones para Propietarios de Homii.
+      </label>
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+        <button type="button" class="btn btn-outline" onclick="window.closeLandlordTermsModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="window.confirmAndAcceptLandlordTerms()" id="btn-confirm-terms">Aceptar y Publicar Inmueble</button>
+      </div>
     </div>
+
+    <!-- Área de Lectura (Si YA los aceptó previamente) -->
+    <div id="landlord-terms-read-footer" style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); display:none; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.78rem; color:var(--green); font-weight:600; display:flex; align-items:center; gap:0.3rem;">
+        <span>✅</span> Términos aceptados formalmente.
+      </span>
+      <button type="button" class="btn btn-primary" onclick="window.closeLandlordTermsModal()" style="font-size:0.85rem;">Cerrar / Entendido</button>
+    </div>
+
   </div>
 </div>
 
@@ -2029,6 +2037,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_23"></script>
+<script src="app.js?v=20260809_24"></script>
 </body>
 </html>

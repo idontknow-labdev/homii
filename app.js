@@ -766,14 +766,61 @@ window.submitBiometricVerification = async function() {
   if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
 };
 
-window.openLandlordTermsModal = function() {
+window.openLandlordTermsModal = function(isForAcceptance = false) {
   const modal = document.getElementById('landlord-terms-modal');
-  if (modal) modal.classList.add('open');
+  if (!modal) return;
+
+  const hasAccepted = CURRENT_PROFILE?.accepted_landlord_terms === true || (CURRENT_USER && localStorage.getItem('homii_landlord_terms_' + CURRENT_USER.id) === 'true');
+
+  const acceptanceFooter = document.getElementById('landlord-terms-acceptance-footer');
+  const readFooter       = document.getElementById('landlord-terms-read-footer');
+  const badgeContainer   = document.getElementById('landlord-terms-badge-container');
+
+  if (hasAccepted && !isForAcceptance) {
+    // Modo Lectura de Términos ya Aceptados
+    if (acceptanceFooter) acceptanceFooter.style.display = 'none';
+    if (readFooter)       readFooter.style.display       = 'flex';
+    if (badgeContainer)   badgeContainer.innerHTML = '<span class="badge badge-green" style="font-size:0.72rem;">✅ Términos y Condiciones Aceptados</span>';
+  } else {
+    // Modo Aceptación Obligatoria al Publicar
+    if (acceptanceFooter) acceptanceFooter.style.display = 'flex';
+    if (readFooter)       readFooter.style.display       = 'none';
+    if (badgeContainer)   badgeContainer.innerHTML = '<span class="badge badge-amber" style="font-size:0.72rem;">⚠️ Aceptación requerida para publicar</span>';
+  }
+
+  modal.classList.add('open');
 };
 
 window.closeLandlordTermsModal = function() {
   const modal = document.getElementById('landlord-terms-modal');
   if (modal) modal.classList.remove('open');
+};
+
+window.confirmAndAcceptLandlordTerms = async function() {
+  const chk = document.getElementById('chk-accept-landlord-terms');
+  if (chk && !chk.checked) {
+    alert('Debe marcar la casilla de verificación confirmando que acepta los Términos y Condiciones para Propietarios.');
+    return;
+  }
+
+  if (CURRENT_USER) {
+    localStorage.setItem('homii_landlord_terms_' + CURRENT_USER.id, 'true');
+    if (CURRENT_PROFILE) CURRENT_PROFILE.accepted_landlord_terms = true;
+
+    await db.from('profiles').update({ accepted_landlord_terms: true }).eq('id', CURRENT_USER.id).catch(() => {});
+  }
+
+  window.closeLandlordTermsModal();
+
+  if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
+
+  // Si había una publicación pendiente, la ejecutamos ahora
+  window._bypassingTermsCheck = true;
+  const form = document.getElementById('publish-form');
+  if (form) {
+    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }
+  window._bypassingTermsCheck = false;
 };
 
 async function logout() {
@@ -2724,6 +2771,39 @@ async function renderLandlordPanel() {
     }
   }
 
+  // Renderizar estado dinámico de Términos y Condiciones para Propietarios
+  const hasAcceptedTerms = CURRENT_PROFILE?.accepted_landlord_terms === true || (CURRENT_USER && localStorage.getItem('homii_landlord_terms_' + CURRENT_USER.id) === 'true');
+  const termsStatusArea  = document.getElementById('landlord-terms-status-container');
+  if (termsStatusArea) {
+    if (hasAcceptedTerms) {
+      termsStatusArea.innerHTML = `
+        <div style="margin-top:1rem; padding:0.85rem; background:#ecfdf5; border-radius:var(--r-md); border:1px solid #a7f3d0; font-size:0.8rem; color:#065f46; line-height:1.5;">
+          <div style="font-weight:600; display:flex; align-items:center; gap:0.4rem; font-size:0.82rem; margin-bottom:0.25rem;">
+            <span>✅</span> Términos y Condiciones Aceptados
+          </div>
+          <p style="margin:0 0 0.4rem; font-size:0.75rem; color:#047857;">
+            Usted ya ha aceptado los Términos y Condiciones Oficiales para Propietarios de Homii.
+          </p>
+          <button type="button" class="btn btn-outline btn-sm btn-full" onclick="window.openLandlordTermsModal(false)" style="font-size:0.75rem; padding:0.35rem 0.5rem; background:#ffffff; color:#065f46; border-color:#6ee7b7; font-weight:600;">
+            📄 Revisar Términos Aceptados (12 Puntos)
+          </button>
+        </div>`;
+    } else {
+      termsStatusArea.innerHTML = `
+        <div style="margin-top:1rem; padding:0.85rem; background:var(--bg-section); border-radius:var(--r-md); border:1px solid var(--border); font-size:0.75rem; color:var(--text-sec); line-height:1.5;">
+          <p style="margin:0 0 0.4rem; font-weight:600; color:var(--blue-dark); font-size:0.78rem; display:flex; align-items:center; gap:0.35rem;">
+            📜 Términos y Condiciones para Propietarios
+          </p>
+          <p style="margin:0 0 0.4rem;">
+            Al hacer clic en "Publicar Inmueble", se desplegarán los Términos y Condiciones Oficiales para su revisión y aceptación obligatoria.
+          </p>
+          <button type="button" class="btn btn-outline btn-sm btn-full" onclick="window.openLandlordTermsModal(false)" style="font-size:0.75rem; padding:0.35rem 0.5rem; font-weight:600; color:var(--blue-dark); border-color:var(--blue-light);">
+            📄 Previsualizar Términos para Propietarios (12 Puntos)
+          </button>
+        </div>`;
+    }
+  }
+
   const { data: myProps } = await db.from('properties').select('*').eq('landlord_id', CURRENT_USER.id);
   const count = (myProps || []).length;
 
@@ -2834,6 +2914,14 @@ function setupPublishForm() {
     if (CURRENT_PROFILE?.role !== 'university' && (currentStatus === 'pending' || currentStatus === 'rejected' || currentStatus === false || !currentStatus)) {
       alert('⚠️ Verificación Biométrica Requerida para Propietarios\n\nSu cuenta aún no ha sido verificada por el Administrador. Debe completar su verificación biométrica de identidad (selfie y cédula) y ser aprobado para poder publicar sus inmuebles.');
       if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
+      return;
+    }
+
+    // Comprobación de Aceptación de Términos y Condiciones para Propietarios
+    const hasAcceptedTerms = CURRENT_PROFILE?.accepted_landlord_terms === true || (CURRENT_USER && localStorage.getItem('homii_landlord_terms_' + CURRENT_USER.id) === 'true');
+    if (!hasAcceptedTerms && !window._bypassingTermsCheck) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Publicar Inmueble'; }
+      window.openLandlordTermsModal(true);
       return;
     }
 

@@ -1027,40 +1027,26 @@ function setupNav() {
 // ============================================================
 
 const SEGMENTS = {
-  student: {
-    title: 'Su hogar seguro, validado por la PUCEM',
-    desc: 'Mudarse a Portoviejo para estudiar en la PUCEM es una decisión importante. Homii le ayuda a encontrar arriendos a pasos del campus, inspeccionados físicamente y respaldados por el convenio oficial con la Pontificia Universidad Católica de Manabí.',
-    features: ['A minutos caminando del campus PUCEM', 'Inmuebles inspeccionados y certificados', 'Soporte exclusivo Homii Student', 'Filtros rápidos de agua, internet y electricidad'],
-    quote: 'Llegué desde Loja sin conocer Portoviejo. Gracias a Homii Student encontré un cuarto certificado a tres cuadras de la PUCEM con internet de fibra. Mis padres quedaron completamente tranquilos.',
-    author: 'Sofía Valenzuela — Estudiante de Medicina, PUCEM'
-  },
-  general: {
-    title: 'Arrendamientos transparentes, rápidos y directos',
-    desc: 'Encuentre su próximo departamento o estudio en Portoviejo con filtros reales: internet estable, agua constante, precio justo y políticas de mascotas flexibles.',
-    features: ['Buscador con filtros precisos', 'Trato directo con propietarios verificados', 'Comparación de precios y valoraciones reales', 'Plataforma autogestionable sin intermediarios'],
-    quote: 'Detestaba buscar arriendos porque las fotos nunca coincidían con la realidad. En Homii los filtros son exactos. Encontré mi departamento en un fin de semana.',
-    author: 'Javier Pérez — Diseñador, Portoviejo'
+  tenant: {
+    title: 'Arriendos verificados y búsqueda de compañeros',
+    desc: 'Encuentre departamentos, estudios y habitaciones inspeccionadas. Conecte directamente con propietarios o busque compañeros compatibles para compartir vivienda y optimizar gastos.',
+    features: ['Inmuebles verificados e inspeccionados', 'Filtros exactos por precio, servicios y ubicación', 'Búsqueda de compañeros de vivienda', 'Chat y contacto directo con propietarios'],
+    quote: 'Encontré mi departamento ideal en pocos minutos. Las fotos y la ubicación son 100% reales y el trato con el propietario fue completamente directo.',
+    author: 'Sofía Valenzuela — Inquilina en Homii'
   },
   landlord: {
-    title: 'Mayor visibilidad y arrendamiento directo',
-    desc: '¿Tiene inmuebles en Portoviejo? Homii le da visibilidad directa entre miles de arrendatarios, con herramientas para gestionar sus propiedades de forma profesional.',
-    features: ['Publicación gratuita con fotos reales', 'Chat directo con inquilinos en tiempo real', 'Plan destacado con mayor alcance', 'Certificación universitaria disponible'],
-    quote: 'Tengo dos departamentos y los arrendaba lentamente antes de Homii. Desde que publiqué, ambos están ocupados todo el año.',
-    author: 'Rosa María Delgado — Propietaria en Portoviejo'
+    title: 'Mayor visibilidad y arrendamiento seguro',
+    desc: 'Publique sus inmuebles y conecte con inquilinos calificados. Gestione sus solicitudes de forma organizada con prioridad para usuarios verificados y herramientas de contratos.',
+    features: ['Publicación rápida con fotos y detalles', 'Mensajería directa con postulantes', 'Prioridad para usuarios verificados', 'Gestión transparente de arrendamientos'],
+    quote: 'Tengo dos departamentos en arriendo. Desde que los publiqué en Homii, mantengo una alta ocupación con inquilinos confiables.',
+    author: 'Rosa María Delgado — Propietaria'
   },
-  admin: {
-    title: 'Gestión centralizada de múltiples unidades',
-    desc: 'Optimice la tasa de ocupación de sus condominios y edificios en Manabí. Gestione consultas y garantice el estándar de calidad exigido.',
-    features: ['Panel de métricas centralizado', 'Soporte prioritario', 'Gestión masiva de listados', 'Certificación colectiva de condominio'],
-    quote: 'Administro un edificio de 16 departamentos. Homii ha centralizado todas las consultas de manera muy eficiente.',
-    author: 'Alberto Castro — Administrador de Condominios'
-  },
-  worker: {
-    title: 'Transición a Manabí sin dificultad',
-    desc: 'Si su empresa lo reubica en Portoviejo, Homii facilita el proceso con estancias ejecutivas completamente amobladas y listas para habitar desde el primer día.',
-    features: ['Estudios ejecutivos completamente amoblados', 'Ubicación estratégica en zonas laborales', 'Contratos temporales flexibles', 'Todos los servicios incluidos desde el primer día'],
-    quote: 'Me trasladaron a la sede de Portoviejo. Encontré un mini departamento amoblado con todos los servicios activos. El proceso fue rápido.',
-    author: 'Eduardo Castillo — Consultor, Portoviejo'
+  pucem: {
+    title: 'Beneficios exclusivos para la Comunidad PUCEM',
+    desc: 'Acceso preferencial para estudiantes y docentes registrados con correo institucional @pucem.edu.ec. Arriendos inspeccionados cercanos al campus con condiciones recomendadas.',
+    features: ['Arriendos a minutos caminando del campus', 'Inspección física y estándares estudiantiles', 'Conexión con compañeros de la universidad', 'Identificación estudiantil validada'],
+    quote: 'Accedí con mi correo universitario y encontré una habitación verificada muy cerca del campus. La tranquilidad para mi familia fue total.',
+    author: 'Mateo Cedeño — Estudiante PUCEM'
   }
 };
 
@@ -1072,26 +1058,14 @@ function setupSegmentTabs() {
       renderSegment(tab.dataset.seg);
     });
   });
-  renderSegment('student');
+  renderSegment('tenant');
 }
 
 function renderSegment(key) {
-  const isPucemMode = document.body.classList.contains('pucem-mode');
-  
-  let d = SEGMENTS[key];
-  if (key === 'student' && !isPucemMode) {
-    d = {
-      title: 'Su hogar cómodo y seguro en Portoviejo',
-      desc: 'Mudarse a Portoviejo por estudios o trabajo es un gran paso. Homii le ayuda a encontrar arriendos verificados físicamente, cercanos a zonas principales y con todos los servicios.',
-      features: ['A minutos de centros educativos y comerciales', 'Inmuebles inspeccionados y verificados', 'Soporte y contacto directo con propietarios', 'Filtros rápidos de agua, internet y luz'],
-      quote: 'Llegué a Portoviejo y encontré una habitación verificada a pocos minutos con internet de fibra. El proceso fue completamente transparente.',
-      author: 'Sofía Valenzuela — Residente en Portoviejo'
-    };
-  }
+  const d = SEGMENTS[key] || SEGMENTS.tenant;
 
-  if (!d) return;
   document.querySelectorAll('.seg-panel').forEach(p => p.classList.remove('active'));
-  const panel = document.getElementById('seg-panel-' + key);
+  const panel = document.getElementById('seg-panel-' + key) || document.getElementById('seg-panel-tenant');
   if (panel) {
     panel.innerHTML = `
       <div>

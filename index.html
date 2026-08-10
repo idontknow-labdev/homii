@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
+  <!-- Favicon / Logo oficial en la pestaña y ventana del navegador -->
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="shortcut icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  
   <!-- Verificación Oficial de Google Search Console -->
   <meta name="google-site-verification" content="google994b02ae93a6fcab" />
   
@@ -201,33 +206,27 @@
       <!-- Segmentos -->
       <div style="margin-bottom:3rem;">
         <div class="section-title">Diseñado para cada miembro de la comunidad</div>
-        <div class="section-desc non-pucem-element">Una plataforma pensada para estudiantes foráneos, propietarios locales y administradores en Portoviejo.</div>
-        <div class="section-desc pucem-element">Una plataforma pensada para estudiantes foráneos, propietarios locales y la administración de la PUCEM.</div>
+        <div class="section-desc">Una plataforma moderna pensada para inquilinos, estudiantes y propietarios de inmuebles.</div>
 
         <div class="seg-tabs">
-          <button class="seg-tab active" data-seg="student">Estudiantes</button>
-          <button class="seg-tab" data-seg="general">Arrendatarios</button>
+          <button class="seg-tab active" data-seg="tenant">Inquilinos & Estudiantes</button>
           <button class="seg-tab" data-seg="landlord">Propietarios</button>
-          <button class="seg-tab" data-seg="admin">Administradores</button>
-          <button class="seg-tab" data-seg="worker">Profesionales</button>
+          <button class="seg-tab" data-seg="pucem">Comunidad PUCEM</button>
         </div>
 
-        <div id="seg-panel-student" class="seg-panel"></div>
-        <div id="seg-panel-general" class="seg-panel"></div>
+        <div id="seg-panel-tenant" class="seg-panel"></div>
         <div id="seg-panel-landlord" class="seg-panel"></div>
-        <div id="seg-panel-admin" class="seg-panel"></div>
-        <div id="seg-panel-worker" class="seg-panel"></div>
+        <div id="seg-panel-pucem" class="seg-panel"></div>
       </div>
 
       <!-- Bloque PUCEM Student -->
       <div class="pucem-block pucem-element">
         <div>
           <div class="pucem-block-label">Programa Oficial</div>
-          <h3>¿Es estudiante foráneo de la PUCEM?</h3>
+          <h3>¿Es estudiante de la PUCEM?</h3>
           <p>
-            Active su cuenta con su correo @pucem.edu.ec y acceda al módulo Homii Student.
-            Filtre arriendos certificados por inspección física, avalados por la Pontificia Universidad
-            Católica de Manabí, a pasos de su facultad y con condiciones preferenciales.
+            Active su cuenta con su correo @pucem.edu.ec y acceda a arriendos inspeccionados físicamente,
+            cercanos a su facultad y con condiciones preferenciales.
           </p>
           <div class="pucem-block-actions">
             <button class="btn btn-white" onclick="navigate('search')">Explorar Arriendos</button>
@@ -255,29 +254,28 @@
             <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
           <h4>Verificación Física</h4>
-          <p>Nuestro equipo visita cada propiedad y revisa agua, internet, electricidad y seguridad estructural antes de publicarla.</p>
+          <p>Inspección visual y biometría para garantizar arriendos 100% seguros y reales.</p>
         </div>
         <div class="feature-card">
           <div class="feature-card-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M12 2a8 8 0 00-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 00-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
           <h4>Ubicación en Google Maps</h4>
-          <p>Cada propiedad incluye su ubicación exacta en Google Maps. Conozca el lugar antes de visitar.</p>
+          <p>Mapas interactivos con puntos de referencia exactos antes de agendar tu visita.</p>
         </div>
         <div class="feature-card">
           <div class="feature-card-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
           <h4>Buscar Compañero</h4>
-          <p class="non-pucem-element">Conecta con otros usuarios en Portoviejo para compartir los gastos del arriendo y reducir costos.</p>
-          <p class="pucem-element">Conecta con otros estudiantes de la PUCEM para compartir los gastos del arriendo y hacer más accesible la vivienda.</p>
+          <p>Conecta con personas compatibles para compartir arriendo y reducir gastos.</p>
         </div>
-        <div class="feature-card non-pucem-element">
+        <div class="feature-card">
           <div class="feature-card-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
           <h4>Trato Directo</h4>
-          <p>Contacto transparente entre propietarios y arrendatarios en Portoviejo sin comisiones ocultas.</p>
+          <p>Contacto fluido e inmediato entre propietarios e inquilinos sin comisiones ocultas.</p>
         </div>
         <div class="feature-card pucem-element">
           <div class="feature-card-icon">
@@ -2031,6 +2029,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=20260809_20"></script>
+<script src="app.js?v=20260809_22"></script>
 </body>
 </html>

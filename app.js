@@ -1804,26 +1804,33 @@ async function setupDirectChat(p) {
 
   const chatId = `prop_${p.id}_usr_${CURRENT_USER.id}`;
 
-  // Cargar historial
-  const { data: history } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+  // Cargar historial (Supabase + localStorage)
+  const localKey = 'homii_local_chat_' + chatId;
+  const localHistory = JSON.parse(localStorage.getItem(localKey) || '[]');
+  const { data: supaHistory } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true }).catch(() => ({ data: [] }));
+
+  const mergedMap = new Map();
+  (supaHistory || []).forEach(m => mergedMap.set(m.id || m.created_at, m));
+  localHistory.forEach(m => mergedMap.set(m.created_at, m));
+  const fullHistory = Array.from(mergedMap.values()).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
   const appendBubble = (m) => {
-    const el = renderChatMessageElement(m, CURRENT_USER.id, p.landlord_name, null);
+    const el = renderChatMessageElement(m, CURRENT_USER?.id, p.landlord_name, null);
     msgs.appendChild(el);
     msgs.scrollTop = msgs.scrollHeight;
   };
 
   msgs.innerHTML = '';
-  if (!history || history.length === 0) {
+  if (fullHistory.length === 0) {
     const defaultWelcome = {
       sender_id: p.landlord_id || 'demo_landlord',
       sender_name: p.landlord_name || 'Propietario Homii',
       message: `Hola, gracias por su interés en "${p.title}". ¿En qué le puedo ayudar?`,
       created_at: new Date().toISOString()
     };
-    msgs.appendChild(renderChatMessageElement(defaultWelcome, CURRENT_USER.id, p.landlord_name, null));
+    msgs.appendChild(renderChatMessageElement(defaultWelcome, CURRENT_USER?.id, p.landlord_name, null));
   } else {
-    (history || []).forEach(m => appendBubble(m));
+    fullHistory.forEach(m => appendBubble(m));
   }
 
   // Suscripción real-time
@@ -2028,52 +2035,56 @@ window.submitGeneratedOffer = async function(e) {
     window.closeGenerateOfferModal();
 
     const offerMsgText = `[HOMII_OFERTA_ID:${resId}] Propuesta Formal de Arrendamiento: $${price}/mes del ${startDate} al ${endDate}.`;
-    const targetReceiver = tenantId || (CURRENT_USER?.id === prop.landlord_id ? 'tenant_user' : prop.landlord_id);
+    const targetChatId = chatId || `prop_${prop.id}_usr_${CURRENT_USER?.id || 'guest'}`;
 
+    // 1. Guardar localmente (garantía instantánea para demos e inmuebles de prueba)
+    const localKey = 'homii_local_chat_' + targetChatId;
+    const existingLocal = JSON.parse(localStorage.getItem(localKey) || '[]');
+    const localMsgObj = {
+      chat_id: targetChatId,
+      sender_id: CURRENT_USER?.id || 'landlord_demo',
+      sender_name: CURRENT_PROFILE?.name || 'Propietario Homii',
+      message: offerMsgText,
+      created_at: new Date().toISOString()
+    };
+    existingLocal.push(localMsgObj);
+    localStorage.setItem(localKey, JSON.stringify(existingLocal));
+
+    // 2. Insertar en Supabase (validando UUIDs para evitar errores de restricción de base de datos)
     if (CURRENT_USER) {
-      await db.from('chats').insert({
-        chat_id: chatId || `prop_${prop.id}_usr_${CURRENT_USER.id}`,
-        property_id: prop.id,
+      const payload = {
+        chat_id: targetChatId,
         property_title: prop.title,
         sender_id: CURRENT_USER.id,
         sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-        receiver_id: targetReceiver,
         message: offerMsgText
-      }).catch(err => console.warn('Supabase chat insert warning:', err));
+      };
+      if (isValidUUID(prop.id)) payload.property_id = prop.id;
+      if (isValidUUID(tenantId)) payload.receiver_id = tenantId;
+
+      await db.from('chats').insert(payload).catch(err => console.warn('Supabase chat insert warning:', err));
     }
 
     addNotif('Oferta Enviada', `Se envió la propuesta formal de arriendo para "${prop.title}".`);
 
-    // Renderizar inmediatamente en la conversación del modal de chat si está abierto
+    // 3. Renderizar en la conversación abierta (modal de chat)
     const convMsgs = document.getElementById('conv-msgs');
-    if (convMsgs && CURRENT_USER) {
-      const localMsg = {
-        sender_id: CURRENT_USER.id,
-        sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-        message: offerMsgText,
-        created_at: new Date().toISOString()
-      };
-      convMsgs.appendChild(renderChatMessageElement(localMsg, CURRENT_USER.id));
+    if (convMsgs) {
+      convMsgs.appendChild(renderChatMessageElement(localMsgObj, CURRENT_USER?.id || 'landlord_demo'));
       convMsgs.scrollTop = convMsgs.scrollHeight;
     }
 
-    // Renderizar también en el chat directo del modal de propiedad si está abierto
+    // 4. Renderizar en el chat directo del modal de propiedad
     const directMsgs = document.getElementById('direct-chat-msgs');
-    if (directMsgs && CURRENT_USER) {
-      const localMsg = {
-        sender_id: CURRENT_USER.id,
-        sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-        message: offerMsgText,
-        created_at: new Date().toISOString()
-      };
-      directMsgs.appendChild(renderChatMessageElement(localMsg, CURRENT_USER.id));
+    if (directMsgs) {
+      directMsgs.appendChild(renderChatMessageElement(localMsgObj, CURRENT_USER?.id || 'landlord_demo'));
       directMsgs.scrollTop = directMsgs.scrollHeight;
     }
 
-    alert('¡Oferta formal y contrato generados con éxito!\n\nEl inquilino ha recibido el mensaje especial en el chat con el botón para revisar el contrato y confirmar su reserva.');
+    alert('¡Oferta formal y contrato generados con éxito!\n\nEl inquilino ha recibido el mensaje especial en el chat con la tarjeta verde para revisar el contrato y confirmar la reserva.');
   } catch (err) {
     console.error('Error al enviar propuesta:', err);
-    alert('No se pudo enviar la propuesta: ' + (err.message || err));
+    alert('Ocurrió un inconveniente al generar la propuesta: ' + (err.message || err));
   }
 };
 
@@ -2247,12 +2258,20 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const btn   = document.getElementById('conv-send');
   if (!msgs) return;
 
-  const { data: history } = await db.from('chats')
-    .select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+  const localKey = 'homii_local_chat_' + chatId;
+  const localHistory = JSON.parse(localStorage.getItem(localKey) || '[]');
+  
+  const { data: supaHistory } = await db.from('chats')
+    .select('*').eq('chat_id', chatId).order('created_at', { ascending: true }).catch(() => ({ data: [] }));
+
+  const mergedMap = new Map();
+  (supaHistory || []).forEach(m => mergedMap.set(m.id || m.created_at, m));
+  localHistory.forEach(m => mergedMap.set(m.created_at, m));
+  const fullHistory = Array.from(mergedMap.values()).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
   msgs.innerHTML = '';
-  (history || []).forEach(m => {
-    msgs.appendChild(renderChatMessageElement(m, CURRENT_USER.id, senderName, null));
+  fullHistory.forEach(m => {
+    msgs.appendChild(renderChatMessageElement(m, CURRENT_USER?.id, senderName, null));
   });
   msgs.scrollTop = msgs.scrollHeight;
 

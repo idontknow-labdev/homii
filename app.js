@@ -1655,7 +1655,7 @@ async function fetchUserProfileForChat(userId) {
   if (!userId || userId === 'demo_landlord' || userId === 'demo_roomie') return null;
   if (CHAT_PROFILES_CACHE[userId]) return CHAT_PROFILES_CACHE[userId];
   try {
-    const { data } = await db.from('profiles').select('id, name, avatar_url, avatar_color, role').eq('id', userId).maybeSingle();
+    const { data } = await db.from('profiles').select('id, name, avatar_url, role').eq('id', userId).maybeSingle();
     if (data) CHAT_PROFILES_CACHE[userId] = data;
     return data;
   } catch(e) {
@@ -1958,13 +1958,6 @@ window._HOMII_RESERVATIONS = JSON.parse(localStorage.getItem('homii_reservations
 async function saveReservationState(resObj) {
   window._HOMII_RESERVATIONS[resObj.id] = resObj;
   localStorage.setItem('homii_reservations_db', JSON.stringify(window._HOMII_RESERVATIONS));
-  try {
-    if (CURRENT_USER?.id && isValidUUID(resObj.property_id)) {
-      await db.from('reservations').upsert([resObj]);
-    }
-  } catch (errRes) {
-    console.warn('Reservation save warning:', errRes);
-  }
 }
 
 function getReservationById(id) {
@@ -2143,19 +2136,6 @@ window._CURRENT_ACTIVE_CHECKOUT_ID = null;
 
 window.openCheckoutModal = async function(resId) {
   let res = getReservationById(resId);
-
-  // Si no se encuentra en memoria local (ej. inquilino en otra pestaña/dispositivo), buscar en Supabase
-  if (!res) {
-    try {
-      const { data: supaRes } = await db.from('reservations').select('*').eq('id', resId).maybeSingle();
-      if (supaRes) {
-        res = supaRes;
-        saveReservationState(res);
-      }
-    } catch (eRes) {
-      console.warn('Reservation DB fetch warning:', eRes);
-    }
-  }
 
   // Fallback inteligente garantizado para prototipos y demos
   if (!res) {
@@ -2503,7 +2483,11 @@ async function filterRoomies() {
   // Cargar perfiles de usuario desde profiles DB para garantizar que todas las fotos carguen
   const userIds = [...new Set((list || []).map(r => r.user_id).filter(id => isValidUUID(id)))];
   if (userIds.length > 0) {
-    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color, rating_avg, rating_count').in('id', userIds);
+    let profs = [];
+    try {
+      const { data } = await db.from('profiles').select('id, name, avatar_url').in('id', userIds);
+      if (data) profs = data;
+    } catch (eRProf) {}
     (profs || []).forEach(p => {
       CHAT_PROFILES_CACHE[p.id] = p;
     });

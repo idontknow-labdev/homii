@@ -1198,8 +1198,29 @@ async function filterListings() {
 
   const selectedProvince = document.getElementById('filter-province')?.value || 'all';
 
+  const soldList = JSON.parse(localStorage.getItem('homii_sold_properties_list') || '[]');
+  const contractsList = JSON.parse(localStorage.getItem('homii_contracts') || '[]');
+  const reservationsMap = JSON.parse(localStorage.getItem('homii_reservations_db') || '{}');
+
+  const soldIdentifiers = new Set();
+  soldList.forEach(x => { if (x) soldIdentifiers.add(String(x).toLowerCase().trim()); });
+  contractsList.forEach(c => {
+    if (c.property_id) soldIdentifiers.add(String(c.property_id).toLowerCase().trim());
+  });
+  Object.values(reservationsMap).forEach(r => {
+    if (r.status === 'PAGADA_CONFIRMADA' || r.status === 'assigned') {
+      if (r.property_id) soldIdentifiers.add(String(r.property_id).toLowerCase().trim());
+      if (r.property_title) soldIdentifiers.add(String(r.property_title).toLowerCase().trim());
+    }
+  });
+
   let filtered = (props || []).filter(p => {
-    // Excluir inmuebles ya vendidos / alquilados
+    const pIdStr = String(p.id || '').toLowerCase().trim();
+    const pTitleStr = String(p.title || '').toLowerCase().trim();
+
+    // Excluir inmuebles ya vendidos / alquilados por ID, título o estado
+    if (soldIdentifiers.has(pIdStr) || soldIdentifiers.has(pTitleStr)) return false;
+
     const propMetaStr = localStorage.getItem('homii_prop_meta_' + p.id);
     const propMeta = propMetaStr ? JSON.parse(propMetaStr) : {};
     const effectiveStatus = propMeta.status || p.status || 'available';
@@ -3419,6 +3440,21 @@ async function renderLandlordPanel() {
 
   const { data: myProps } = await db.from('properties').select('*').eq('landlord_id', CURRENT_USER.id);
   const count = (myProps || []).length;
+  const soldList = JSON.parse(localStorage.getItem('homii_sold_properties_list') || '[]');
+  const contractsList = JSON.parse(localStorage.getItem('homii_contracts') || '[]');
+  const reservationsMap = JSON.parse(localStorage.getItem('homii_reservations_db') || '{}');
+
+  const soldIdentifiers = new Set();
+  soldList.forEach(x => { if (x) soldIdentifiers.add(String(x).toLowerCase().trim()); });
+  contractsList.forEach(c => {
+    if (c.property_id) soldIdentifiers.add(String(c.property_id).toLowerCase().trim());
+  });
+  Object.values(reservationsMap).forEach(r => {
+    if (r.status === 'PAGADA_CONFIRMADA' || r.status === 'assigned') {
+      if (r.property_id) soldIdentifiers.add(String(r.property_id).toLowerCase().trim());
+      if (r.property_title) soldIdentifiers.add(String(r.property_title).toLowerCase().trim());
+    }
+  });
 
   if (document.getElementById('stat-listings'))  document.getElementById('stat-listings').textContent  = count;
   if (document.getElementById('stat-views'))     document.getElementById('stat-views').textContent     = count * 147;
@@ -3430,12 +3466,16 @@ async function renderLandlordPanel() {
       list.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1.5rem;">No ha publicado propiedades todavía. Use el formulario para crear su primer anuncio.</p>';
     } else {
       list.innerHTML = (myProps || []).map(p => {
+        const pIdStr = String(p.id || '').toLowerCase().trim();
+        const pTitleStr = String(p.title || '').toLowerCase().trim();
+
         const propMetaStr = localStorage.getItem('homii_prop_meta_' + p.id);
         const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: p.status || 'available', waiting_list: p.waiting_list || [] };
-        const status = propMeta.status || 'available';
+        const status = propMeta.status || p.status || 'available';
         const waitingList = propMeta.waiting_list || [];
 
-        const isSold = status === 'assigned' || status === 'sold' || status === 'vendido' || status === 'alquilado';
+        const isSold = status === 'assigned' || status === 'sold' || status === 'vendido' || status === 'alquilado' || soldIdentifiers.has(pIdStr) || soldIdentifiers.has(pTitleStr);
+
         let statusBadge = '<span class="badge badge-green">Disponible</span>';
         if (isSold) {
           statusBadge = '<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔴 Vendido</span>';

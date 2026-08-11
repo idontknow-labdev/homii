@@ -2654,7 +2654,7 @@ async function openRoomieModal(id) {
   }
 
   document.getElementById('rmodal-desc').textContent    = r.description;
-  document.getElementById('rmodal-contact').textContent = r.is_demo ? 'soporte@homii.ec (solo ejemplo)' : r.contact;
+  document.getElementById('rmodal-contact').textContent = r.is_demo ? 'homii.info@gmail.com (solo ejemplo)' : r.contact;
 
   await setupRoomieChat(r);
 
@@ -3934,7 +3934,7 @@ function setupSupport() {
     render();
     setTimeout(() => {
       const t = text.toLowerCase();
-      let reply = 'Su consulta ha sido registrada. Escríbanos a soporte@homii.ec para una respuesta más rápida.';
+      let reply = 'Su consulta ha sido registrada. Escríbanos a homii.info@gmail.com para una respuesta más rápida.';
       if (t.includes('verific') || t.includes('certific')) reply = 'La certificación PUCEM requiere inspección presencial. El proceso toma entre 3 y 5 días hábiles.';
       if (t.includes('precio') || t.includes('costo') || t.includes('comis')) reply = 'Homii es gratuito para arrendatarios. Los propietarios pagan comisión solo al concretar el arrendamiento.';
       if (t.includes('roomie') || t.includes('compa')) reply = 'La sección Buscar Compañero le permite conectar con estudiantes de la PUCEM que buscan dividir gastos de arriendo.';

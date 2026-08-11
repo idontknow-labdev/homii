@@ -1696,32 +1696,53 @@ function renderChatMessageElement(m, currentUserId, defaultAuthorName = '', defa
   const offerMatch = rawText.match(/\[HOMII_OFERTA_ID:([^\]]+)\]/);
   if (offerMatch && offerMatch[1]) {
     const resId = offerMatch[1].trim();
-    const res = typeof getReservationById === 'function' ? getReservationById(resId) : null;
-    if (res) {
-      const isConfirmed = res.status === 'PAGADA_CONFIRMADA';
-      offerCardHtml = `
-        <div class="homii-offer-card" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--r-lg); padding:0.9rem 1rem; margin-top:0.4rem; min-width:260px; box-shadow:0 2px 6px rgba(0,0,0,0.04); text-align:left;">
-          <div style="font-size:0.75rem; color:#166534; font-weight:700; text-transform:uppercase; letter-spacing:0.02em; margin-bottom:0.25rem;">
-            ${isConfirmed ? '✅ Contrato Confirmado' : 'El propietario te ha enviado una propuesta de arrendamiento'}
-          </div>
-          <div style="font-size:0.85rem; color:#0f172a; font-weight:700; margin-bottom:0.35rem;">
-            ${res.property_title || 'Propiedad de Arriendo'} — $${res.monthly_price}/mes
-          </div>
-          <div style="font-size:0.76rem; color:#475569; margin-bottom:0.75rem; line-height:1.4;">
-            Fechas: <strong>${res.start_date} a ${res.end_date}</strong> ${res.deposit ? `| Garantía: <strong>$${res.deposit}</strong>` : ''}
-          </div>
-          ${isConfirmed ? `
-            <div style="font-size:0.75rem; color:#15803d; font-weight:700; background:#dcfce7; padding:0.45rem 0.65rem; border-radius:var(--r-md); text-align:center; border:1px solid #86efac;">
-              🔒 Pago Simulado Completado — Calendario Bloqueado
-            </div>
-          ` : `
-            <button type="button" class="btn btn-primary btn-sm btn-full" onclick="window.openCheckoutModal('${res.id}')" style="font-size:0.8rem; font-weight:600; padding:0.5rem 0.85rem; background:#059669; border:none; color:#ffffff; border-radius:var(--r-md); box-shadow:0 2px 4px rgba(5,150,105,0.2);">
-              Revisar y Firmar Contrato 📄
-            </button>
-          `}
-        </div>`;
-      rawText = rawText.replace(/\[HOMII_OFERTA_ID:[^\]]+\]/, '').trim();
+    let res = typeof getReservationById === 'function' ? getReservationById(resId) : null;
+    
+    // Si no existe la reserva en la memoria de este cliente (ej. inquilino recibiendo el mensaje), reconstruirla con los datos de la propuesta
+    if (!res) {
+      const priceMatch = rawText.match(/\$(\d+)\/mes/);
+      const datesMatch = rawText.match(/del\s+([\d-]+)\s+al\s+([\d-]+)/);
+      const priceVal = priceMatch ? parseInt(priceMatch[1]) : 200;
+      const startDate = datesMatch ? datesMatch[1] : new Date().toISOString().split('T')[0];
+      const endDate = datesMatch ? datesMatch[2] : new Date().toISOString().split('T')[0];
+
+      res = {
+        id: resId,
+        property_title: 'Propuesta Formal de Arrendamiento',
+        monthly_price: priceVal,
+        start_date: startDate,
+        end_date: endDate,
+        deposit: Math.round(priceVal * 0.5),
+        status: 'PENDIENTE_ACEPTACION'
+      };
+      if (typeof saveReservationState === 'function') {
+        saveReservationState(res);
+      }
     }
+
+    const isConfirmed = res.status === 'PAGADA_CONFIRMADA';
+    offerCardHtml = `
+      <div class="homii-offer-card" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--r-lg); padding:0.9rem 1rem; margin-top:0.4rem; min-width:260px; box-shadow:0 2px 6px rgba(0,0,0,0.04); text-align:left;">
+        <div style="font-size:0.75rem; color:#166534; font-weight:700; text-transform:uppercase; letter-spacing:0.02em; margin-bottom:0.25rem;">
+          ${isConfirmed ? '✅ Contrato Confirmado' : 'El propietario te ha enviado una propuesta de arrendamiento'}
+        </div>
+        <div style="font-size:0.85rem; color:#0f172a; font-weight:700; margin-bottom:0.35rem;">
+          ${res.property_title || 'Propiedad de Arriendo'} — $${res.monthly_price}/mes
+        </div>
+        <div style="font-size:0.76rem; color:#475569; margin-bottom:0.75rem; line-height:1.4;">
+          Fechas: <strong>${res.start_date} a ${res.end_date}</strong> ${res.deposit ? `| Garantía: <strong>$${res.deposit}</strong>` : ''}
+        </div>
+        ${isConfirmed ? `
+          <div style="font-size:0.75rem; color:#15803d; font-weight:700; background:#dcfce7; padding:0.45rem 0.65rem; border-radius:var(--r-md); text-align:center; border:1px solid #86efac;">
+            🔒 Pago Simulado Completado — Calendario Bloqueado
+          </div>
+        ` : `
+          <button type="button" class="btn btn-primary btn-sm btn-full" onclick="window.openCheckoutModal('${res.id}')" style="font-size:0.8rem; font-weight:600; padding:0.5rem 0.85rem; background:#059669; border:none; color:#ffffff; border-radius:var(--r-md); box-shadow:0 2px 4px rgba(5,150,105,0.2);">
+            Revisar y Firmar Contrato 📄
+          </button>
+        `}
+      </div>`;
+    rawText = rawText.replace(/\[HOMII_OFERTA_ID:[^\]]+\]/, '').trim();
   }
 
   const row = document.createElement('div');

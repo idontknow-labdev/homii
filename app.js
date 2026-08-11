@@ -1807,7 +1807,13 @@ async function setupDirectChat(p) {
   // Cargar historial (Supabase + localStorage)
   const localKey = 'homii_local_chat_' + chatId;
   const localHistory = JSON.parse(localStorage.getItem(localKey) || '[]');
-  const { data: supaHistory } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true }).catch(() => ({ data: [] }));
+  let supaHistory = [];
+  try {
+    const { data } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+    if (data) supaHistory = data;
+  } catch (eFetchDirect) {
+    console.warn('Direct chat fetch warning:', eFetchDirect);
+  }
 
   const mergedMap = new Map();
   (supaHistory || []).forEach(m => mergedMap.set(m.id || m.created_at, m));
@@ -2261,8 +2267,13 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const localKey = 'homii_local_chat_' + chatId;
   const localHistory = JSON.parse(localStorage.getItem(localKey) || '[]');
   
-  const { data: supaHistory } = await db.from('chats')
-    .select('*').eq('chat_id', chatId).order('created_at', { ascending: true }).catch(() => ({ data: [] }));
+  let supaHistory = [];
+  try {
+    const { data } = await db.from('chats').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+    if (data) supaHistory = data;
+  } catch (eChatFetch) {
+    console.warn('Chat history fetch warning:', eChatFetch);
+  }
 
   const mergedMap = new Map();
   (supaHistory || []).forEach(m => mergedMap.set(m.id || m.created_at, m));
@@ -3140,7 +3151,13 @@ async function loadInboxMessages(container) {
   // Cargar fotos y estado de suscripción de perfiles desde profiles DB para los participantes
   const otherIds = [...new Set(convs.map(c => c.otherId).filter(id => isValidUUID(id)))];
   if (otherIds.length > 0) {
-    const { data: profs } = await db.from('profiles').select('id, name, avatar_url, avatar_color, is_premium').in('id', otherIds);
+    let profs = [];
+    try {
+      const { data } = await db.from('profiles').select('id, name, avatar_url').in('id', otherIds);
+      if (data) profs = data;
+    } catch (eProfFetch) {
+      console.warn('Profiles fetch warning:', eProfFetch);
+    }
     (profs || []).forEach(p => {
       CHAT_PROFILES_CACHE[p.id] = p;
     });

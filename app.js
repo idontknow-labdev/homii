@@ -3547,7 +3547,21 @@ window.requestVerif = async function(id, title) {
   const propMetaKey = 'homii_prop_meta_' + id;
   const propMeta = JSON.parse(localStorage.getItem(propMetaKey) || '{}');
   propMeta.verification_requested = true;
+  propMeta.title = title;
   localStorage.setItem(propMetaKey, JSON.stringify(propMeta));
+
+  (APP.allProperties || []).forEach(p => {
+    if (String(p.id) === String(id) || p.title === title) {
+      p.verification_requested = true;
+      p.status = 'pending_verification';
+    }
+  });
+  (APP.properties || []).forEach(p => {
+    if (String(p.id) === String(id) || p.title === title) {
+      p.verification_requested = true;
+      p.status = 'pending_verification';
+    }
+  });
 
   const verifReqs = JSON.parse(localStorage.getItem('homii_verif_requests_list') || '[]');
   const reqObj = {
@@ -3559,7 +3573,7 @@ window.requestVerif = async function(id, title) {
     landlord_email: CURRENT_USER?.email || '',
     requested_at: new Date().toISOString()
   };
-  if (!verifReqs.some(r => String(r.prop_id) === String(id))) {
+  if (!verifReqs.some(r => String(r.prop_id) === String(id) || r.prop_title === title)) {
     verifReqs.push(reqObj);
     localStorage.setItem('homii_verif_requests_list', JSON.stringify(verifReqs));
   }
@@ -3570,8 +3584,8 @@ window.requestVerif = async function(id, title) {
     } catch (eUpd) {}
   }
 
-  addNotif('Solicitud Enviada', `Solicitud de revisión enviada para "${title}". El administrador la revisará a la brevedad.`);
-  alert('✓ Solicitud enviada al Administrador.\n\nSu propiedad ha sido notificada al equipo de administración para su revisión y posterior homologación PUCEM / Homii.');
+  addNotif('Solicitud Enviada', `Solicitud de revisión enviada para "${title}". El administrador Homii la revisará a la brevedad.`);
+  alert('✓ Solicitud enviada al Administrador Homii.\n\nSu propiedad ha sido notificada al Panel del Administrador Homii para su revisión y aprobación.');
 
   if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
   if (typeof renderAdminPanel === 'function') renderAdminPanel();
@@ -4723,7 +4737,7 @@ window.renderAdminPanel = async function() {
             </p>
           </div>
           <div style="display:flex; gap:0.5rem;">
-            <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.45rem 0.9rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveProperty('${p.id}', '${escAttr(p.title)}')">✓ Aprobar y Publicar Inmueble</button>
+            <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.45rem 0.9rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveProperty('${p.id}', '${escAttr(p.title)}')">✓ Aprobar (Verificado Homii)</button>
           </div>
         </div>
       `).join('');

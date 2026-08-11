@@ -2944,60 +2944,61 @@ async function renderProfileView() {
   if (s('edit-occupation')) s('edit-occupation').value = p.occupation || '';
   if (s('edit-bio'))        s('edit-bio').value        = p.bio || '';
 
-  // Estado de Verificación Biométrica (solo estudiantes)
+  // Estado de Verificación Biométrica (para todos los usuarios)
   const bioCard = s('profile-biometric-card');
   const bioArea = s('profile-biometric-status-area');
   
   if (bioCard && bioArea) {
-    if (p.role === 'student') {
-      bioCard.style.display = 'block';
-      const localMetaStr = localStorage.getItem('homii_profile_meta_' + CURRENT_USER.id);
-      const localMeta = localMetaStr ? JSON.parse(localMetaStr) : {};
-      const status = p.is_verified || localMeta.is_verified || 'pending';
-      const reason = p.rejection_reason || localMeta.rejection_reason || '';
-      
-      let html = '';
-      if (status === 'approved') {
-        html = `
-          <div style="background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem;">
-            <strong>✓ Cuenta Verificada Exitosamente:</strong> Tu identidad ha sido validada por el Administrador de Homii. Ya puedes reservar y postular a inmuebles con normalidad.
-          </div>`;
-      } else if (status === 'pending') {
-        html = `
-          <div style="background:#fffbeb; border:1px solid #fef3c7; color:#b45309; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem;">
-            <strong>⏳ Verificación Biométrica en Proceso:</strong> Tus documentos (selfie y cédula de identidad) están siendo validados por el equipo de Homii. Te notificaremos en un plazo máximo de 24 horas.
-          </div>`;
-      } else if (status === 'rejected') {
-        html = `
-          <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem; display:flex; flex-direction:column; gap:0.5rem;">
-            <div><strong>❌ Verificación Rechazada:</strong> ${reason || 'Documentos inconsistentes o ilegibles.'}</div>
-            <div style="font-size:0.8rem; font-weight:500; margin-top:0.25rem;">Por favor, vuelve a subir tus archivos corregidos a continuación:</div>
+    bioCard.style.display = 'block';
+    const localMetaStr = localStorage.getItem('homii_profile_meta_' + CURRENT_USER.id);
+    const localMeta = localMetaStr ? JSON.parse(localMetaStr) : {};
+    const status = p.is_verified || localMeta.is_verified || 'unverified';
+    const reason = p.rejection_reason || localMeta.rejection_reason || '';
+    
+    let html = '';
+    if (status === 'approved' || status === true) {
+      html = `
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <strong>✓ Cuenta Verificada Exitosamente:</strong> Tu identidad ha sido validada oficialmente por el Administrador Homii. Ya tienes acceso completo a todas las funcionalidades.
           </div>
-          
-          <form onsubmit="event.preventDefault(); window.reuploadBiometrics();" style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.5rem;">
-            <div style="display:flex; flex-direction:column; gap:0.75rem;">
-              <div>
-                <label class="form-label" style="font-size:0.8rem; font-weight:600;">Nueva Foto de tu Rostro (Selfie) *</label>
-                <input type="file" id="re-selfie" accept="image/*" class="form-input" style="padding:0.4rem;" required onchange="window.handleReuploadFileChange('selfie')">
-              </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
-                <div>
-                  <label class="form-label" style="font-size:0.8rem; font-weight:600;">Cédula Frente *</label>
-                  <input type="file" id="re-idcard-front" accept="image/*" class="form-input" style="padding:0.4rem;" required onchange="window.handleReuploadFileChange('front')">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:0.8rem; font-weight:600;">Cédula Reverso *</label>
-                  <input type="file" id="re-idcard-back" accept="image/*" class="form-input" style="padding:0.4rem;" required onchange="window.handleReuploadFileChange('back')">
-                </div>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary" style="align-self:flex-start; margin-top:0.5rem; padding:0.6rem 1.2rem; font-weight:600;">Re-enviar Documentos</button>
-          </form>`;
-      }
-      bioArea.innerHTML = html;
+          <span class="badge badge-green" style="background:#d1fae5; color:#059669; font-weight:700; padding:0.35rem 0.75rem;">✓ Verificado Homii</span>
+        </div>`;
+    } else if (status === 'pending') {
+      html = `
+        <div style="background:#fffbeb; border:1px solid #fef3c7; color:#b45309; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem; display:flex; flex-direction:column; gap:0.75rem;">
+          <div>
+            <strong>⏳ Verificación Biométrica en Proceso:</strong> Tus documentos (selfie de rostro y cédula de identidad) fueron enviados y están siendo validados por el Administrador Homii.
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.openBiometricModal()" style="font-weight:600;">📸 Actualizar o Re-enviar Documentos</button>
+          </div>
+        </div>`;
+    } else if (status === 'rejected') {
+      html = `
+        <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:1rem; border-radius:var(--radius-md); font-size:0.875rem; display:flex; flex-direction:column; gap:0.75rem;">
+          <div>
+            <strong>❌ Verificación Rechazada:</strong> ${reason || 'Los documentos presentados eran ilegibles o requerían actualización.'}
+          </div>
+          <div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="window.openBiometricModal()" style="font-weight:600;">📸 Volver a Subir Documentos Biométricos</button>
+          </div>
+        </div>`;
     } else {
-      bioCard.style.display = 'none';
+      html = `
+        <div style="background:var(--bg-section); border:1px solid var(--border); color:var(--text); padding:1.25rem; border-radius:var(--radius-md); font-size:0.875rem; display:flex; flex-direction:column; gap:0.85rem;">
+          <div>
+            <strong style="color:var(--blue-dark); font-size:0.95rem;">🛡️ Verifique su Cuenta en Homii:</strong>
+            <p style="margin:0.25rem 0 0; color:var(--text-muted); font-size:0.825rem;">Suba su foto selfie de rostro y documento de cédula de identidad para verificar su perfil y brindar mayor seguridad en la plataforma.</p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-primary" onclick="window.openBiometricModal()" style="padding:0.65rem 1.25rem; font-weight:700; background:var(--blue); color:white; border-radius:var(--radius-md); display:inline-flex; align-items:center; gap:0.5rem; border:none; cursor:pointer;">
+              📸 Iniciar Verificación Biométrica Ahora
+            </button>
+          </div>
+        </div>`;
     }
+    bioArea.innerHTML = html;
   }
 
   // Mis propiedades (solo propietario)

@@ -2288,7 +2288,11 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
 
   // Marcar como leídos (si hay usuario autenticado)
   if (CURRENT_USER?.id) {
-    db.from('chats').update({ is_read: true }).eq('chat_id', chatId).eq('receiver_id', CURRENT_USER.id).catch(() => {});
+    try {
+      await db.from('chats').update({ is_read: true }).eq('chat_id', chatId).eq('receiver_id', CURRENT_USER.id);
+    } catch (eRead) {
+      console.warn('Read update warning:', eRead);
+    }
   }
 
   if (activeChatChannel) { activeChatChannel.unsubscribe(); }
@@ -2335,14 +2339,18 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
     localStorage.setItem(localKey, JSON.stringify(existingLocal));
 
     if (CURRENT_USER?.id) {
-      await db.from('chats').insert({
-        chat_id: chatId,
-        property_title: propTitle,
-        sender_id: CURRENT_USER.id,
-        sender_name: currentUserName,
-        receiver_id: senderId,
-        message: text
-      }).catch(err => console.warn('Chat send warning:', err));
+      try {
+        await db.from('chats').insert({
+          chat_id: chatId,
+          property_title: propTitle,
+          sender_id: CURRENT_USER.id,
+          sender_name: currentUserName,
+          receiver_id: senderId,
+          message: text
+        });
+      } catch (errIns) {
+        console.warn('Chat send warning:', errIns);
+      }
     }
   };
 

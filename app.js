@@ -318,7 +318,7 @@ async function loadUserProfile(user) {
     const { error: upsertErr } = await db.from('profiles').upsert(profile, { onConflict: 'id' });
     if (upsertErr) {
       console.warn('Auto-healing profile creation warning:', upsertErr.message);
-      await db.from('profiles').insert(profile).catch(e => console.warn('Direct insert fallback:', e.message));
+      try { await db.from('profiles').insert(profile); } catch (e) {}
     }
   } else {
     // Si la fila existía pero le faltaban datos críticos (email, rol, cédula, estado de verificación, imágenes), actualizar Supabase
@@ -647,9 +647,11 @@ async function doRegister() {
       };
 
       // Actualizar o insertar perfil en tabla public.profiles de Supabase
-      await db.from('profiles').upsert(profileDbPayload, { onConflict: 'id' }).catch(async () => {
-        await db.from('profiles').insert(profileDbPayload).catch(() => {});
-      });
+      try {
+        await db.from('profiles').upsert(profileDbPayload, { onConflict: 'id' });
+      } catch (eUp) {
+        try { await db.from('profiles').insert(profileDbPayload); } catch (eIns) {}
+      }
 
       if (!data.session) {
         alert('¡Cuenta registrada!\n\nPor favor revise su correo electrónico (' + email + ') para confirmar su cuenta e inicie sesión.');
@@ -744,13 +746,15 @@ window.submitBiometricVerification = async function() {
   if (error) {
     console.warn('Advertencia al actualizar verificación en Supabase:', error.message);
     // Reintentar si el campo is_verified requiere booleano
-    await db.from('profiles').update({
-      cedula,
-      is_verified: false,
-      selfie_url: selfieUrl,
-      id_card_front_url: frontUrl,
-      id_card_back_url: backUrl
-    }).eq('id', CURRENT_USER.id).catch(() => {});
+    try {
+      await db.from('profiles').update({
+        cedula,
+        is_verified: false,
+        selfie_url: selfieUrl,
+        id_card_front_url: frontUrl,
+        id_card_back_url: backUrl
+      }).eq('id', CURRENT_USER.id);
+    } catch (eBiom) {}
   }
 
   if (CURRENT_PROFILE) {
@@ -810,7 +814,9 @@ window.confirmAndAcceptLandlordTerms = async function() {
     localStorage.setItem('homii_landlord_terms_' + CURRENT_USER.id, 'true');
     if (CURRENT_PROFILE) CURRENT_PROFILE.accepted_landlord_terms = true;
 
-    await db.from('profiles').update({ accepted_landlord_terms: true }).eq('id', CURRENT_USER.id).catch(() => {});
+    try {
+      await db.from('profiles').update({ accepted_landlord_terms: true }).eq('id', CURRENT_USER.id);
+    } catch (eTerms) {}
   }
 
   window.closeLandlordTermsModal();
@@ -1920,10 +1926,16 @@ async function setupDirectChat(p) {
 
 window._HOMII_RESERVATIONS = JSON.parse(localStorage.getItem('homii_reservations_db') || '{}');
 
-function saveReservationState(resObj) {
+async function saveReservationState(resObj) {
   window._HOMII_RESERVATIONS[resObj.id] = resObj;
   localStorage.setItem('homii_reservations_db', JSON.stringify(window._HOMII_RESERVATIONS));
-  db.from('reservations').upsert([resObj]).catch(() => {});
+  try {
+    if (CURRENT_USER?.id && isValidUUID(resObj.property_id)) {
+      await db.from('reservations').upsert([resObj]);
+    }
+  } catch (errRes) {
+    console.warn('Reservation save warning:', errRes);
+  }
 }
 
 function getReservationById(id) {
@@ -2242,11 +2254,17 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   const targetPropId = matchProp ? matchProp[1] : null;
   const targetTenantId = matchProp ? matchProp[2] : senderId;
 
-  // Verificar estrictamente si el usuario logueado es el PROPIETARIO del inmueble
-  const currentRole = (CURRENT_PROFILE?.role || 'student').toLowerCase();
-  const isLandlord = (currentRole === 'landlord' || currentRole === 'university');
+  const currentUserId = CURRENT_USER?.id;
+  const currentRole = (CURRENT_PROFILE?.role || localStorage.getItem('homii_role') || 'student').toLowerCase();
 
-  if (isLandlord && targetPropId) {
+  // El usuario es el Inquilino de este chat si su ID coincide con targetTenantId
+  const isTenantInThisChat = currentUserId && targetTenantId && (currentUserId === targetTenantId);
+  const isLandlordRole = (currentRole === 'landlord' || currentRole === 'university');
+
+  // La herramienta solo se muestra si el usuario NO es el inquilino de este chat Y TIENE rol de Propietario
+  const showLandlordOfferBar = isLandlordRole && !isTenantInThisChat && targetPropId;
+
+  if (showLandlordOfferBar) {
     offerBar.style.display = 'flex';
     offerBar.innerHTML = `
       <div style="font-size:0.8rem; color:#1e40af; font-weight:600; display:flex; align-items:center; gap:0.35rem;">
@@ -4164,8 +4182,12 @@ window.processPremiumPayment = async function() {
     profileMeta.premium_tier = selectedPremiumTier;
     localStorage.setItem('homii_profile_meta_' + CURRENT_USER.id, JSON.stringify(profileMeta));
 
-    await db.auth.updateUser({ data: { is_premium: true, premium_tier: selectedPremiumTier } }).catch(() => {});
-    await db.from('profiles').update({ is_premium: true, premium_tier: selectedPremiumTier }).eq('id', CURRENT_USER.id).catch(() => {});
+    try {
+      await db.auth.updateUser({ data: { is_premium: true, premium_tier: selectedPremiumTier } });
+    } catch (ePremAuth) {}
+    try {
+      await db.from('profiles').update({ is_premium: true, premium_tier: selectedPremiumTier }).eq('id', CURRENT_USER.id);
+    } catch (ePremProf) {}
 
     closePremiumModal();
     addNotif('👑 Homii Premium Activado', '¡Felicidades! Ahora cuentas con Prioridad Nivel 1 en arriendos.');
@@ -4252,7 +4274,11 @@ window.generateAndCompleteRent = async function() {
     localStorage.setItem('homii_prop_meta_' + propId, JSON.stringify(propMeta));
 
     // Intentar actualizar la base de datos Supabase
-    await db.from('properties').update({ status: 'assigned' }).eq('id', propId).catch(() => {});
+    if (isValidUUID(propId)) {
+      try {
+        await db.from('properties').update({ status: 'assigned' }).eq('id', propId);
+      } catch (ePUpd) {}
+    }
 
     // Guardar el contrato en local y Supabase
     const contractObj = {
@@ -4271,7 +4297,9 @@ window.generateAndCompleteRent = async function() {
     contracts.push(contractObj);
     localStorage.setItem('homii_contracts', JSON.stringify(contracts));
 
-    await db.from('contracts').insert(contractObj).catch(() => {});
+    try {
+      await db.from('contracts').insert(contractObj);
+    } catch (eCInsert) {}
 
     closeContractModal();
     if (openPropertyData && openPropertyData.id === propId) {

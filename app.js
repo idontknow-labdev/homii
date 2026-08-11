@@ -4623,61 +4623,60 @@ window.renderAdminPanel = async function() {
   if (countEl) countEl.textContent = pendingList.length + ' Pendientes';
   if (pendingStat) pendingStat.textContent = pendingList.length;
 
-  // 4. Si no hay solicitudes pendientes, mostrar estado limpio sin datos de prueba
+  // 4. Si no hay solicitudes biométricas pendientes, mostrar aviso en esa sección
   if (pendingList.length === 0) {
     listEl.innerHTML = `
       <div style="padding: 3rem 1.5rem; text-align: center; color: var(--text-muted);">
         <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎉</div>
-        <h5 style="margin: 0; font-size: 1.1rem; color: var(--blue-dark); font-weight: 700;">No hay solicitudes de verificación pendientes</h5>
-        <p style="margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--text-sec);">Todas las cuentas de estudiantes están verificadas o no hay nuevas solicitudes en este momento.</p>
+        <h5 style="margin: 0; font-size: 1.1rem; color: var(--blue-dark); font-weight: 700;">No hay solicitudes biométricas pendientes</h5>
+        <p style="margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--text-sec);">Todas las cuentas están verificadas o no hay nuevas solicitudes biométricas en este momento.</p>
       </div>
     `;
-    return;
+  } else {
+    // 5. Renderizar lista de solicitudes pendientes reales
+    listEl.innerHTML = pendingList.map(u => `
+      <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; background: var(--bg-white);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <h5 style="margin:0; font-size:1rem; color:var(--text); font-weight:600;">${u.name}</h5>
+              <span class="badge ${u.role === 'landlord' ? 'badge-amber' : 'badge-blue'}" style="font-size:0.65rem;">${u.role === 'landlord' ? 'Propietario' : 'Estudiante'}</span>
+              <span class="badge badge-gray" style="font-size:0.65rem;">Pendiente de Verificación</span>
+            </div>
+            <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--text-muted);">
+              Cédula: <strong>${u.cedula}</strong> &middot; Email: ${u.email} &middot; Tel: ${u.phone}
+            </p>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveUserBiometrics('${u.id}', false)">✓ Aprobar</button>
+            <button class="btn btn-sm" style="background:#ef4444; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.rejectUserBiometrics('${u.id}', false)">✗ Rechazar</button>
+          </div>
+        </div>
+        
+        <!-- Documentos -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; background: var(--bg-section); padding: 0.85rem; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+          <div>
+            <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Selfie Rostro</span>
+            <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.selfie_url}', 'Selfie - ${escAttr(u.name)}')">
+              <img src="${u.selfie_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60'">
+            </div>
+          </div>
+          <div>
+            <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Cédula Frente</span>
+            <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.id_card_front_url}', 'Cédula Frente - ${escAttr(u.name)}')">
+              <img src="${u.id_card_front_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60'">
+            </div>
+          </div>
+          <div>
+            <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Cédula Reverso</span>
+            <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.id_card_back_url}', 'Cédula Reverso - ${escAttr(u.name)}')">
+              <img src="${u.id_card_back_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60'">
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
   }
-
-  // 5. Renderizar lista de solicitudes pendientes reales
-  listEl.innerHTML = pendingList.map(u => `
-    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; background: var(--bg-white);">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
-        <div>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <h5 style="margin:0; font-size:1rem; color:var(--text); font-weight:600;">${u.name}</h5>
-            <span class="badge ${u.role === 'landlord' ? 'badge-amber' : 'badge-blue'}" style="font-size:0.65rem;">${u.role === 'landlord' ? 'Propietario' : 'Estudiante'}</span>
-            <span class="badge badge-gray" style="font-size:0.65rem;">Pendiente de Verificación</span>
-          </div>
-          <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--text-muted);">
-            Cédula: <strong>${u.cedula}</strong> &middot; Email: ${u.email} &middot; Tel: ${u.phone}
-          </p>
-        </div>
-        <div style="display:flex; gap:0.5rem;">
-          <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.approveUserBiometrics('${u.id}', false)">✓ Aprobar</button>
-          <button class="btn btn-sm" style="background:#ef4444; color:white; border:none; padding:0.4rem 0.85rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer;" onclick="window.rejectUserBiometrics('${u.id}', false)">✗ Rechazar</button>
-        </div>
-      </div>
-      
-      <!-- Documentos -->
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; background: var(--bg-section); padding: 0.85rem; border-radius: var(--radius-lg); border: 1px solid var(--border);">
-        <div>
-          <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Selfie Rostro</span>
-          <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.selfie_url}', 'Selfie - ${escAttr(u.name)}')">
-            <img src="${u.selfie_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60'">
-          </div>
-        </div>
-        <div>
-          <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Cédula Frente</span>
-          <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.id_card_front_url}', 'Cédula Frente - ${escAttr(u.name)}')">
-            <img src="${u.id_card_front_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=60'">
-          </div>
-        </div>
-        <div>
-          <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem; text-transform:uppercase;">Cédula Reverso</span>
-          <div style="width:100%; height:120px; background:#e2e8f0; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="window.zoomBiometricImage('${u.id_card_back_url}', 'Cédula Reverso - ${escAttr(u.name)}')">
-            <img src="${u.id_card_back_url}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1606857521015-7f9fcf423740?w=400&auto=format&fit=crop&q=60'">
-          </div>
-        </div>
-      </div>
-    </div>
-  `).join('');
 
   // 6. Cargar y renderizar solicitudes de verificación de inmuebles
   const propListEl  = document.getElementById('admin-property-verification-list');

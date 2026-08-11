@@ -2219,6 +2219,40 @@ window.togglePaymentButtonState = function() {
   }
 };
 
+window.markPropertyAsSold = function(propId, propTitle) {
+  if (!propId && !propTitle) return;
+
+  const soldList = JSON.parse(localStorage.getItem('homii_sold_properties_list') || '[]');
+  if (propId && !soldList.includes(String(propId))) soldList.push(String(propId));
+  if (propTitle && !soldList.includes(String(propTitle))) soldList.push(String(propTitle));
+  localStorage.setItem('homii_sold_properties_list', JSON.stringify(soldList));
+
+  if (propId) {
+    const propMetaKey = 'homii_prop_meta_' + propId;
+    const existingMeta = JSON.parse(localStorage.getItem(propMetaKey) || '{}');
+    existingMeta.status = 'assigned';
+    localStorage.setItem(propMetaKey, JSON.stringify(existingMeta));
+  }
+
+  (APP.allProperties || []).forEach(p => {
+    if ((propId && String(p.id) === String(propId)) || (propTitle && p.title === propTitle)) p.status = 'assigned';
+  });
+  (APP.properties || []).forEach(p => {
+    if ((propId && String(p.id) === String(propId)) || (propTitle && p.title === propTitle)) p.status = 'assigned';
+  });
+  if (openPropertyData && ((propId && String(openPropertyData.id) === String(propId)) || (propTitle && openPropertyData.title === propTitle))) {
+    openPropertyData.status = 'assigned';
+  }
+
+  if (propId && isValidUUID(propId)) {
+    try { db.from('properties').update({ status: 'assigned' }).eq('id', propId); } catch(e) {}
+  }
+
+  if (typeof renderProperties === 'function') renderProperties();
+  if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
+  if (typeof renderAdminPanel === 'function') renderAdminPanel();
+};
+
 window.processSimulatedPayment = async function() {
   const resId = window._CURRENT_ACTIVE_CHECKOUT_ID;
   const res = getReservationById(resId);
@@ -2235,17 +2269,8 @@ window.processSimulatedPayment = async function() {
     res.confirmed_at = new Date().toISOString();
     saveReservationState(res);
 
-    if (res.property_id) {
-      await db.from('properties').update({
-        status: 'assigned',
-        is_verified: true
-      }).eq('id', res.property_id).catch(() => {});
-
-      const propMetaKey = 'homii_prop_meta_' + res.property_id;
-      const existingMeta = JSON.parse(localStorage.getItem(propMetaKey) || '{}');
-      existingMeta.status = 'assigned';
-      existingMeta.booked_dates = `${res.start_date} al ${res.end_date}`;
-      localStorage.setItem(propMetaKey, JSON.stringify(existingMeta));
+    if (res.property_id || res.property_title) {
+      window.markPropertyAsSold(res.property_id, res.property_title);
     }
 
     window.closeCheckoutModal();
@@ -4320,17 +4345,8 @@ window.generateAndCompleteRent = async function() {
   setTimeout(async () => {
     if (btn) { btn.disabled = false; btn.textContent = '🔐 Generar Contrato y Marcar Inmueble como Alquilado'; }
 
-    const propMetaStr = localStorage.getItem('homii_prop_meta_' + propId);
-    const propMeta = propMetaStr ? JSON.parse(propMetaStr) : { status: 'available', waiting_list: [] };
-    propMeta.status = 'assigned'; // Cambiar a Alquilado
-    localStorage.setItem('homii_prop_meta_' + propId, JSON.stringify(propMeta));
-
-    // Intentar actualizar la base de datos Supabase
-    if (isValidUUID(propId)) {
-      try {
-        await db.from('properties').update({ status: 'assigned' }).eq('id', propId);
-      } catch (ePUpd) {}
-    }
+    const propTitleText = document.getElementById('contract-prop-title')?.textContent || '';
+    window.markPropertyAsSold(propId, propTitleText);
 
     // Guardar el contrato en local y Supabase
     const contractObj = {
@@ -4362,12 +4378,10 @@ window.generateAndCompleteRent = async function() {
     alert('✅ Contrato de Arrendamiento Generado Exitosamente.\n\nEl inmueble ha sido dado de baja de las búsquedas públicas y registrado en el historial de Homii.');
 
     // Abrir automáticamente la evaluación por estrellas post-contrato
-    const propTitle = document.getElementById('contract-prop-title')?.textContent || 'el inmueble';
-    openRatingModal('property', propId, propTitle);
+    openRatingModal('property', propId, propTitleText || 'el inmueble');
 
-    if (APP.currentView === 'landlord') {
-      renderLandlordDashboard();
-    }
+    if (typeof renderLandlordPanel === 'function') renderLandlordPanel();
+    if (typeof renderProperties === 'function') renderProperties();
   }, 1000);
 };
 

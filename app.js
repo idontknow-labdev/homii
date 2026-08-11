@@ -1802,7 +1802,7 @@ async function setupDirectChat(p) {
 
   if (activeChatChannel) { activeChatChannel.unsubscribe(); activeChatChannel = null; }
 
-  const chatId = `prop_${p.id}_usr_${CURRENT_USER.id}`;
+  const chatId = `prop_${p.id}_usr_${CURRENT_USER?.id || 'guest'}`;
 
   // Cargar historial (Supabase + localStorage)
   const localKey = 'homii_local_chat_' + chatId;
@@ -1842,7 +1842,7 @@ async function setupDirectChat(p) {
       filter: `chat_id=eq.${chatId}`
     }, (payload) => {
       // Evitar duplicar mensajes propios (ya los añadimos optimistically)
-      if (payload.new.sender_id !== CURRENT_USER.id) appendBubble(payload.new);
+      if (payload.new.sender_id !== CURRENT_USER?.id) appendBubble(payload.new);
     })
     .subscribe();
 
@@ -2275,17 +2275,21 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
   });
   msgs.scrollTop = msgs.scrollHeight;
 
-  // Marcar como leídos
-  await db.from('chats').update({ is_read: true }).eq('chat_id', chatId).eq('receiver_id', CURRENT_USER.id);
+  // Marcar como leídos (si hay usuario autenticado)
+  if (CURRENT_USER?.id) {
+    db.from('chats').update({ is_read: true }).eq('chat_id', chatId).eq('receiver_id', CURRENT_USER.id).catch(() => {});
+  }
 
   if (activeChatChannel) { activeChatChannel.unsubscribe(); }
-  activeChatChannel = db.channel('conv:' + chatId)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats', filter: `chat_id=eq.${chatId}` }, (payload) => {
-      if (payload.new.sender_id !== CURRENT_USER.id) {
-        msgs.appendChild(renderChatMessageElement(payload.new, CURRENT_USER.id, senderName, null));
-        msgs.scrollTop = msgs.scrollHeight;
-      }
-    }).subscribe();
+  if (CURRENT_USER?.id) {
+    activeChatChannel = db.channel('conv:' + chatId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats', filter: `chat_id=eq.${chatId}` }, (payload) => {
+        if (payload.new.sender_id !== CURRENT_USER.id) {
+          msgs.appendChild(renderChatMessageElement(payload.new, CURRENT_USER.id, senderName, null));
+          msgs.scrollTop = msgs.scrollHeight;
+        }
+      }).subscribe();
+  }
 
   const newBtn = btn.cloneNode(true);
   btn.parentNode.replaceChild(newBtn, btn);
@@ -2302,22 +2306,33 @@ window.openConversation = async function(chatId, propTitle, senderName, senderId
     }
 
     if (input) input.value = '';
+    const currentUserId = CURRENT_USER?.id || 'guest_user';
+    const currentUserName = CURRENT_PROFILE?.name || CURRENT_USER?.email || 'Usuario';
+
     const localMsgObj = {
-      sender_id: CURRENT_USER.id,
-      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
+      sender_id: currentUserId,
+      sender_name: currentUserName,
       message: text,
       created_at: new Date().toISOString()
     };
-    msgs.appendChild(renderChatMessageElement(localMsgObj, CURRENT_USER.id));
+    msgs.appendChild(renderChatMessageElement(localMsgObj, currentUserId));
     msgs.scrollTop = msgs.scrollHeight;
-    await db.from('chats').insert({
-      chat_id: chatId,
-      property_title: propTitle,
-      sender_id: CURRENT_USER.id,
-      sender_name: CURRENT_PROFILE?.name || CURRENT_USER.email,
-      receiver_id: senderId,
-      message: text
-    });
+
+    const localKey = 'homii_local_chat_' + chatId;
+    const existingLocal = JSON.parse(localStorage.getItem(localKey) || '[]');
+    existingLocal.push(localMsgObj);
+    localStorage.setItem(localKey, JSON.stringify(existingLocal));
+
+    if (CURRENT_USER?.id) {
+      await db.from('chats').insert({
+        chat_id: chatId,
+        property_title: propTitle,
+        sender_id: CURRENT_USER.id,
+        sender_name: currentUserName,
+        receiver_id: senderId,
+        message: text
+      }).catch(err => console.warn('Chat send warning:', err));
+    }
   };
 
   newBtn.addEventListener('click', () => doSend(input?.value));

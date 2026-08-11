@@ -1199,6 +1199,14 @@ async function filterListings() {
   const selectedProvince = document.getElementById('filter-province')?.value || 'all';
 
   let filtered = (props || []).filter(p => {
+    // Excluir inmuebles ya vendidos / alquilados
+    const propMetaStr = localStorage.getItem('homii_prop_meta_' + p.id);
+    const propMeta = propMetaStr ? JSON.parse(propMetaStr) : {};
+    const effectiveStatus = propMeta.status || p.status || 'available';
+    if (effectiveStatus === 'assigned' || effectiveStatus === 'sold' || effectiveStatus === 'vendido' || effectiveStatus === 'alquilado') {
+      return false;
+    }
+
     // Solo mostrar inmuebles verificados/aprobados por el Administrador (excluir pendientes de revisión)
     const isApproved = p.is_demo || p.university_certified === true || p.is_verified === true || p.status === 'available' || p.status === 'approved';
     if (!isApproved) return false;
@@ -3418,9 +3426,10 @@ async function renderLandlordPanel() {
         const status = propMeta.status || 'available';
         const waitingList = propMeta.waiting_list || [];
 
+        const isSold = status === 'assigned' || status === 'sold' || status === 'vendido' || status === 'alquilado';
         let statusBadge = '<span class="badge badge-green">Disponible</span>';
-        if (status === 'assigned') {
-          statusBadge = '<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">Alquilado</span>';
+        if (isSold) {
+          statusBadge = '<span class="badge badge-red" style="background:#fee2e2;color:#dc2626;font-weight:700;">🔴 Vendido</span>';
         } else if (status === 'in_progress') {
           statusBadge = `<span class="badge badge-amber" style="background:#fef3c7;color:#d97706;font-weight:700;">En Asignación (${waitingList.length} en espera)</span>`;
         }
@@ -3439,10 +3448,14 @@ async function renderLandlordPanel() {
               <div style="font-size:0.75rem;color:var(--text-muted);">${(p.location || '').split(',')[0]} &middot; <span style="color:var(--blue);font-weight:600;">$${p.price}/mes</span></div>
             </div>
             <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
-              ${status !== 'assigned' ? `<button class="btn btn-primary btn-sm" onclick="openContractModal('${p.id}')">📜 Generar Contrato / Dar de Baja</button>` : ''}
-              ${p.university_certified ? `<span class="badge badge-green">Verificado PUCEM</span>` : `<button class="btn btn-secondary btn-sm" onclick="requestVerif('${p.id}', '${escAttr(p.title)}')">Pedir verificación</button>`}
-              ${p.featured ? `<span class="badge badge-blue">Destacado</span>` : `<button class="btn btn-outline btn-sm" onclick="makeFeatured('${p.id}')">Destacar</button>`}
-              <button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Eliminar</button>
+              ${isSold ? `
+                <button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Eliminar</button>
+              ` : `
+                <button class="btn btn-primary btn-sm" onclick="openContractModal('${p.id}')">📜 Generar Contrato / Dar de Baja</button>
+                ${p.university_certified ? `<span class="badge badge-green">Verificado PUCEM</span>` : `<button class="btn btn-secondary btn-sm" onclick="requestVerif('${p.id}', '${escAttr(p.title)}')">Pedir verificación</button>`}
+                ${p.featured ? `<span class="badge badge-blue">Destacado</span>` : `<button class="btn btn-outline btn-sm" onclick="makeFeatured('${p.id}')">Destacar</button>`}
+                <button class="btn btn-danger btn-sm" onclick="deleteProp('${p.id}')">Eliminar</button>
+              `}
             </div>
           </div>
           ${waitingList.length > 0 ? `
